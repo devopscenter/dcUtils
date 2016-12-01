@@ -1,0 +1,55 @@
+version: '2'
+# docker-compose for web-debug container. This uses
+# cling for static files, django sslserver (started with 'python manage.py runsslserver'), and no async service
+#
+# Assumes docker for mac.
+#
+services:
+    web:
+        container_name: "${dcDEFAULT_APP_NAME}_${CUSTOMER_APP_ENV}_web-1"
+        image: devopscenter/0099ff.web-debug:${CONTAINER_VERSION}
+        ports:
+            - "80:80"
+            - "8000:8000"
+            - "443:443"
+        links:
+            - "pgmaster-1"
+        volumes:
+            - "$dcAPP:/data/deploy/current"
+            - "/wheelhouse"
+            - "$dcDATA:/dataload"
+            - "$dcUTILS:/utils"
+        working_dir: "/data/deploy/current"
+        env_file:
+            - "APP_NAME-ENV.env"
+        volumes_from:
+            - syslog
+
+    pgmaster-1:
+        container_name: "${dcDEFAULT_APP_NAME}_${CUSTOMER_APP_ENV}_pgmaster-1"
+        extends:
+            file: APP_NAME-CONFIG-DIR-common.yml
+            service: pgmaster-1
+        volumes:
+            - "$dcUTILS:/utils"
+        volumes_from:
+            - syslog
+
+    syslog:
+        container_name: "${dcDEFAULT_APP_NAME}_${CUSTOMER_APP_ENV}_syslog"
+        environment:
+            LOG_NAME:
+        extends:
+            file: APP_NAME-CONFIG-DIR-common.yml
+            service: syslog
+        logging:
+            driver: syslog
+            options:
+                syslog-address: udp://logs2.papertrailapp.com:48809
+                syslog-facility: local0
+                env: LOG_NAME
+                tag: "{{ (.ExtraAttributes nil).LOG_NAME}} {{.DaemonName}}"
+
+# Must include all named volumes in V2 compose file format.
+volumes:
+    pg-db:
