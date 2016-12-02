@@ -3,6 +3,7 @@ import os
 from os.path import expanduser
 import sys
 import argparse
+import subprocess
 # ==============================================================================
 """
 This script provides an administrative interface to a customers application set
@@ -54,6 +55,11 @@ class ManageAppName:
         self.createUtilDirectories()
         self.createWebDirectories()
 
+        # and now run the git init
+        basePath = self.baseDir + self.appName
+        os.chdir(basePath)
+        subprocess.check_call("git init .", shell=True)
+
     def createUtilDirectories(self):
         basePath = self.baseDir + self.appName
         try:
@@ -65,6 +71,24 @@ class ManageAppName:
             sys.exit(1)
 
         commonDirs = ["local", "dev", "staging", "prod"]
+
+        # put a .gitignore file in the appName directory to properly ignore
+        # some files that will be created that don't need to go into the
+        # repository
+        gitIgnoreFile = basePath + "/.gitignore"
+
+        try:
+            fileHandle = open(gitIgnoreFile, 'w')
+            strToWrite = (".DS_Store\n"
+                          "personal.env\n"
+                          "*-utils/environments/.generatedEnvDir/*\n")
+
+            fileHandle.write(strToWrite)
+            fileHandle.close()
+        except IOError:
+            print "NOTE: There is a file that needs to be created: \n" + \
+                basePath + "/.gitignore and could not be written. \n" + \
+                "Please report this issue to the devops.center admins."
 
         # create the dataload directory...this is a placeholder and can
         # be a link to somewhere else with more diskspace.  But that is
