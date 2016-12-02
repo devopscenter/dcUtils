@@ -29,14 +29,15 @@
 #-------------------------------------------------------------------------------
 function usage
 {
-    echo -e "usage: ./health_checks.sh --customerAppDir CUSTOMER_APP_DIR\n"
-    echo -e "--customerAppDir is the path to the customer specific directory including"
-    echo -e "the appName that contains the config directory where the health_checks"
-    echo -e "config file resides."
+    echo -e "usage: ./health_checks.sh --customerAppName CUSTOMER_APP_Name\n"
+    echo -e "--customerAppDir is the name of the application that you want to"
+    echo -e "run as the default app for the current session.  This is optional"
+    echo -e "as by default the appName will be set when deployenv.sh is run"
+    echo -e "--env theEnv is one of local, dev, staging, prod"
     echo 
     echo -e "Examples:"
     echo -e "Health checks for client1:"
-    echo -e "    ./health_checks.sh path/to/clientName/appname1\n"
+    echo -e "    ./health_checks.sh appName\n"
     echo -e "Notes:"
     echo -e "Requires installation of https://github.com/devopscenter/paws, "
     echo -e "an accompanying .aws/credentials profile, and a config directory and file in the "
@@ -51,26 +52,40 @@ function usage
 #-------------------------------------------------------------------------------
 # Loop through the arguments and assign input args with the appropriate variables
 #-------------------------------------------------------------------------------
+CUSTOMER_APP_NAME=""
+ENV=""
 while [[ $# -gt 0 ]]; do
     case $1 in
-      --customerAppDir|--customerappdir )    shift
-                  CUSTOMER_APP_DIR=$1
-                  ;;
+        --customerAppName|--customerappname )    shift
+            CUSTOMER_APP_NAME=$1
+            ;;
+        --env )    shift
+            ENV=$1
+            ;;
       * )           usage
                   exit 1
     esac
     shift
 done
 
-if [[ -d ${CUSTOMER_APP_DIR} ]]; then
-    CUSTOMER_APP_NAME=$(basename ${CUSTOMER_APP_DIR})
+echo "Checking environment..."
+if [[ -z ${CUSTOMER_APP_NAME} ]]; then
+    if [[ -z ${ENV} ]]; then
+        . ./scripts/process-dc-env.sh
+    else
+        . ./scripts/process-dc-env.sh --env ${ENV}
+    fi
 else
-    CUSTOMER_APP_NAME="default"
+    if [[ -z ${ENV} ]]; then
+        . ./scripts/process-dc-env.sh --customerAppName ${CUSTOMER_APP_NAME}
+    else
+        . ./scripts/process-dc-env.sh --customerAppName ${CUSTOMER_APP_NAME} --env ${ENV}
+    fi
 fi
 
 # read the client specific health_checks config file.  Note this is a different file
 # than the customer/appName env file.
-source "${CUSTOMER_APP_DIR}/config/health_checks"
+source "${BASE_CUSTOMER_DIR}/${dcDEFAULT_APP_NAME}/${CUSTOMER_APP_UTILS}/config/health_checks"
 
 # generate string used to search for the timestamps from the past 7 days
 for i in $(seq 1 7); do

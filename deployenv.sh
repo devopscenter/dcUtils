@@ -14,8 +14,8 @@
 #
 #                Creates ENV settings in this order:
 #                  environments/common.env                 <- common for all deployments
-#                  $BASE_CUSTOMER_DIR/${CUSTOMER_APP_UTILS}/environments/$ENV.env       <- per-stage
-#                  $BASE_CUSTOMER_DIR/${CUSTOMER_APP_UTILS}/environments/personal.env   <- local overrides
+#                  $BASE_CUSTOMER_DIR/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_UTILS}/environments/$ENV.env       <- per-stage
+#                  $BASE_CUSTOMER_DIR/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_UTILS}/environments/personal.env   <- local overrides
 #
 #                For instance deployments, two results:
 #                  - appends to the instance-wide /etc/environments
@@ -156,6 +156,13 @@ else
     exit 1
 fi
 
+BASE_CUSTOMER_APP_UTILS_DIR="${BASE_CUSTOMER_DIR}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_UTILS}"
+
+#-------------------------------------------------------------------------------
+# first off copy the health_checks template to the appropriate place for the
+# application
+#-------------------------------------------------------------------------------
+cp template-health_checks ${BASE_CUSTOMER_APP_UTILS_DIR}/config/health_checks
 
 #-------------------------------------------------------------------------------
 # handle the case where the type is an instance
@@ -178,14 +185,14 @@ if [[ $TYPE = "instance" ]]; then
     #echo "CUSTOMER_APP_WEB=${CUSTOMER_APP_WEB}" >> ${TEMP_FILE}
 
     # Add env vars for this environment, if it exists
-    if [[ -e ${BASE_CUSTOMER_DIR}/${CUSTOMER_APP_UTILS}/environments/${ENV}.env ]]; then
-        sudo cat ${BASE_CUSTOMER_DIR}/${CUSTOMER_APP_UTILS}/environments/${ENV}.env >> /etc/environment
+    if [[ -e ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/${ENV}.env ]]; then
+        sudo cat ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/${ENV}.env >> /etc/environment
     fi
 
     # only bring in the personal.env if one exists for the environment and if not there
     # check the base environments directory as a last resort (in case they have only one)
-    if [[ -e ${BASE_CUSTOMER_DIR}/${CUSTOMER_APP_UTILS}/environments/personal.env ]]; then
-        sudo cat ${BASE_CUSTOMER_DIR}/${CUSTOMER_APP_UTILS}/environments/personal.env >> /etc/environment
+    if [[ -e ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/personal.env ]]; then
+        sudo cat ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/personal.env >> /etc/environment
     fi
 
     # Add the environment variables to the Supervisor, when started by init.d
@@ -195,12 +202,12 @@ if [[ $TYPE = "instance" ]]; then
         sudo sed -e 's/^/export /'  environments/common.env > /etc/default/supervisor
     fi
 
-    if [[ -e ${BASE_CUSTOMER_DIR}/${CUSTOMER_APP_UTILS}/environments/${ENV}.env ]]; then
-        sudo sed -e 's/^/export /' ${BASE_CUSTOMER_DIR}/${CUSTOMER_APP_UTILS}/environments/${ENV}.env >> /etc/default/supervisor
+    if [[ -e ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/${ENV}.env ]]; then
+        sudo sed -e 's/^/export /' ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/${ENV}.env >> /etc/default/supervisor
     fi
 
-    if [[ -e ${BASE_CUSTOMER_DIR}/${CUSTOMER_APP_UTILS}/environments/personal.env ]]; then
-        sudo sed -e 's/^/export /' ${BASE_CUSTOMER_DIR}/${CUSTOMER_APP_UTILS}/environments/personal.env >> /etc/default/supervisor
+    if [[ -e ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/personal.env ]]; then
+        sudo sed -e 's/^/export /' ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/personal.env >> /etc/default/supervisor
     fi
 
     echo "ENV vars for '${ENV}' added to /etc/environment and /etc/default/supervisor"
@@ -232,14 +239,14 @@ else
     echo "CUSTOMER_APP_WEB=${CUSTOMER_APP_WEB}" >> ${TEMP_FILE}
     echo "CUSTOMER_APP_ENV=${ENV}" >> ${TEMP_FILE}
 
-    if [[ -e ${BASE_CUSTOMER_DIR}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_UTILS}/environments/${ENV}.env ]]; then
-        cat ${BASE_CUSTOMER_DIR}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_UTILS}/environments/${ENV}.env >> ${TEMP_FILE}
+    if [[ -e ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/${ENV}.env ]]; then
+        cat ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/${ENV}.env >> ${TEMP_FILE}
     fi
 
     # only bring in the personal.env if one exists for the environment and if not there
     # check the base environments directory as a last resort (in case they have only one)
-    if [[ -e ${BASE_CUSTOMER_DIR}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_UTILS}/environments/personal.env ]]; then
-        cat ${BASE_CUSTOMER_DIR}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_UTILS}/environments/personal.env >> ${TEMP_FILE}
+    if [[ -e ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/personal.env ]]; then
+        cat ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/personal.env >> ${TEMP_FILE}
     fi
 
     # now read in the ./.tmp-local.env file and remove comments/spaces and duplicates
@@ -249,7 +256,7 @@ else
 
     # Now create the links
     if [[ -f ${TEMP_FILE} ]]; then
-        TARGET_ENV_FILE="${BASE_CUSTOMER_DIR}/${CUSTOMER_APP_NAME}/$CUSTOMER_APP_UTILS/environments/.generatedEnvFiles/dcEnv-${CUSTOMER_APP_NAME}-${ENV}.env"
+        TARGET_ENV_FILE="${BASE_CUSTOMER_APP_UTILS_DIR}/environments/.generatedEnvFiles/dcEnv-${CUSTOMER_APP_NAME}-${ENV}.env"
         mv ${TEMP_FILE} ${TARGET_ENV_FILE}
     else
         echo -e "ERROR: the creation of the environments file was not successful."
@@ -260,7 +267,7 @@ else
     fi
 
     # Create a script to initialize the local shell
-    TARGET_SH_FILE="${BASE_CUSTOMER_DIR}/${CUSTOMER_APP_NAME}/$CUSTOMER_APP_UTILS/environments/.generatedEnvFiles/dcEnv-${CUSTOMER_APP_NAME}-${ENV}.sh"
+    TARGET_SH_FILE="${BASE_CUSTOMER_APP_UTILS_DIR}/environments/.generatedEnvFiles/dcEnv-${CUSTOMER_APP_NAME}-${ENV}.sh"
     sed -e 's/^/export /'  ${TARGET_ENV_FILE} > ${TARGET_SH_FILE}
 
 
@@ -271,11 +278,11 @@ else
     # NOTE2 using a ? as the delimiter for the sed command to allow the variables to have
     # a forward slash (ie a directory path) in it.  By using a different delimeter than a
     # slash sed doesn't get confused by the forwards slashes in the variable.
-    sed -e "s?APP_NAME-ENV.env?${TARGET_ENV_FILE}?" template-common.yml > "${BASE_CUSTOMER_DIR}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_UTILS}/config/${ENV}/common.yml"
-    sed -e "s?APP_NAME-ENV.env?${TARGET_ENV_FILE}?" template-docker-compose.yml >  "${BASE_CUSTOMER_DIR}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_UTILS}/config/${ENV}/docker-compose.yml"
-    sed -i -e "s?APP_NAME-CONFIG-DIR-common.yml?\"${BASE_CUSTOMER_DIR}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_UTILS}/config/${ENV}/common.yml\"?" "${BASE_CUSTOMER_DIR}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_UTILS}/config/${ENV}/docker-compose.yml"
-    sed -e "s?APP_NAME-ENV.env?${TARGET_ENV_FILE}?" template-docker-compose-debug.yml >  "${BASE_CUSTOMER_DIR}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_UTILS}/config/${ENV}/docker-compose-debug.yml"
-    sed -i -e "s?APP_NAME-CONFIG-DIR-common.yml?\"${BASE_CUSTOMER_DIR}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_UTILS}/config/${ENV}/common.yml\"?" "${BASE_CUSTOMER_DIR}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_UTILS}/config/${ENV}/docker-compose-debug.yml"
+    sed -e "s?APP_NAME-ENV.env?${TARGET_ENV_FILE}?" template-common.yml > "${BASE_CUSTOMER_APP_UTILS_DIR}/config/${ENV}/common.yml"
+    sed -e "s?APP_NAME-ENV.env?${TARGET_ENV_FILE}?" template-docker-compose.yml >  "${BASE_CUSTOMER_APP_UTILS_DIR}/config/${ENV}/docker-compose.yml"
+    sed -i -e "s?APP_NAME-CONFIG-DIR-common.yml?\"${BASE_CUSTOMER_APP_UTILS_DIR}/config/${ENV}/common.yml\"?" "${BASE_CUSTOMER_APP_UTILS_DIR}/config/${ENV}/docker-compose.yml"
+    sed -e "s?APP_NAME-ENV.env?${TARGET_ENV_FILE}?" template-docker-compose-debug.yml >  "${BASE_CUSTOMER_APP_UTILS_DIR}/config/${ENV}/docker-compose-debug.yml"
+    sed -i -e "s?APP_NAME-CONFIG-DIR-common.yml?\"${BASE_CUSTOMER_APP_UTILS_DIR}/config/${ENV}/common.yml\"?" "${BASE_CUSTOMER_APP_UTILS_DIR}/config/${ENV}/docker-compose-debug.yml"
 
     #echo "ENV vars for '${ENV}' added to docker-current.env for use by docker compose"
     #echo "ENV vars for '${ENV}' used to create docker-current.sh for use in local shell"
