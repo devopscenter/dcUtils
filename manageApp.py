@@ -45,11 +45,63 @@ class ManageAppName:
                 "$HOME/.devops.center/config and could not be written. \n" + \
                 "Please report this issue to the devops.center admins."
 
-    def joinExistingDevelopment(self):
+    def run(self, command, options):
+        optionsMap = self.parseOptions(options)
+#   for testing purposes
+#        if len(optionsMap.keys()):
+#            for item in optionsMap.keys():
+#                print "[{}] =>{}<=".format(item, optionsMap[item])
+
+        if command == "join":
+            self.joinExistingDevelopment(optionsMap)
+        elif command == "create":
+            self.create(optionsMap)
+        elif command == "update":
+            self.update(optionsMap)
+        elif command == "delete":
+            self.delete(optionsMap)
+
+    def parseOptions(self, options):
+        """options is string of comma separate key=value pairs. If there is
+        only one then it won't have a comma.  And it could be blank"""
+        retMap = {}
+
+        if options:
+            # first they are comma se
+            optionsList = options.split(",")
+            for item in optionsList:
+                (key, val) = item.split('=', 1)
+                key = key.strip()
+                retMap[key] = val
+
+        return retMap
+
+    def joinExistingDevelopment(self, optionsMap):
         """pulls down an existing repo with the given appName and
         puts it in the given baseDirectory"""
 
-    def create(self):
+        # in order to get the files we need to know where the appName
+        # repository is.  It had to be put in an owner directory, so that
+        # has to be passed on the command line in the -o argument and would
+        # be of the format owner=something
+        if len(optionsMap.keys()) and "owner" in optionsMap:
+            print "[owner] =>{}<=".format(optionsMap["owner"])
+        else:
+            print "The owner=repositoryBaseName was not given in the -o" + \
+                " argument. This is required in order to do a git clone" + \
+                " of the appName repository. "
+            sys.exit(1)
+
+        # change to the baseDirectory
+        os.chdir(self.baseDir)
+
+        # execute git clone on theAppName and put it in the baseDirectory
+        cmdToRun = "git clone git@github.com:" + optionsMap["owner"] + "/" + \
+            self.appName + ".git"
+        # print "=>{}<=".format(cmdToRun)
+        subprocess.check_call(cmdToRun, shell=True)
+
+    def create(self, optionsMap):
         """creates the directory structure and sets up the appropriate
         templates necessary to run a customers appliction set."""
         self.createUtilDirectories()
@@ -227,11 +279,11 @@ class ManageAppName:
                 ' given configDir: {} \n'.format(personalFile, envDir)
             sys.exit(1)
 
-    def update(self, whatToUpdate, updateOptions):
+    def update(self, optionsMap):
         """takes an argument that dictates what needs to be updated and then
         what items that are associated with the change"""
 
-    def delete(self):
+    def delete(self, optionsMap):
         """delete all the necessary items that are associated with the
         appName"""
 
@@ -306,17 +358,10 @@ def main(argv):
 #    print 'appName is: ' + appName
 #    print 'baseDir is: ' + baseDir
 #    print 'command is: ' + command
-#    print 'options is: ' + options
+#    print 'options are: ' + options
 
     customerApp = ManageAppName(appName, baseDir)
-    if command == "join":
-        customerApp.joinExistingDevelopment()
-    elif command == "create":
-        customerApp.create()
-    elif command == "update":
-        customerApp.update()
-    elif command == "delete":
-        customerApp.delete()
+    customerApp.run(command, options)
 
 if __name__ == "__main__":
     main(sys.argv[1:])
