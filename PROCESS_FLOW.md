@@ -4,7 +4,7 @@ This document describes the intended sequence of using the devops.center framewo
 
     - Use git to clone devops.center dcUtils
     - Change directory to dcUtils
-    - Optional create a local directory that will be the base for the appliction
+    - Optional create a local directory that will be the base for the application
       directory structure
     - Create the application by using manageApp.py with the create command using a
       base directory path to be used to put the application directory structure in
@@ -23,7 +23,7 @@ This document describes the intended sequence of using the devops.center framewo
 
     - Use git to clone devops.center dcUtils
     - Change directory to dcUtils
-    - Optional create a local directory that will be the base for the appliction
+    - Optional create a local directory that will be the base for the application
       directory structure
     - Join the application by using manageApp.py with the join command using a
       base directory path to be used to put the application directory structure in
@@ -40,7 +40,7 @@ This document describes the intended sequence of using the devops.center framewo
 #### Clone devops.center dcUtils
 The devops.center application framework is manipulated by the scripts that are found
 in the devopscenter/dcUtils repository on github.com. Use git to clone that 
-repsitory to somewhere on your local machine.  Make note the location as this will
+repository to somewhere on your local machine.  Make note the location as this will
 be used later.
 
 #### Create the local directory structure
@@ -62,7 +62,7 @@ Once there execute the script (from within dcUtils):
 
 where the options are:
 
-    -a appName                   # the appliation name you have chosen
+    -a appName                   # the application name you have chosen
     -d /local/base/directory     # local directory you identified/created to house
                                  # the application(s) directory structure
     -c create                    # the command of create
@@ -73,7 +73,7 @@ in on the development, then you will run the manageApp.py script with the same o
 except the command to run will be join. This will clone the application respoitory
 from github.  So, the arguments would be:
 
-    -a appName                   # the appliation name you have chosen
+    -a appName                   # the application name you have chosen
     -d /local/base/directory     # local directory you identified/created to house
                                  # the application(s) directory structure
     -c join                      # the command of create
@@ -93,13 +93,13 @@ on your team.  This will will be ignored when working with git.
 
 So, you can either update the environment specific file or you can do the personal.env
 file.  At least, change the peronal.env file, modifying the dcUTILS variable to point
-to where you cloned the devops.center dcUtils respoitory.
+to where you cloned the devops.center dcUtils repository.
 
 #### Run deployenv.sh
 After you have the environment files how you want them, than it is time to collect all
 of them and create one file to be used for the session that you will run the application
 in.  This process will take the common.env file and merge it with the specific env file.
-This will take the variables defined in the env specific file and overwrite any dupicate
+This will take the variables defined in the env specific file and overwrite any duplicate
 settings found in the common.env. All other variables will be added to a resultant file.
 Then it will then take that resultant file and merge it with the personal.env.  This
 will take the variables define in the personal.env file and overwrite any duplicate
@@ -119,7 +119,7 @@ where the options are:
 
     --type TYPE                          # TYPE is one of instance or docker 
     --env ENV                            # ENV is one of local, dev, staging, prod
-    --customerAppName CUSTOMER_APP_NAME  # appliation name you have wish to configure
+    --customerAppName CUSTOMER_APP_NAME  # application name you have wish to configure
                                          # the environment for
 
 For local development the options will be --type docker --env local  and then 
