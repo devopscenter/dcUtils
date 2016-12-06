@@ -18,7 +18,7 @@
 #===============================================================================
 
 #set -o nounset                              # Treat unset variables as an error
-set -o errexit      # exit immediately if command exits with a non-zero status
+#set -o errexit      # exit immediately if command exits with a non-zero status
 #set -x              # essentially debug mode
 
 #---  FUNCTION  ----------------------------------------------------------------
@@ -59,7 +59,13 @@ while [[ $# -gt 0 ]]; do
     shift
 done
 
+#-------------------------------------------------------------------------------
+# Check the environment first
+#-------------------------------------------------------------------------------
 echo "Checking environment..."
+# turn on error on exit incase the process-dc-env.sh exists this script
+# needs to exit
+set -e  
 if [[ -z ${CUSTOMER_APP_NAME} ]]; then
     if [[ -z ${ENV} ]]; then
         . ./scripts/process-dc-env.sh
@@ -73,6 +79,11 @@ else
         . ./scripts/process-dc-env.sh --customerAppName ${CUSTOMER_APP_NAME} --env ${ENV}
     fi
 fi
+set +e  # turn off error on exit
+#-------------------------------------------------------------------------------
+# end checking environment
+#-------------------------------------------------------------------------------
+
 
 #-------------------------------------------------------------------------------
 # Draw attention to the appName that is being used by this session!!
@@ -87,7 +98,11 @@ echo "NOTICE: Using appName: ${dcDEFAULT_APP_NAME}"
 # TODO - determine if we want to run in the customers directory
 cd $dcUTILS
 
-DOCKER_COMPOSE_FILE="${BASE_CUSTOMER_DIR}/${dcDEFAULT_APP_NAME}/${CUSTOMER_APP_UTILS}/config/${CUSTOMER_APP_ENV}/docker-compose.yml"
+if [[ ${DEBUG} -eq 1 ]]; then
+    DOCKER_COMPOSE_FILE="${BASE_CUSTOMER_DIR}/${dcDEFAULT_APP_NAME}/${CUSTOMER_APP_UTILS}/config/${CUSTOMER_APP_ENV}/docker-compose-debug.yml"
+else
+    DOCKER_COMPOSE_FILE="${BASE_CUSTOMER_DIR}/${dcDEFAULT_APP_NAME}/${CUSTOMER_APP_UTILS}/config/${CUSTOMER_APP_ENV}/docker-compose.yml"
+fi
 #echo ${DOCKER_COMPOSE_FILE}
 
 #-------------------------------------------------------------------------------
@@ -99,10 +114,20 @@ if [[ ! -f ${DOCKER_COMPOSE_FILE} ]]; then
     exit 1
 fi
 
-# TODO - determine if we really want to use down or stop here.  stop leaves that containers
-# in place so that they can be started again using docker-compose up.  The down option
-# removes the containers and removes networks ... Need to think though ramifications of
-# each.
+
+#-------------------------------------------------------------------------------
+# get the number of applications running by the name of the specialized network
+# bridge created.  
+#-------------------------------------------------------------------------------
+NUM_NETWORKS=$(docker network ls | grep -c "_dcnet" )
+export NET_NUMBER=$((20+$NUM_NETWORKS-1)) 
+
+#-------------------------------------------------------------------------------
+# TODO - determine if we really want to use down or stop here. Sstop leaves that
+#        containers in place so that they can be started again using docker-compose
+#        up.  The down option removes the containers and removes networks ... 
+#        Need to think though ramifications of each.
+#-------------------------------------------------------------------------------
 CMDTORUN="docker-compose -f ${DOCKER_COMPOSE_FILE} -p ${dcDEFAULT_APP_NAME} down"
 #echo  ${CMDTORUN}
 ${CMDTORUN}
