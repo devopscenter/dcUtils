@@ -285,6 +285,14 @@ else
         sed -e "s?APP_NAME-ENV.env?${TARGET_ENV_FILE}?" templates/docker-compose-debug.yml >  "${BASE_CUSTOMER_APP_UTILS_DIR}/config/${ENV}/docker-compose-debug.yml"
         sed -i -e "s?APP_NAME-CONFIG-DIR-common.yml?\"${BASE_CUSTOMER_APP_UTILS_DIR}/config/${ENV}/common.yml\"?" "${BASE_CUSTOMER_APP_UTILS_DIR}/config/${ENV}/docker-compose-debug.yml"
     fi
+
+    # TODO
+    # update the local ~/.aws/config and ~/.aws/credentials with the new data
+    # and inform the user to put their keys in the credentials file
+
+    # TODO need to figure out how to get the users keys so that "paws" will work
+    # probably need another script to manage them (ie, manageKeys.py)
+
     #echo "ENV vars for '${ENV}' added to docker-current.env for use by docker compose"
     #echo "ENV vars for '${ENV}' used to create docker-current.sh for use in local shell"
 fi
