@@ -1,9 +1,12 @@
 #!/usr/bin/env python
 import os
 from os.path import expanduser
+import shutil
 import sys
 import argparse
 import subprocess
+from time import time
+import fileinput
 # ==============================================================================
 """
 This script provides an administrative interface to a customers application set
@@ -106,6 +109,7 @@ class ManageAppName:
         templates necessary to run a customers appliction set."""
         self.createUtilDirectories()
         self.createWebDirectories()
+        self.createStackDirectory()
 
         # and now run the git init
         basePath = self.baseDir + self.appName
@@ -212,6 +216,59 @@ class ManageAppName:
                 "could not be written. \n" + \
                 "Please report this issue to the devops.center admins."
 
+    def createStackDirectory(self):
+        """create the dcStack directory that will contain the necessary files
+        to create the web and worker containers"""
+
+        uniqueStackName = self.getUniqueStackID()
+        stackName = uniqueStackName + "-stack"
+
+        # stack path to be created
+        baseStack = self.baseDir + self.appName + "/" + stackName
+        os.makedirs(baseStack, 0755)
+
+        # make the web and worker directories
+        for item in ["web", "web-debug", "worker"]:
+            os.makedirs(baseStack + "/" + item, 0755)
+
+        # create the  web/wheelhouse directory
+        os.makedirs(baseStack + "/web/wheelhouse", 0755)
+
+        # and the .gitignore to ignore the wheelhouse directoryo
+        gitIgnoreFile = baseStack + "/web/.gitignore"
+        try:
+            fileHandle = open(gitIgnoreFile, 'w')
+            strToWrite = ("wheelhouse\n")
+
+            fileHandle.write(strToWrite)
+            fileHandle.close()
+        except IOError:
+            print "NOTE: There is a file that needs to be created: \n" + \
+                baseStack + "web/.gitignore and could not be written. \n" + \
+                "Please report this issue to the devops.center admins."
+
+        # and get the template Dockerfile, requirements for each of the sub
+        # directories
+        webDockerFile = baseStack + "/web/Dockerfile"
+        shutil.copyfile("templates/Dockerfile-web", webDockerFile)
+
+        workerDockerFile = baseStack + "/worker/Dockerfile"
+        shutil.copyfile("templates/Dockerfile-worker", workerDockerFile)
+
+        webShFile = baseStack + "/web/web.sh"
+        shutil.copyfile("templates/web.sh", webShFile)
+
+        supervisorConfFile = baseStack + \
+            "/worker/supervisor-djangorq-worker.conf"
+        shutil.copyfile("templates/supervisor-djangorq-worker.conf",
+                        supervisorConfFile)
+
+        # need to change the entry in the work Dockerfile that references the
+        # stackName-web image to build from.  So, there is a CUSTOMER_STACK
+        # variable that needs to be changed
+        for line in fileinput.input(workerDockerFile, inplace=1):
+            print line.replace("CUSTOMER_STACK", uniqueStackName),
+
     def createEnvFiles(self, envDir):
         commonFiles = ["dev", "local", "staging", "prod"]
         for name in commonFiles:
@@ -286,6 +343,8 @@ class ManageAppName:
     def delete(self, optionsMap):
         """delete all the necessary items that are associated with the
         appName"""
+    def getUniqueStackID(self):
+            return hex(int(time()*10000000))[9:]
 
 
 def checkArgs():

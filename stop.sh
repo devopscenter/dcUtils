@@ -32,10 +32,11 @@ function usage
 {
     echo -e "Usage: stop.sh [--customerAppName appName] [--env theEnv]"
     echo
-    echo -e "--customerAppName is the name of the application that you want to"
-    echo -e "run as the default app for the current session.  This is optional"
-    echo -e "as by default the appName will be set when deployenv.sh is run"
-    echo -e "--env theEnv is one of local, dev, staging, prod"
+    echo -e "--customerAppDir is the name of the application that you want to"
+    echo -e "      run as the default app for the current session. This is "
+    echo -e "      optional if you only have one application defined."
+    echo -e "--env theEnv is one of local, dev, staging, prod. This is optional"
+    echo -e "      unless you have defined an enviornment other than local."
     exit 1
 }
 
@@ -122,13 +123,7 @@ fi
 NUM_NETWORKS=$(docker network ls | grep -c "_dcnet" )
 export NET_NUMBER=$((20+$NUM_NETWORKS-1)) 
 
-#-------------------------------------------------------------------------------
-# TODO - determine if we really want to use down or stop here. Sstop leaves that
-#        containers in place so that they can be started again using docker-compose
-#        up.  The down option removes the containers and removes networks ... 
-#        Need to think though ramifications of each.
-#-------------------------------------------------------------------------------
-CMDTORUN="docker-compose -f ${DOCKER_COMPOSE_FILE} -p ${dcDEFAULT_APP_NAME} down"
+CMDTORUN="docker-compose -f ${DOCKER_COMPOSE_FILE} -p ${dcDEFAULT_APP_NAME} stop"
 #echo  ${CMDTORUN}
 ${CMDTORUN}
 

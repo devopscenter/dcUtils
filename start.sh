@@ -35,9 +35,10 @@ function usage
     echo -e "Usage: start.sh [--customerAppName appName] [--env theEnv] [-d]"
     echo
     echo -e "--customerAppDir is the name of the application that you want to"
-    echo -e "run as the default app for the current session.  This is optional"
-    echo -e "as by default the appName will be set when deployenv.sh is run"
-    echo -e "--env theEnv is one of local, dev, staging, prod"
+    echo -e "      run as the default app for the current session. This is "
+    echo -e "      optional if you only have one application defined."
+    echo -e "--env theEnv is one of local, dev, staging, prod. This is optional"
+    echo -e "      unless you have defined an enviornment other than local."
     echo -e "--debug will start the web-debug container rather than the web one"
     echo
     exit 1
@@ -143,7 +144,7 @@ export NET_NUMBER=$((20+$NUM_NETWORKS))
 
 
 CMDTORUN="docker-compose -f ${DOCKER_COMPOSE_FILE} -p ${dcDEFAULT_APP_NAME} up -d"
-#echo  ${CMDTORUN}
+echo  ${CMDTORUN}
 ${CMDTORUN}
 
 exit

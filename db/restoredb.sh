@@ -25,8 +25,8 @@
 # exit immediately if command exits with a non-zero status
 set -o errexit
 # be verbose
-set -o verbose
-set -x 
+#set -o verbose
+#set -x 
 
 #---  FUNCTION  ----------------------------------------------------------------
 #          NAME:  usage

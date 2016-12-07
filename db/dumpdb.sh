@@ -28,11 +28,13 @@ set -o nounset                              # Treat unset variables as an error
 #-------------------------------------------------------------------------------
 function usage
 {
-    echo -e "Usage: dumpdb.sh [--customerAppDir clientName/appName]"
+    echo -e "Usage: dumpdb.sh [--customerAppName appName] [--env theEnv]"
     echo
-    echo -e "--customerAppName is the name of the application that you want to"
-    echo -e "run as the default app for the current session.  This is optional"
-    echo -e "as by default the appName will be set when deployenv.sh is run"
+    echo -e "--customerAppDir is the name of the application that you want to"
+    echo -e "      run as the default app for the current session. This is "
+    echo -e "      optional if you only have one application defined."
+    echo -e "--env theEnv is one of local, dev, staging, prod. This is optional"
+    echo -e "      unless you have defined an enviornment other than local."
     exit 1
 }
 
@@ -41,7 +43,6 @@ function usage
 # Loop through the argument(s) and assign input args with the appropriate variables
 #-------------------------------------------------------------------------------
 BACKUP=backup.sql
-CUSTOMER_APP_DIR=""
 CUSTOMER_APP_NAME=""
 
 while [[ $# -gt 0 ]]; do
@@ -49,8 +50,11 @@ while [[ $# -gt 0 ]]; do
         --backupFileName|--backupfilename ) shift
             BACKUP=$1
             ;;
-        --customerAppDir|--customerappdir )    shift
-            CUSTOMER_APP_DIR=$1
+        --customerAppName|--customerappname )    shift
+            CUSTOMER_APP_NAME=$1
+            ;;
+        --env )    shift
+            ENV=$1
             ;;
         * ) usage
             exit 1
@@ -58,16 +62,31 @@ while [[ $# -gt 0 ]]; do
     shift
 done
 
-echo "Checking environment..."
-if [[ -d ${CUSTOMER_APP_DIR} ]]; then
-    CUSTOMER_APP_NAME=$(basename ${CUSTOMER_APP_DIR})
-fi
 
+#-------------------------------------------------------------------------------
+# Check the environment first
+#-------------------------------------------------------------------------------
+echo "Checking environment..."
+# turn on error on exit incase the process-dc-env.sh exists this script
+# needs to exit
+set -e  
 if [[ -z ${CUSTOMER_APP_NAME} ]]; then
-    . ./scripts/process-dc-env.sh
+    if [[ -z ${ENV} ]]; then
+        . ./scripts/process-dc-env.sh
+    else
+        . ./scripts/process-dc-env.sh --env ${ENV}
+    fi
 else
-    . ./scripts/process-dc-env.sh --customerAppName ${CUSTOMER_APP_NAME}
+    if [[ -z ${ENV} ]]; then
+        . ./scripts/process-dc-env.sh --customerAppName ${CUSTOMER_APP_NAME}
+    else
+        . ./scripts/process-dc-env.sh --customerAppName ${CUSTOMER_APP_NAME} --env ${ENV}
+    fi
 fi
+set +e  # turn off error on exit
+#-------------------------------------------------------------------------------
+# end checking environment
+#-------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------
 # Draw attention to the appName that is being used by this session!!

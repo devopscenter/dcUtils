@@ -278,12 +278,13 @@ else
     # NOTE2 using a ? as the delimiter for the sed command to allow the variables to have
     # a forward slash (ie a directory path) in it.  By using a different delimeter than a
     # slash sed doesn't get confused by the forwards slashes in the variable.
-    sed -e "s?APP_NAME-ENV.env?${TARGET_ENV_FILE}?" templates/common.yml > "${BASE_CUSTOMER_APP_UTILS_DIR}/config/${ENV}/common.yml"
-    sed -e "s?APP_NAME-ENV.env?${TARGET_ENV_FILE}?" templates/docker-compose.yml >  "${BASE_CUSTOMER_APP_UTILS_DIR}/config/${ENV}/docker-compose.yml"
-    sed -i -e "s?APP_NAME-CONFIG-DIR-common.yml?\"${BASE_CUSTOMER_APP_UTILS_DIR}/config/${ENV}/common.yml\"?" "${BASE_CUSTOMER_APP_UTILS_DIR}/config/${ENV}/docker-compose.yml"
-    sed -e "s?APP_NAME-ENV.env?${TARGET_ENV_FILE}?" templates/docker-compose-debug.yml >  "${BASE_CUSTOMER_APP_UTILS_DIR}/config/${ENV}/docker-compose-debug.yml"
-    sed -i -e "s?APP_NAME-CONFIG-DIR-common.yml?\"${BASE_CUSTOMER_APP_UTILS_DIR}/config/${ENV}/common.yml\"?" "${BASE_CUSTOMER_APP_UTILS_DIR}/config/${ENV}/docker-compose-debug.yml"
-
+    if [[ ! -f "${BASE_CUSTOMER_APP_UTILS_DIR}/config/${ENV}/docker-compose.yml" ]]; then
+        sed -e "s?APP_NAME-ENV.env?${TARGET_ENV_FILE}?" templates/common.yml > "${BASE_CUSTOMER_APP_UTILS_DIR}/config/${ENV}/common.yml"
+        sed -e "s?APP_NAME-ENV.env?${TARGET_ENV_FILE}?" templates/docker-compose.yml >  "${BASE_CUSTOMER_APP_UTILS_DIR}/config/${ENV}/docker-compose.yml"
+        sed -i -e "s?APP_NAME-CONFIG-DIR-common.yml?\"${BASE_CUSTOMER_APP_UTILS_DIR}/config/${ENV}/common.yml\"?" "${BASE_CUSTOMER_APP_UTILS_DIR}/config/${ENV}/docker-compose.yml"
+        sed -e "s?APP_NAME-ENV.env?${TARGET_ENV_FILE}?" templates/docker-compose-debug.yml >  "${BASE_CUSTOMER_APP_UTILS_DIR}/config/${ENV}/docker-compose-debug.yml"
+        sed -i -e "s?APP_NAME-CONFIG-DIR-common.yml?\"${BASE_CUSTOMER_APP_UTILS_DIR}/config/${ENV}/common.yml\"?" "${BASE_CUSTOMER_APP_UTILS_DIR}/config/${ENV}/docker-compose-debug.yml"
+    fi
     #echo "ENV vars for '${ENV}' added to docker-current.env for use by docker compose"
     #echo "ENV vars for '${ENV}' used to create docker-current.sh for use in local shell"
 fi

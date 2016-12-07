@@ -29,15 +29,16 @@
 #-------------------------------------------------------------------------------
 function usage
 {
-    echo -e "usage: ./health_checks.sh --customerAppName CUSTOMER_APP_Name\n"
+    echo -e "Usage: health_checks.sh [--customerAppName appName] [--env theEnv]"
+    echo
     echo -e "--customerAppDir is the name of the application that you want to"
-    echo -e "run as the default app for the current session.  This is optional"
-    echo -e "as by default the appName will be set when deployenv.sh is run"
-    echo -e "--env theEnv is one of local, dev, staging, prod"
+    echo -e "      run as the default app for the current session. This is "
+    echo -e "      optional if you only have one application defined."
+    echo -e "--env theEnv is one of local, dev, staging, prod. This is optional"
+    echo -e "      unless you have defined an enviornment other than local."
     echo 
     echo -e "Examples:"
-    echo -e "Health checks for client1:"
-    echo -e "    ./health_checks.sh appName\n"
+    echo -e "Health checks for client1 with appName:"
     echo -e "Notes:"
     echo -e "Requires installation of https://github.com/devopscenter/paws, "
     echo -e "an accompanying .aws/credentials profile, and a config directory and file in the "
@@ -68,7 +69,13 @@ while [[ $# -gt 0 ]]; do
     shift
 done
 
+#-------------------------------------------------------------------------------
+# Check the environment first
+#-------------------------------------------------------------------------------
 echo "Checking environment..."
+# turn on error on exit incase the process-dc-env.sh exists this script
+# needs to exit
+set -e  
 if [[ -z ${CUSTOMER_APP_NAME} ]]; then
     if [[ -z ${ENV} ]]; then
         . ./scripts/process-dc-env.sh
@@ -82,6 +89,10 @@ else
         . ./scripts/process-dc-env.sh --customerAppName ${CUSTOMER_APP_NAME} --env ${ENV}
     fi
 fi
+set +e  # turn off error on exit
+#-------------------------------------------------------------------------------
+# end checking environment
+#-------------------------------------------------------------------------------
 
 # read the client specific health_checks config file.  Note this is a different file
 # than the customer/appName env file.
