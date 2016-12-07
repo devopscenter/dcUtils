@@ -175,8 +175,7 @@ class ManageAppName:
 
         # and then the keys directory and all the sub directories
         keyDir = baseUtils + "keys/"
-        for item in commonDirs:
-            os.makedirs(keyDir + item, 0755)
+        os.makedirs(keyDir, 0755)
 
         fileToWrite = basePath + "/.dcDirMap.cnf"
         try:
