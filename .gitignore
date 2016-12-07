@@ -7,4 +7,5 @@ docker-local.*
 personal.env
 dcWatcher-compose.yml
 dcWatcher.json
+.mapAppStack
 

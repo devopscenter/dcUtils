@@ -7,6 +7,7 @@ import argparse
 import subprocess
 from time import time
 import fileinput
+import re
 # ==============================================================================
 """
 This script provides an administrative interface to a customers application set
@@ -222,6 +223,7 @@ class ManageAppName:
 
         uniqueStackName = self.getUniqueStackID()
         stackName = uniqueStackName + "-stack"
+        self.registerStackID(stackName)
 
         # stack path to be created
         baseStack = self.baseDir + self.appName + "/" + stackName
@@ -345,6 +347,48 @@ class ManageAppName:
         appName"""
     def getUniqueStackID(self):
             return hex(int(time()*10000000))[9:]
+
+    def registerStackID(self, stackName):
+        """This will make not of the mapping between appName and stackName"""
+        # TODO: send this to a server to register in the devops.center database
+        # for now put it in a private file in this directory
+        mappingFile = ".mapAppStack"
+        if os.path.isfile(mappingFile):
+            foundALine = 0
+            for line in fileinput.input(mappingFile, inplace=1):
+                if line == "\n":
+                    continue
+                if self.appName in line:
+                    foundALine = 1
+                    print re.sub("=(.*)-stack", "=" + stackName, line),
+                else:
+                    # NOTE the comma doesn't print out an extra newline
+                    print line,
+            fileinput.close()
+
+            if foundALine == 0:
+                try:
+                    fileHandle = open(mappingFile, 'a')
+                    strToWrite = (self.appName + "=" + stackName + "\n")
+
+                    fileHandle.write(strToWrite)
+                    fileHandle.close()
+                except IOError:
+                    print "NOTE: There is a file that needs to be " + \
+                        "created:\n./.mapAppStack\n And it could not be" + \
+                        "written. \n" + \
+                        "Please report this issue to the devops.center admins."
+        else:
+            try:
+                fileHandle = open(mappingFile, 'w')
+                strToWrite = (self.appName + "=" + stackName + "\n")
+
+                fileHandle.write(strToWrite)
+                fileHandle.close()
+            except IOError:
+                print "NOTE: There is a file that needs to be created: \n" + \
+                    "./.mapAppStack and could not be written. \n" + \
+                    "Please report this issue to the devops.center admins."
 
 
 def checkArgs():
