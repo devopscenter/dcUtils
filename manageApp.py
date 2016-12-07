@@ -345,6 +345,10 @@ class ManageAppName:
     def delete(self, optionsMap):
         """delete all the necessary items that are associated with the
         appName"""
+        # items to delete:
+        #   - self.baseDir/self.appName
+        #   - unregister the appName (ie, remove it from .mapAppStack)
+
     def getUniqueStackID(self):
             return hex(int(time()*10000000))[9:]
 
