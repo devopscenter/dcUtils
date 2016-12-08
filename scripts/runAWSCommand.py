@@ -58,13 +58,14 @@ class AWSCommand:
         while i < len(awsOutputList):
             # print "[{}] =>{}<=".format(i, awsOutputList[i])
             if "End" in awsOutputList[i]:
-                # the start line initially looks something like:
+                # the end line initially looks something like:
                 # "End": "2016-03-04T22:33:31.659Z"
                 # quotes and all.  So the regular expression below will
                 # find all the strings in side each of the double quotes.
                 # that returns a list.  We want the second one so we pull
                 # the index of 1.  Then from that result we only want the
                 # first 10 characters.  and that gives the date we can use
+                fullEndDateAndTime = re.findall('"(.*?)"', awsOutputList[i])[1]
                 endDate = re.findall('"(.*?)"', awsOutputList[i])[1][:10]
                 # print endDate
                 # now we want to increase the index count to get the associated
@@ -73,7 +74,7 @@ class AWSCommand:
                 instanceType = re.findall('"(.*?)"', awsOutputList[i])[1]
                 # print instanceType
                 # and finally put the tuple in the list
-                reservedList.append((endDate, instanceType))
+                reservedList.append((endDate, instanceType, fullEndDateAndTime))
 
             i += 1
 
@@ -108,14 +109,22 @@ class AWSCommand:
         for reservedItem in reservedTypeAndDateList:
             reservedDate = datetime.strptime(reservedItem[0], date_format)
             diff = reservedDate - now
+            # print "diff: {} reservedDate: {} and now: {} ".format(
+            #    diff.days, reservedDate, now)
             # now if any of those days are between 330-365 go through the
             # instance list and get the name
-            if diff.days < 30 and diff.days > 0:
+            if diff.days < 30 and diff.days > -30:
+                if diff.days <= -2:
+                    print "These appear to be past due:"
+                elif diff.days >= -1 and diff.days <= 0:
+                    print "These appear to be due today:."
+                else:
+                    print "These appear to be coming due:."
                 # go through the instance list and get the name
                 for instance in returnList:
                     if reservedItem[1] == instance[1]:
-                        print "[{}] {} date reserved: {}".format(
-                            reservedItem[1], instance[0], reservedItem[0])
+                        print "[{}] {} reserved instance ends: {}".format(
+                            reservedItem[1], instance[0], reservedItem[2])
 
     def listInstances(self):
         print "going to do listInstances"
@@ -129,7 +138,7 @@ def checkArgs():
     parser = argparse.ArgumentParser(
         description='Script that provides a facility to execute various ' +
                     'AWS commands and show the output')
-    parser.add_argument('-p', '--profileName', help='Name of the profile ' +
+    parser.add_argument('--customerAppName', help='Name of the appName  ' +
                         'in which to execute the AWS command',
                         required=True)
     parser.add_argument('-c', '--command', help='The AWS command action ' +
@@ -140,7 +149,7 @@ def checkArgs():
                         default='container')
     args = parser.parse_args()
 
-    retProfileName = args.profileName
+    retProfileName = args.customerAppName
     retCommand = args.command
 
     # if we get here then the
@@ -149,7 +158,7 @@ def checkArgs():
 
 def main(argv):
     (profileName, cmdToRun) = checkArgs()
-#    print 'profileName is: ' + profileName
+#    print 'customerAppName/profileName is: ' + profileName
 #    print 'cmdToRun is: ' + cmdToRun
 
     awsCmd = AWSCommand(profileName)
