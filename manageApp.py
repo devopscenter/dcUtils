@@ -113,6 +113,12 @@ class ManageAppName:
         self.createStackDirectory()
         self.createAWSProfile()
 
+        # TODO need to decide if there is a git init at the top level
+        # of do it in each of the sub directories (ie, appName-utils,
+        # appName-web, and uniqueID-stack).  I think it should be the separate
+        # ones. So the .gitignore may need to be down in the appropriate sub
+        # directory.
+
         # and now run the git init
         basePath = self.baseDir + self.appName
         os.chdir(basePath)
