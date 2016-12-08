@@ -111,6 +111,7 @@ class ManageAppName:
         self.createUtilDirectories()
         self.createWebDirectories()
         self.createStackDirectory()
+        self.createAWSProfile()
 
         # and now run the git init
         basePath = self.baseDir + self.appName
@@ -194,8 +195,8 @@ class ManageAppName:
         webName = self.appName + "-web"
 
         userResponse = raw_input(
-            "Enter the name of the web directory that you want to use and "
-            "a directory will be created with that name.\n"
+            "\n\nEnter the name of the web directory that you want to use\n"
+            "and a directory will be created with that name.\n"
             "Or press return to accept the default name: (" + webName + ")\n")
         if userResponse:
             webName = userResponse
@@ -337,6 +338,68 @@ class ManageAppName:
                 ' given configDir: {} \n'.format(personalFile, envDir)
             sys.exit(1)
 
+    def createAWSProfile(self):
+        """This method will create the necessary skeleton in the .aws directory
+        for the new appName which will be used as the profile name"""
+
+        # TODO determine if this is a good thing to do...By doing this the
+        # .aws config and credentials could be set up and then the user would
+        # have to fill it in.  But the region wouldn't be known and the keys
+        # would not be known.  The reason for doing this is that if the user
+        # goes through the aws configure steps and doesn't do the profile or
+        # gives a different profile name than the appName then things wont
+        # work right.
+
+        # first check for the existance of the .aws directory
+        configFileWriteFlag = 'w'
+        credentialFileWriteFlag = 'w'
+        awsBaseDir = expanduser("~") + "/.aws"
+        if os.path.exists(awsBaseDir):
+            # and then check for the existance of the config and credentials
+            # files
+            if os.path.isfile(awsBaseDir + "/config"):
+                configFileWriteFlag = 'a'
+            if os.path.isfile(awsBaseDir + "/credentials"):
+                credentialFileWriteFlag = 'a'
+        else:
+            # create the directory
+            os.makedirs(awsBaseDir)
+
+        # now add the necessary entries in config
+        awsConfigFile = awsBaseDir + "/config"
+        try:
+            fileHandle = open(awsConfigFile, configFileWriteFlag)
+            strToWrite = ("[profile " + self.appName + "]\n"
+                          "output = json\n"
+                          "region = us-west-2\n")
+            fileHandle.write(strToWrite)
+            fileHandle.close()
+        except IOError:
+            print "NOTE: There is a file that needs to be created: \n" + \
+                "$HOME/.aws/config and could not be written. \n" + \
+                "Please report this issue to the devops.center admins."
+
+        # now add the necessary entries in credentials
+        awsCredentialsFile = awsBaseDir + "/credentials"
+        try:
+            fileHandle = open(awsCredentialsFile, credentialFileWriteFlag)
+            strToWrite = "[" + self.appName + "]\n" + \
+                "aws_access_key_id = YOUR_ACCESS_KEY_ID_HERE\n" + \
+                "aws_secret_access_key = YOUR_SECRET_ACCESS_KEY_HERE\n"
+            fileHandle.write(strToWrite)
+            fileHandle.close()
+        except IOError:
+            print "NOTE: There is a file that needs to be created: \n" + \
+                "$HOME/.aws/credentials and could not be written. \n" + \
+                "Please report this issue to the devops.center admins."
+
+        print "\nYou will need to add your AWS access and secret key to \n" + \
+            "the ~/.aws/credentials file and will need to check the \n" + \
+            "region in the ~/.aws/config file to ensure it is set to  \n" + \
+            "correct AWS region that your instances are created in.\n" + \
+            "Look for these entries under the profile name: \n" + \
+            self.appName + "\n\n"
+
     def update(self, optionsMap):
         """takes an argument that dictates what needs to be updated and then
         what items that are associated with the change"""
@@ -344,9 +407,10 @@ class ManageAppName:
     def delete(self, optionsMap):
         """delete all the necessary items that are associated with the
         appName"""
-        # items to delete:
+        # TODO items to delete:
         #   - self.baseDir/self.appName
         #   - unregister the appName (ie, remove it from .mapAppStack)
+        #   - remove the entry from the .aws config and credentials files
 
     def getUniqueStackID(self):
             return hex(int(time()*10000000))[9:]
