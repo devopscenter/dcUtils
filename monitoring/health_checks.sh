@@ -325,6 +325,15 @@ function azure_check
 
 
 #-------------------------------------------------------------------------------
+# check the reserved instances for renewal soon
+#-------------------------------------------------------------------------------
+function reserved_instance_renewal_check
+{
+    echo "/nChecking for any reserved instances that need to be renewed:"
+    ${dcUTILS}/scripts/runAWSCommand.py --customerAppName ${dcDEFAULT_APP_NAME} -c checkReservedInstanceRenewal
+}
+
+#-------------------------------------------------------------------------------
 # Checks run for all instances, no entries in the customer specific config files are necessary.
 #-------------------------------------------------------------------------------
 echo -e "##### ALL INSTANCES #####"
@@ -394,3 +403,6 @@ if [[ "$FLOWER_HOSTS" ]]; then
     # running process
     process_check 'flower' "$FLOWER_HOSTS"
 fi
+
+echo -e "##### Reserved Instance Renewal #####"
+reserved_instance_renewal_check

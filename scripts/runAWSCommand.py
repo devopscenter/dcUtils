@@ -44,19 +44,20 @@ class AWSCommand:
 
     def getReservedTypeAndDate(self):
         awsCmd = ("aws --profile " + self.profileName +
-                  " ec2 describe-reserved-instances | grep " +
-                  "-e InstanceType -e End")
+                  " ec2 describe-reserved-instances --query "
+                  "'ReservedInstances[*].{InstanceType:InstanceType,End:End}'")
 
         awsOutput = subprocess.check_output(awsCmd, shell=True)
         # split the output on the comman giving a list of start and instance
         # type.  Because we know that we are just going through the string
         # as it comes we know that the start and instanceType will end up
         # next to each other.
-        awsOutputList = awsOutput.split(',')
+        awsOutputList = awsOutput.split('\n')
+        # for item in awsOutputList:
+        #    print "=>{}<=".format(item)
         reservedList = []
         i = 0
         while i < len(awsOutputList):
-            # print "[{}] =>{}<=".format(i, awsOutputList[i])
             if "End" in awsOutputList[i]:
                 # the end line initially looks something like:
                 # "End": "2016-03-04T22:33:31.659Z"
@@ -65,7 +66,7 @@ class AWSCommand:
                 # that returns a list.  We want the second one so we pull
                 # the index of 1.  Then from that result we only want the
                 # first 10 characters.  and that gives the date we can use
-                fullEndDateAndTime = re.findall('"(.*?)"', awsOutputList[i])[1]
+                fullEndDateTime = re.findall('"(.*?)"', awsOutputList[i])[1]
                 endDate = re.findall('"(.*?)"', awsOutputList[i])[1][:10]
                 # print endDate
                 # now we want to increase the index count to get the associated
@@ -74,7 +75,7 @@ class AWSCommand:
                 instanceType = re.findall('"(.*?)"', awsOutputList[i])[1]
                 # print instanceType
                 # and finally put the tuple in the list
-                reservedList.append((endDate, instanceType, fullEndDateAndTime))
+                reservedList.append((endDate, instanceType, fullEndDateTime))
 
             i += 1
 
