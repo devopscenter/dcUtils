@@ -81,29 +81,52 @@ class ManageAppName:
         return retMap
 
     def joinExistingDevelopment(self, optionsMap):
-        """pulls down an existing repo with the given appName and
-        puts it in the given baseDirectory"""
+        """This expects that the user is new and is joining development of an
+        already exsiting repository.  So, this pulls down that existing repo
+        with the given appName and puts it in the given baseDirectory"""
 
         # in order to get the files we need to know where the appName
         # repository is.  It had to be put in an owner directory, so that
         # has to be passed on the command line in the -o argument and would
         # be of the format owner=something
-        if len(optionsMap.keys()) and "owner" in optionsMap:
-            print "[owner] =>{}<=".format(optionsMap["owner"])
-        else:
+        if not len(optionsMap.keys()):
+            print "In order to join an existing development effort, you" + \
+                " will need to provide the option \n" + \
+                "  -o 'owner=repositoryBaseName'" + \
+                " \nThis is required in order to do a git clone" + \
+                " of the appName repository. "
+            sys.exit(1)
+        if len(optionsMap.keys()) and "owner" not in optionsMap:
             print "The owner=repositoryBaseName was not given in the -o" + \
                 " argument. This is required in order to do a git clone" + \
                 " of the appName repository. "
             sys.exit(1)
 
+        # create the base Directory
+        self.createUtilDirectories()
+
         # change to the baseDirectory
-        os.chdir(self.baseDir)
+        os.chdir(self.baseDir + "/" + self.appName)
+
+        webName = self.appName + "-web"
+
+        userResponse = raw_input(
+            "\n\nEnter the name of the web repository that has been set up\n"
+            "and it will be cloned from github. Or press return to accept\n"
+            "the default name: (" + webName + ")\n")
+        if userResponse:
+            webName = userResponse
 
         # execute git clone on theAppName and put it in the baseDirectory
-        cmdToRun = "git clone git@github.com:" + optionsMap["owner"] + "/" + \
-            self.appName + ".git"
-        # print "=>{}<=".format(cmdToRun)
-        subprocess.check_call(cmdToRun, shell=True)
+        cmdToRun = "git clone https://github.com/" + optionsMap["owner"] + \
+            "/" + webName + ".git"
+        # print "[{}] =>{}<=".format(os.getcwd(), cmdToRun)
+        try:
+            subprocess.check_call(cmdToRun, shell=True)
+        except subprocess.CalledProcessError:
+            print "There was an issue with cloning the application you " + \
+                "specified.  Check that you specified\nthe correct owner " + \
+                "and respository name."
 
     def create(self, optionsMap):
         """creates the directory structure and sets up the appropriate
