@@ -270,26 +270,6 @@ else
     TARGET_SH_FILE="${BASE_CUSTOMER_APP_UTILS_DIR}/environments/.generatedEnvFiles/dcEnv-${CUSTOMER_APP_NAME}-${ENV}.sh"
     sed -e 's/^/export /'  ${TARGET_ENV_FILE} > ${TARGET_SH_FILE}
 
-
-    # create an appName compose file and put it in the config/${ENV} to associate this
-    # set of yml with the specific environment for this appName
-    # NOTE this is created by copying the appropriate template common and docker-compose
-    # files.  This will need to change to be built dynamically from a appName config file
-    # NOTE2 using a ? as the delimiter for the sed command to allow the variables to have
-    # a forward slash (ie a directory path) in it.  By using a different delimeter than a
-    # slash sed doesn't get confused by the forwards slashes in the variable.
-    if [[ ! -f "${BASE_CUSTOMER_APP_UTILS_DIR}/config/${ENV}/docker-compose.yml" ]]; then
-        sed -e "s?APP_NAME-ENV.env?${TARGET_ENV_FILE}?" templates/common.yml > "${BASE_CUSTOMER_APP_UTILS_DIR}/config/${ENV}/common.yml"
-        sed -e "s?APP_NAME-ENV.env?${TARGET_ENV_FILE}?" templates/docker-compose.yml >  "${BASE_CUSTOMER_APP_UTILS_DIR}/config/${ENV}/docker-compose.yml"
-        sed -i -e "s?APP_NAME-CONFIG-DIR-common.yml?\"${BASE_CUSTOMER_APP_UTILS_DIR}/config/${ENV}/common.yml\"?" "${BASE_CUSTOMER_APP_UTILS_DIR}/config/${ENV}/docker-compose.yml"
-        sed -e "s?APP_NAME-ENV.env?${TARGET_ENV_FILE}?" templates/docker-compose-debug.yml >  "${BASE_CUSTOMER_APP_UTILS_DIR}/config/${ENV}/docker-compose-debug.yml"
-        sed -i -e "s?APP_NAME-CONFIG-DIR-common.yml?\"${BASE_CUSTOMER_APP_UTILS_DIR}/config/${ENV}/common.yml\"?" "${BASE_CUSTOMER_APP_UTILS_DIR}/config/${ENV}/docker-compose-debug.yml"
-    fi
-
-    # TODO
-    # update the local ~/.aws/config and ~/.aws/credentials with the new data
-    # and inform the user to put their keys in the credentials file
-
     # TODO need to figure out how to get the users keys so that "paws" will work
     # probably need another script to manage them (ie, manageKeys.py)
 

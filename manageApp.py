@@ -133,8 +133,9 @@ class ManageAppName:
         templates necessary to run a customers appliction set."""
         self.createUtilDirectories()
         self.createWebDirectories()
-        self.createStackDirectory()
-        self.createAWSProfile()
+        self.createDockerComposeFiles()
+        # self.createStackDirectory()
+        # self.createAWSProfile()
 
         # TODO need to decide if there is a git init at the top level
         # of do it in each of the sub directories (ie, appName-utils,
@@ -431,6 +432,36 @@ class ManageAppName:
             "correct AWS region that your instances are created in.\n" + \
             "Look for these entries under the profile name: \n" + \
             self.appName + "\n\n"
+
+    def createDockerComposeFiles(self):
+        """This method will create the Dockerfile(s) as necessary for this
+        appName.  It will take a template file and update it with the specific
+        directory updates for created with this script."""
+
+        # set up the base config directory path
+        # NOTE: it will only put these in the "local" directory
+        baseConfig = self.baseDir + self.appName + "/" + self.appName + \
+            "-utils/config/local"
+
+        # copy the docker-compose template files
+        composeFile = baseConfig + "/docker-compose.yml"
+        shutil.copyfile("templates/docker-compose.yml", composeFile)
+
+        composeDebugFile = baseConfig + "/docker-compose-debug.yml"
+        shutil.copyfile("templates/docker-compose-debug.yml", composeDebugFile)
+
+        # set up the targetEnvFile name based upon  the name and the
+        # path to get there
+        targetEnvFile = self.baseDir + self.appName + self.appName + \
+            "-utils/environments/.generatedEnvDir/dcEnv-" + \
+            self.appName + "-local.env"
+
+        # need to change the env file name and path to represent what is created
+        # with this script
+        for line in fileinput.input(composeFile, inplace=1):
+            print line.replace("APP_NAME-ENV", targetEnvFile),
+        for line in fileinput.input(composeDebugFile, inplace=1):
+            print line.replace("APP_NAME-ENV", targetEnvFile),
 
     def update(self, optionsMap):
         """takes an argument that dictates what needs to be updated and then

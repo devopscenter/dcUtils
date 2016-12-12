@@ -7,7 +7,7 @@ version: '2'
 services:
     web:
         container_name: "${dcDEFAULT_APP_NAME}_${CUSTOMER_APP_ENV}_web-1"
-        image: devopscenter/0099ff.web-debug:${CONTAINER_VERSION}
+        image: devopscenter/DC_UNIQUE_ID.web-debug:${CONTAINER_VERSION}
         ports:
             - "80:80"
             - "8000:8000"
@@ -27,21 +27,25 @@ services:
 
     pgmaster-1:
         container_name: "${dcDEFAULT_APP_NAME}_${CUSTOMER_APP_ENV}_pgmaster-1"
-        extends:
-            file: APP_NAME-CONFIG-DIR-common.yml
-            service: pgmaster-1
+        image: devopscenter/db_postgres:${CONTAINER_VERSION}
+        ports:
+            - "5432:5432"
+        env_file:
+            - "APP_NAME-ENV.env"
         volumes:
+            - pg-db:/media/data/postgres/
             - "$dcUTILS:/utils"
         volumes_from:
             - syslog
 
+
     syslog:
         container_name: "${dcDEFAULT_APP_NAME}_${CUSTOMER_APP_ENV}_syslog"
+        image: devopscenter/syslog:${CONTAINER_VERSION}
+        env_file:
+            - "APP_NAME-ENV.env"
         environment:
             LOG_NAME:
-        extends:
-            file: APP_NAME-CONFIG-DIR-common.yml
-            service: syslog
         logging:
             driver: syslog
             options:
