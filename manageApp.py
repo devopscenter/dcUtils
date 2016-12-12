@@ -453,7 +453,7 @@ class ManageAppName:
         # set up the targetEnvFile name based upon  the name and the
         # path to get there
         targetEnvFile = self.baseDir + self.appName + "/" + self.appName + \
-            "-utils/environments/.generatedEnvDir/dcEnv-" + \
+            "-utils/environments/.generatedEnvFiles/dcEnv-" + \
             self.appName + "-local"
 
         # need to change the env file name and path to represent what is created
