@@ -64,6 +64,8 @@ class ManageAppName:
             self.update(optionsMap)
         elif command == "delete":
             self.delete(optionsMap)
+        elif command == "getUniqueID":
+            print self.getUniqueStackID()
 
     def parseOptions(self, options):
         """options is string of comma separate key=value pairs. If there is
@@ -540,7 +542,8 @@ def checkArgs():
                         choices=["join",
                                  "create",
                                  "update",
-                                 "delete"],
+                                 "delete",
+                                 "getUniqueID"],
                         default='join',
                         required=False)
     parser.add_argument('-o', '--cmdOptions', help='Options for the ' +
