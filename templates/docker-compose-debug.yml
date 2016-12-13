@@ -1,0 +1,59 @@
+version: '2'
+# docker-compose for web-debug container. This uses
+# cling for static files, django sslserver (started with 'python manage.py runsslserver'), and no async service
+#
+# Assumes docker for mac.
+#
+services:
+    web:
+        container_name: "${dcDEFAULT_APP_NAME}_${CUSTOMER_APP_ENV}_web-1"
+        image: devopscenter/DC_UNIQUE_ID.web-debug:${CONTAINER_VERSION}
+        ports:
+            - "80:80"
+            - "8000:8000"
+            - "443:443"
+        links:
+            - "pgmaster-1"
+        volumes:
+            - "$dcAPP:/data/deploy/current"
+            - "/wheelhouse"
+            - "$dcDATA:/dataload"
+            - "$dcUTILS:/utils"
+        working_dir: "/data/deploy/current"
+        env_file:
+            - "APP_NAME-ENV.env"
+        volumes_from:
+            - syslog
+
+    pgmaster-1:
+        container_name: "${dcDEFAULT_APP_NAME}_${CUSTOMER_APP_ENV}_pgmaster-1"
+        image: devopscenter/db_postgres:${CONTAINER_VERSION}
+        ports:
+            - "5432:5432"
+        env_file:
+            - "APP_NAME-ENV.env"
+        volumes:
+            - pg-db:/media/data/postgres/
+            - "$dcUTILS:/utils"
+        volumes_from:
+            - syslog
+
+
+    syslog:
+        container_name: "${dcDEFAULT_APP_NAME}_${CUSTOMER_APP_ENV}_syslog"
+        image: devopscenter/syslog:${CONTAINER_VERSION}
+        env_file:
+            - "APP_NAME-ENV.env"
+        environment:
+            LOG_NAME:
+        logging:
+            driver: syslog
+            options:
+                syslog-address: udp://logs2.papertrailapp.com:48809
+                syslog-facility: local0
+                env: LOG_NAME
+                tag: "{{ (.ExtraAttributes nil).LOG_NAME}} {{.DaemonName}}"
+
+# Must include all named volumes in V2 compose file format.
+volumes:
+    pg-db:

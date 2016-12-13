@@ -1,0 +1,6 @@
+# This file contains variables that will hold the name and address information about the instances that are running the various 
+# services.  Make the necesary changes to reflect the environment that you are running
+# NOTE: these are just examples of what is possible to put into these variables
+#MASTER_FOLLOWERS_HOSTS=( 'staging-db3 172.31.1.2' 'prod-db2 172.31.3.4' 'prod-db4 172.31.5.6' )
+#S3_BUCKETS='appname1-postgres-backup-prod/prod-db2 appname1-postgres-backup-prod/prod-db4 appname1-postgres-backup-staging/staging-db3 appname1-jenkins-backup'
+#AZURE_PAIRS=( 'staging-db3 postgres-backups-staging' 'prod-db4 postgres-backups-prod' )

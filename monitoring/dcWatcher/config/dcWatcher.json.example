@@ -1,0 +1,23 @@
+[
+    {
+        "patterns": [
+            "$HOME/devops/topopps/utils/db/*.py",
+            "$HOME/devops/topopps/utils/db/*.sh"
+        ],
+        "action" :  "log"
+    },
+    {
+        "patterns": [
+            "$HOME/someplace/nginx/nginx.cfg"
+        ],
+        "otherHosts" : [ "dev-web", "dev-worker" ],
+        "action" : {
+            "shell-command" : [
+                    "supervisorctl restart nginx && supersiorctl restart uwsgi" 
+                ]
+        },
+        "options" : {
+            "drop" : "True"
+        }
+    }
+]

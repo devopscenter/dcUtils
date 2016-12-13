@@ -1,0 +1,91 @@
+version: '2'
+# Assumes docker for mac.
+#
+# - There is no docker0 bridge network in docker for mac: https://docs.docker.com/docker-for-mac/networking/
+#   so alias names for the containers are commented out.
+#
+services:
+    web:
+        container_name: "${dcDEFAULT_APP_NAME}_${CUSTOMER_APP_ENV}_web-1"
+        image: devopscenter/DC_UNIQUE_ID.web:${CONTAINER_VERSION}
+        ports:
+            - "80:80"
+            - "8000:8000"
+            - "443:443"
+        links:
+            - "pgmaster-1"
+            - "worker"
+            - "redismaster"
+        volumes:
+            - "$dcAPP:/data/deploy/current"
+            - "/wheelhouse"
+            - "$dcDATA:/dataload"
+            - "$dcUTILS:/utils"
+        working_dir: "/data/deploy/current"
+        env_file:
+            - "APP_NAME-ENV.env"
+        volumes_from:
+            - syslog
+
+    worker:
+        container_name: "${dcDEFAULT_APP_NAME}_${CUSTOMER_APP_ENV}_worker-1"
+        image: devopscenter/DC_UNIQUE_ID.worker:${CONTAINER_VERSION}
+        links:
+            - "pgmaster-1"
+            - "redismaster"
+        volumes:
+            - "$dcAPP:/data/deploy/current"
+            - /wheelhouse
+            - "$dcHOME/topopps/utils:/utils"
+        working_dir: "/data/deploy/current"
+        env_file:
+            - "APP_NAME-ENV.env"
+        volumes_from:
+            - syslog
+
+    pgmaster-1:
+        container_name: "${dcDEFAULT_APP_NAME}_${CUSTOMER_APP_ENV}_pgmaster-1"
+        image: devopscenter/db_postgres:${CONTAINER_VERSION}
+        ports:
+            - "5432:5432"
+        env_file:
+            - "APP_NAME-ENV.env"
+        volumes:
+            - pg-db:/media/data/postgres/
+            - "$dcUTILS:/utils"
+        volumes_from:
+            - syslog
+
+
+    redismaster:
+        container_name: "${dcDEFAULT_APP_NAME}_${CUSTOMER_APP_ENV}_redismaster"
+        image: "devopscenter/db_redis:${CONTAINER_VERSION}"
+        env_file:
+            - "APP_NAME-ENV.env"
+        ports:
+            - "6379:6379"
+        volumes:
+            - redis:/media/data/redis
+            - "$dcUTILS:/utils"
+        volumes_from:
+            - syslog
+
+    syslog:
+        container_name: "${dcDEFAULT_APP_NAME}_${CUSTOMER_APP_ENV}_syslog"
+        image: devopscenter/syslog:${CONTAINER_VERSION}
+        env_file:
+            - "APP_NAME-ENV.env"
+        environment:
+            LOG_NAME:
+        logging:
+            driver: syslog
+            options:
+                syslog-address: udp://logs2.papertrailapp.com:48809
+                syslog-facility: local0
+                env: LOG_NAME
+                tag: "{{ (.ExtraAttributes nil).LOG_NAME}} {{.DaemonName}}"
+
+# Must include all named volumes in V2 compose file format.
+volumes:
+    redis:
+    pg-db:

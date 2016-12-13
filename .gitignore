@@ -1,0 +1,11 @@
+docker-enter
+.vagrant
+*.pyc
+*.bak
+.DS_Store
+docker-local.*
+personal.env
+dcWatcher-compose.yml
+dcWatcher.json
+.mapAppStack
+
