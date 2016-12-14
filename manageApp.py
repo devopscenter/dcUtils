@@ -254,11 +254,16 @@ class ManageAppName:
 
                 baseWeb = self.baseDir + self.appName + "/" + webName
                 print "\nThis directory: {}".format(userRepo)
-                print "will be linked to: {}\n\n".format(
+                print "will be linked to: {}\n".format(
                     baseWeb)
-
-                # and the destination directory
-                os.symlink(userRepo, baseWeb)
+                yesResponse = raw_input(
+                    "If this is correct press Y/y:(Any other response"
+                    " will NOT create this directory)")
+                if yesResponse.lower() == 'y':
+                    # and the destination directory
+                    os.symlink(userRepo, baseWeb)
+                else:
+                    print "The symlink was NOT created."
         else:
             # web path to be created
             baseWeb = self.baseDir + self.appName + "/" + webName
