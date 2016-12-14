@@ -145,11 +145,6 @@ class ManageAppName:
         # ones. So the .gitignore may need to be down in the appropriate sub
         # directory.
 
-        # and now run the git init
-        basePath = self.baseDir + self.appName
-        os.chdir(basePath)
-        subprocess.check_call("git init .", shell=True)
-
     def createUtilDirectories(self):
         basePath = self.baseDir + self.appName
         try:
@@ -161,24 +156,6 @@ class ManageAppName:
             sys.exit(1)
 
         commonDirs = ["local", "dev", "staging", "prod"]
-
-        # put a .gitignore file in the appName directory to properly ignore
-        # some files that will be created that don't need to go into the
-        # repository
-        gitIgnoreFile = basePath + "/.gitignore"
-
-        try:
-            fileHandle = open(gitIgnoreFile, 'w')
-            strToWrite = (".DS_Store\n"
-                          "personal.env\n"
-                          "*-utils/environments/.generatedEnvDir/*\n")
-
-            fileHandle.write(strToWrite)
-            fileHandle.close()
-        except IOError:
-            print "NOTE: There is a file that needs to be created: \n" + \
-                basePath + "/.gitignore and could not be written. \n" + \
-                "Please report this issue to the devops.center admins."
 
         # create the dataload directory...this is a placeholder and can
         # be a link to somewhere else with more diskspace.  But that is
@@ -220,6 +197,30 @@ class ManageAppName:
             print "NOTE: There is a file that needs to be created: \n" + \
                 basePath + "/.dcDirMap.cnf and could not be written. \n" + \
                 "Please report this issue to the devops.center admins."
+
+        # put a .gitignore file in the appName directory to properly ignore
+        # some files that will be created that don't need to go into the
+        # repository
+        gitIgnoreFile = baseUtils + "/.gitignore"
+
+        try:
+            fileHandle = open(gitIgnoreFile, 'w')
+            strToWrite = (".DS_Store\n"
+                          "personal.env\n"
+                          "environments/.generatedEnvDir/*\n")
+
+            fileHandle.write(strToWrite)
+            fileHandle.close()
+        except IOError:
+            print "NOTE: There is a file that needs to be created: \n" + \
+                basePath + "/.gitignore and could not be written. \n" + \
+                "Please report this issue to the devops.center admins."
+
+        # and now run the git init on the Utils directory
+        originalDir = os.getcwd()
+        os.chdir(baseUtils)
+        subprocess.check_call("git init .", shell=True)
+        os.chdir(originalDir)
 
     def createWebDirectories(self):
         # TODO ask them if they need to have  a web directory created
