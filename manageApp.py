@@ -228,14 +228,40 @@ class ManageAppName:
 
         userResponse = raw_input(
             "\n\nEnter the name of the web directory that you want to use\n"
-            "and a directory will be created with that name.\n"
-            "Or press return to accept the default name: (" + webName + ")\n")
+            "and a directory will be created with that name.\n\n"
+            "NOTE: If you already have a repository checked out on this \n"
+            "machine, we can create a link from there into our directory\n"
+            "structure.  Provide the full path to your"
+            "existing directory.\nOr press return to accept the \n"
+            "default name: (" + webName + ")\n")
         if userResponse:
-            webName = userResponse
+            if '/' not in userResponse:
 
-        # web path to be created
-        baseWeb = self.baseDir + self.appName + "/" + webName
-        os.makedirs(baseWeb, 0755)
+                # web path to be created
+                baseWeb = self.baseDir + self.appName + "/" + userResponse
+                os.makedirs(baseWeb, 0755)
+            else:
+                if '~' in userResponse or '$HOME' in userResponse:
+                    userRepo = userResponse.replace("~", expanduser("~"))
+                if not os.path.exists(userRepo):
+                    print "ERROR: That directory does not exist: {}".format(
+                        userRepo)
+                    sys.exit(1)
+
+                # other wise get the name of the repository
+                webName = os.path.basename(userRepo)
+
+                baseWeb = self.baseDir + self.appName + "/" + webName
+                print "\nThis directory: {}".format(userRepo)
+                print "will be linked to: {}\n\n".format(
+                    baseWeb)
+
+                # and the destination directory
+                os.symlink(userRepo, baseWeb)
+        else:
+            # web path to be created
+            baseWeb = self.baseDir + self.appName + "/" + webName
+            os.makedirs(baseWeb, 0755)
 
         fileToWrite = self.baseDir + self.appName + "/.dcDirMap.cnf"
         try:
