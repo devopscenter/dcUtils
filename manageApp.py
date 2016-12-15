@@ -104,6 +104,11 @@ class ManageAppName:
                 " of the appName repository. "
             sys.exit(1)
 
+        gitRepo = "github.com"
+        if len(optionsMap.keys()) and "gitRepo" in optionsMap:
+            gitRepo = optionsMap["gitRepo"]
+        print "Going to use the git repo: {}\n".format(gitRepo)
+
         # create the base Directory
         self.createUtilDirectories()
 
@@ -120,9 +125,22 @@ class ManageAppName:
             webName = userResponse
 
         # execute git clone on theAppName and put it in the baseDirectory
-        cmdToRun = "git clone https://github.com/" + optionsMap["owner"] + \
-            "/" + webName + ".git"
+        cmdToRunSSH = "git clone git@" + gitRepo + ":" + \
+            optionsMap["owner"] + "/" + webName + ".git"
+        cmdToRunHTTPS = "git clone https://" + gitRepo + "/" + \
+            optionsMap["owner"] + "/" + webName + ".git"
+
+        cmdToRun = cmdToRunHTTPS
+        if "transferType" in optionsMap:
+            if optionsMap["transferType"].lower() == "ssh":
+                cmdToRun = cmdToRunSSH
+            elif optionsMap["transferType"].lower() != "https":
+                print "ERROR transferType not one of ssh or https, not " + \
+                    "able to clone the repository\n"
+                sys.exit(1)
+
         # print "[{}] =>{}<=".format(os.getcwd(), cmdToRun)
+
         try:
             subprocess.check_call(cmdToRun, shell=True)
         except subprocess.CalledProcessError:
