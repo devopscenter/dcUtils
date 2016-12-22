@@ -329,7 +329,7 @@ function azure_check
 #-------------------------------------------------------------------------------
 function reserved_instance_renewal_check
 {
-    echo "/nChecking for any reserved instances that need to be renewed:"
+    echo "Checking for any reserved instances that need to be renewed:"
     ${dcUTILS}/scripts/runAWSCommand.py --customerAppName ${dcDEFAULT_APP_NAME} -c checkReservedInstanceRenewal
 }
 
