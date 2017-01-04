@@ -225,7 +225,7 @@ class ManageAppName:
             fileHandle = open(gitIgnoreFile, 'w')
             strToWrite = (".DS_Store\n"
                           "personal.env\n"
-                          "environments/.generatedEnvDir/*\n")
+                          "environments/.generatedEnvFiles/*\n")
 
             fileHandle.write(strToWrite)
             fileHandle.close()
