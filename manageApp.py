@@ -41,8 +41,12 @@ class ManageAppName:
         try:
             fileHandle = open(baseConfigFile, 'w')
             adjustedBaseDir = self.baseDir[:-1]
+            instanceBaseDir = "$HOME/" + self.appName
             strToWrite = "BASE_CUSTOMER_DIR=" + adjustedBaseDir + "\n"
             fileHandle.write(strToWrite)
+            strToWrite2 = "BASE_APP_INSTANCE_DIR_" + self.appName.upper() + \
+                "=" + instanceBaseDir + "\n"
+            fileHandle.write(strToWrite2)
             fileHandle.close()
         except IOError:
             print "NOTE: There is a file that needs to be created: \n" + \
