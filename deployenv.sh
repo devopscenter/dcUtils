@@ -136,33 +136,39 @@ while [[ $# -gt 0 ]]; do
     shift
 done
 
-#-------------------------------------------------------------------------------
-# First we need to get the base location of the customers files.  This was created
-# when the manageApp.py was run as one of the arguments is the directory and it 
-# should be an absolute path
-#-------------------------------------------------------------------------------
-if [[ -f ~/.devops.center/config ]]; then
-    source ~/.devops.center/config
-else
-    echo -e "Can not read the config file in ~/.devops.center, have you run manageApp.py"
-    echo -e "yet? "
-    exit 1
+# for the local environment do some setup of the local enviornment variables
+# these aren't needed when the call this script inside an instance as the paths
+# are more hardcoded. 
+# This is because that environment is completely auto generated
+if [[ $TYPE != "instance" ]]; then
+    #-------------------------------------------------------------------------------
+    # First we need to get the base location of the customers files.  This was created
+    # when the manageApp.py was run as one of the arguments is the directory and it 
+    # should be an absolute path
+    #-------------------------------------------------------------------------------
+    if [[ -f ~/.devops.center/config ]]; then
+        source ~/.devops.center/config
+    else
+        echo -e "Can not read the config file in ~/.devops.center, have you run manageApp.py"
+        echo -e "yet? "
+        exit 1
+    fi
+
+    if [[ -d "${BASE_CUSTOMER_DIR}/${CUSTOMER_APP_NAME}" ]]; then
+        source "${BASE_CUSTOMER_DIR}/${CUSTOMER_APP_NAME}/.dcDirMap.cnf"
+    else
+        echo -e "ERROR: the customer application direct is not found: ${BASE_CUSTOMER_DIR}/${CUSTOMER_APP_NAME}"
+        exit 1
+    fi
+
+    BASE_CUSTOMER_APP_UTILS_DIR="${BASE_CUSTOMER_DIR}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_UTILS}"
+
+    #-------------------------------------------------------------------------------
+    # first off copy the health_checks template to the appropriate place for the
+    # application
+    #-------------------------------------------------------------------------------
+    cp templates/health_checks ${BASE_CUSTOMER_APP_UTILS_DIR}/config/health_checks
 fi
-
-if [[ -d "${BASE_CUSTOMER_DIR}/${CUSTOMER_APP_NAME}" ]]; then
-    source "${BASE_CUSTOMER_DIR}/${CUSTOMER_APP_NAME}/.dcDirMap.cnf"
-else
-    echo -e "ERROR: the customer application direct is not found: ${BASE_CUSTOMER_DIR}/${CUSTOMER_APP_NAME}"
-    exit 1
-fi
-
-BASE_CUSTOMER_APP_UTILS_DIR="${BASE_CUSTOMER_DIR}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_UTILS}"
-
-#-------------------------------------------------------------------------------
-# first off copy the health_checks template to the appropriate place for the
-# application
-#-------------------------------------------------------------------------------
-cp templates/health_checks ${BASE_CUSTOMER_APP_UTILS_DIR}/config/health_checks
 
 #-------------------------------------------------------------------------------
 # handle the case where the type is an instance
@@ -185,14 +191,14 @@ if [[ $TYPE = "instance" ]]; then
     #echo "CUSTOMER_APP_WEB=${CUSTOMER_APP_WEB}" >> ${TEMP_FILE}
 
     # Add env vars for this environment, if it exists
-    if [[ -e ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/${ENV}.env ]]; then
-        sudo cat ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/${ENV}.env >> /etc/environment
+    if [[ -e ~/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/${ENV}.env ]]; then
+        sudo cat ~/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/${ENV}.env >> /etc/environment
     fi
 
     # only bring in the personal.env if one exists for the environment and if not there
     # check the base environments directory as a last resort (in case they have only one)
-    if [[ -e ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/personal.env ]]; then
-        sudo cat ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/personal.env >> /etc/environment
+    if [[ -e ~/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/personal.env ]]; then
+        sudo cat ~/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/personal.env >> /etc/environment
     fi
 
     # Add the environment variables to the Supervisor, when started by init.d
@@ -202,12 +208,12 @@ if [[ $TYPE = "instance" ]]; then
         sudo sed -e 's/^/export /'  environments/common.env > /etc/default/supervisor
     fi
 
-    if [[ -e ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/${ENV}.env ]]; then
-        sudo sed -e 's/^/export /' ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/${ENV}.env >> /etc/default/supervisor
+    if [[ -e ${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/${ENV}.env ]]; then
+        sudo sed -e 's/^/export /' ${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/${ENV}.env >> /etc/default/supervisor
     fi
 
-    if [[ -e ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/personal.env ]]; then
-        sudo sed -e 's/^/export /' ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/personal.env >> /etc/default/supervisor
+    if [[ -e ${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/personal.env ]]; then
+        sudo sed -e 's/^/export /' ~/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/personal.env >> /etc/default/supervisor
     fi
 
     echo "ENV vars for '${ENV}' added to /etc/environment and /etc/default/supervisor"
