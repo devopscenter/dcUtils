@@ -191,29 +191,29 @@ if [[ $TYPE = "instance" ]]; then
     #echo "CUSTOMER_APP_WEB=${CUSTOMER_APP_WEB}" >> ${TEMP_FILE}
 
     # Add env vars for this environment, if it exists
-    if [[ -e ~/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/${ENV}.env ]]; then
-        sudo cat ~/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/${ENV}.env >> /etc/environment
+    if [[ -e ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/${ENV}.env ]]; then
+        cat ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/${ENV}.env | sudo tee -a /etc/environment
     fi
 
     # only bring in the personal.env if one exists for the environment and if not there
     # check the base environments directory as a last resort (in case they have only one)
-    if [[ -e ~/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/personal.env ]]; then
-        sudo cat ~/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/personal.env >> /etc/environment
+    if [[ -e ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/personal.env ]]; then
+        cat ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/personal.env | sudo tee -a /etc/environment
     fi
 
     # Add the environment variables to the Supervisor, when started by init.d
     if [[ -e "/etc/default/supervisor" ]]; then
-        sudo sed -e 's/^/export /'  environments/common.env >> /etc/default/supervisor
+        sed -e 's/^/export /'  environments/common.env | sudo tee -a /etc/default/supervisor
     else
-        sudo sed -e 's/^/export /'  environments/common.env > /etc/default/supervisor
+        sed -e 's/^/export /'  environments/common.env | sudo tee  /etc/default/supervisor
     fi
 
-    if [[ -e ${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/${ENV}.env ]]; then
-        sudo sed -e 's/^/export /' ${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/${ENV}.env >> /etc/default/supervisor
+    if [[ -e ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/${ENV}.env ]]; then
+        sed -e 's/^/export /' ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/${ENV}.env | sudo tee -a /etc/default/supervisor
     fi
 
-    if [[ -e ${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/personal.env ]]; then
-        sudo sed -e 's/^/export /' ~/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/personal.env >> /etc/default/supervisor
+    if [[ -e ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/personal.env ]]; then
+        sed -e 's/^/export /' ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/personal.env | sudo tee -a /etc/default/supervisor
     fi
 
     echo "ENV vars for '${ENV}' added to /etc/environment and /etc/default/supervisor"
