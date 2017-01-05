@@ -181,7 +181,7 @@ if [[ $TYPE = "instance" ]]; then
 
 
     # Add common env vars to instance environment file
-    sudo cat environments/common.env >> /etc/environment
+    cat environments/common.env | sudo tee -a  /etc/environment
 
     # TODO determine if this is required and/or would it need to be put in some other file
     # get the Customer specific utils and web dir and put it in the file
