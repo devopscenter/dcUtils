@@ -72,7 +72,7 @@ done
 #-------------------------------------------------------------------------------
 # Check the environment first
 #-------------------------------------------------------------------------------
-echo "Checking environment..."
+echo "Checking environment at $(date) ..."
 # turn on error on exit incase the process-dc-env.sh exists this script
 # needs to exit
 set -e  
