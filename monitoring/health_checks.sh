@@ -70,6 +70,14 @@ while [[ $# -gt 0 ]]; do
 done
 
 #-------------------------------------------------------------------------------
+# lets check to see if dcUtils has been set already if not then we are probably
+# the first time through and it hasn't been set in the environment, so we assume
+# we are in the directory
+#-------------------------------------------------------------------------------
+dcUTILS=${dcUTILS:-"."}
+
+
+#-------------------------------------------------------------------------------
 # Check the environment first
 #-------------------------------------------------------------------------------
 echo "Checking environment at $(date) ..."
@@ -78,15 +86,15 @@ echo "Checking environment at $(date) ..."
 set -e  
 if [[ -z ${CUSTOMER_APP_NAME} ]]; then
     if [[ -z ${ENV} ]]; then
-        . ./scripts/process-dc-env.sh
+        . ${dcUTILS}/scripts/process-dc-env.sh
     else
-        . ./scripts/process-dc-env.sh --env ${ENV}
+        . ${dcUTILS}/scripts/process-dc-env.sh --env ${ENV}
     fi
 else
     if [[ -z ${ENV} ]]; then
-        . ./scripts/process-dc-env.sh --customerAppName ${CUSTOMER_APP_NAME}
+        . ${dcUTILS}/scripts/process-dc-env.sh --customerAppName ${CUSTOMER_APP_NAME}
     else
-        . ./scripts/process-dc-env.sh --customerAppName ${CUSTOMER_APP_NAME} --env ${ENV}
+        . ${dcUTILS}/scripts/process-dc-env.sh --customerAppName ${CUSTOMER_APP_NAME} --env ${ENV}
     fi
 fi
 set +e  # turn off error on exit
