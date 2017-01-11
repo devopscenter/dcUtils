@@ -29,7 +29,7 @@ class EnvironmentDescription:
 
     def __init__(self, appNameIn,  envTypeIn, destDirIn):
         """creates an instance of EnvironmentDescription that takes the
-        customer or application name, the environmentType (dev,staging,prod)
+        customer or application name, environmentType (dev,test,staging,prod)
         and the destination directory for where the selected backup file will be
         downloaded to."""
         self.envType = envTypeIn
@@ -146,7 +146,7 @@ def main(argv):
     # make sure it is available and writeable by this user
     destDir, appName = checkArgs(argv)
 
-    possibleEnvironments = ["dev", "staging", "prod"]
+    possibleEnvironments = ["dev", "test", "staging", "prod"]
     # iterate over the possible environment names to have the user select one
     for num, envType in enumerate(possibleEnvironments, start=1):
         print('{}. {}'.format(num, envType))
