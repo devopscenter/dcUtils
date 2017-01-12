@@ -80,7 +80,7 @@ services:
         logging:
             driver: syslog
             options:
-                syslog-address: udp://logs2.papertrailapp.com:48809
+                syslog-address: "${SYSLOG_PROTO}://${SYSLOG_SERVER}:${SYSLOG_PORT}"
                 syslog-facility: local0
                 env: LOG_NAME
                 tag: "{{ (.ExtraAttributes nil).LOG_NAME}} {{.DaemonName}}"
