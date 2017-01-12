@@ -146,10 +146,10 @@ if [[ $TYPE != "instance" ]]; then
     # when the manageApp.py was run as one of the arguments is the directory and it 
     # should be an absolute path
     #-------------------------------------------------------------------------------
-    if [[ -f ~/.devops.center/config ]]; then
-        source ~/.devops.center/config
+    if [[ -f ~/.dcConfig/baseDirectory ]]; then
+        source ~/.dcConfig/baseDirectory
     else
-        echo -e "Can not read the config file in ~/.devops.center, have you run manageApp.py"
+        echo -e "Can not read the config file in ~/.dcConfig, have you run manageApp.py"
         echo -e "yet? "
         exit 1
     fi
