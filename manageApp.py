@@ -42,11 +42,11 @@ class ManageAppName:
         if not os.path.exists(baseConfigDir):
                 os.makedirs(baseConfigDir)
         baseConfigFile = baseConfigDir + "/baseDirectory"
+        adjustedBaseDir = self.baseDir[:-1]
 
         if not os.path.isfile(baseConfigFile):
             try:
                 fileHandle = open(baseConfigFile, 'w')
-                adjustedBaseDir = self.baseDir[:-1]
 
                 if self.altName:
                     strToWrite = "CURRENT_WORKSPACE=" + self.altName + "\n"
@@ -80,6 +80,57 @@ class ManageAppName:
                 print "NOTE: There is a file that needs to be created: \n" + \
                     "$HOME/.dcConfig/baseDirectory and could not be written" + \
                     "\nPlease report this issue to the devops.center admins."
+
+        elif os.path.isfile(baseConfigFile) and self.altName:
+            # the file exists and they are adding a new base directory
+            self.insertIntoBaseDirectoryFile(baseConfigFile, adjustedBaseDir)
+
+    def insertIntoBaseDirectoryFile(self, baseConfigFile, adjustedBaseDir):
+        # so we need to read in the file into an array
+        with open(baseConfigFile) as f:
+            lines = [line.rstrip('\n') for line in f]
+
+        # first go through and check to see if we already have an alternate
+        # base directory by this name and if so, set a flag so we dont add
+        # again
+        flagToAdd = 1
+        strToSearch = "_" + self.altName.upper() + "_BASE_CUSTOMER_DIR"
+        for aLine in lines:
+            if strToSearch in aLine:
+                flagToAdd = 0
+                break
+
+        # then open the same file for writting
+        try:
+            fileHandle = open(baseConfigFile, 'w')
+
+            # then loop through the  array
+            for aLine in lines:
+                # look for the CURRENT_WORKSPACE and set it to the new name
+                if "CURRENT_WORKSPACE=" in aLine:
+                    strToWrite = "CURRENT_WORKSPACE=" + self.altName + "\n"
+                    fileHandle.write(strToWrite)
+                    continue
+
+                # then look for the line that has  WORKSPACES in it
+                if "WORKSPACES" in aLine:
+                    fileHandle.write(aLine + "\n")
+                    if flagToAdd:
+                        strToWrite = "_" + self.altName.upper() + \
+                            "_BASE_CUSTOMER_DIR=" + adjustedBaseDir + "\n"
+                        fileHandle.write(strToWrite)
+                    continue
+
+                # other wise write the line as it came from the file
+                fileHandle.write(aLine + "\n")
+
+            fileHandle.close()
+        except IOError:
+            print "NOTE: There is a file that needs to be created: \n" + \
+                "$HOME/.dcConfig/baseDirectory and could not be written" + \
+                "\nPlease report this issue to the devops.center admins."
+        # and add a new line with the new altName and the adjustBasedir
+        # then write out the rest of the file
 
     def run(self, command, options):
         optionsMap = self.parseOptions(options)
