@@ -25,29 +25,61 @@ __status__ = "Development"
 
 class ManageAppName:
 
-    def __init__(self, theAppName, baseDirectory):
+    def __init__(self, theAppName, baseDirectory, altName, altDir):
         """ManageAppName constructor"""
         self.appName = theAppName
-        self.baseDir = baseDirectory
+        if baseDirectory:
+            self.baseDir = baseDirectory
+            self.altName = ''
+        else:
+            self.baseDir = altDir
+            self.altName = altName
 
-        # put the baseDirectory path in the users $HOME/.devops.center
-        # directory so that subsequent scripts can use it as a base to work
+        # put the baseDirectory path in the users $HOME/.dcConfig/baseDirectory
+        # file so that subsequent scripts can use it as a base to work
         # from when determining the environment for a session
-        baseConfigDir = expanduser("~") + "/.devops.center"
+        baseConfigDir = expanduser("~") + "/.dcConfig"
         if not os.path.exists(baseConfigDir):
                 os.makedirs(baseConfigDir)
-        baseConfigFile = baseConfigDir + "/config"
+        baseConfigFile = baseConfigDir + "/baseDirectory"
 
-        try:
-            fileHandle = open(baseConfigFile, 'w')
-            adjustedBaseDir = self.baseDir[:-1]
-            strToWrite = "BASE_CUSTOMER_DIR=" + adjustedBaseDir + "\n"
-            fileHandle.write(strToWrite)
-            fileHandle.close()
-        except IOError:
-            print "NOTE: There is a file that needs to be created: \n" + \
-                "$HOME/.devops.center/config and could not be written. \n" + \
-                "Please report this issue to the devops.center admins."
+        if not os.path.isfile(baseConfigFile):
+            try:
+                fileHandle = open(baseConfigFile, 'w')
+                adjustedBaseDir = self.baseDir[:-1]
+
+                if self.altName:
+                    strToWrite = "CURRENT_WORKSPACE=" + self.altName + "\n"
+                else:
+                    strToWrite = "CURRENT_WORKSPACE=DEFAULT\n"
+                fileHandle.write(strToWrite)
+
+                strToWrite = "##### WORKSPACES ######\n"
+                fileHandle.write(strToWrite)
+
+                if self.altName:
+                    strToWrite = "_" + self.altName.upper() + \
+                        "_BASE_CUSTOMER_DIR=" + adjustedBaseDir + "\n"
+                else:
+                    strToWrite = "_DEFAULT_BASE_CUSTOMER_DIR=" + \
+                        adjustedBaseDir + "\n"
+                fileHandle.write(strToWrite)
+
+                strToWrite = "##### BASE DIR CONSTRUCTION NO TOUCH ######\n"
+                fileHandle.write(strToWrite)
+
+                strToWrite = "CONSTRUCTED_BASE_DIR=_${CURRENT_WORKSPACE}" + \
+                    "_BASE_CUSTOMER_DIR\n"
+                fileHandle.write(strToWrite)
+
+                strToWrite = "BASE_CUSTOMER_DIR=${!CONSTRUCTED_BASE_DIR}\n"
+                fileHandle.write(strToWrite)
+
+                fileHandle.close()
+            except IOError:
+                print "NOTE: There is a file that needs to be created: \n" + \
+                    "$HOME/.dcConfig/baseDirectory and could not be written" + \
+                    "\nPlease report this issue to the devops.center admins."
 
     def run(self, command, options):
         optionsMap = self.parseOptions(options)
@@ -153,6 +185,7 @@ class ManageAppName:
         templates necessary to run a customers appliction set."""
         self.createUtilDirectories()
         self.createWebDirectories()
+        self.tmpGetStackDirectory()
         self.createDockerComposeFiles()
         # self.createStackDirectory()
         # self.createAWSProfile()
@@ -299,6 +332,24 @@ class ManageAppName:
                 "could not be written. \n" + \
                 "Please report this issue to the devops.center admins."
 
+    def tmpGetStackDirectory(self):
+        """This method is put in place to be called instead of the
+        createStackDirectory method.  This will just ask for the unique stack
+        name that you want to use for this appliacation"""
+        userResponse = raw_input(
+            "\n\nEnter the name of the unique stack repository that has been "
+            "set up for this app\nand it will be used in the "
+            "docker-compoase.yml files\n"
+            "for the web and worker images:\n")
+        if userResponse:
+            # take the userResponse and use it to edit the docker-compose.yml
+            self.uniqueStackName = userResponse
+        else:
+            print "You will need to have a stack name that corresponds " + \
+                "with the name of a repository that has the web " + \
+                "(and worker) that is with dcStack"
+            sys.exit(1)
+
     def createStackDirectory(self):
         """create the dcStack directory that will contain the necessary files
         to create the web and worker containers"""
@@ -413,7 +464,8 @@ class ManageAppName:
                 'dcDATA=${dcHOME}/dataload\n'
                 'dcAPP=${dcHOME}/' + self.appName + "-web\n"
                 "\n"
-                "LOG_NAME=" + self.appName + "\n"
+                "#LOG_NAME=put the name you want to see in papertrail, "
+                "the default is hostname\n"
                 '#AWS_ACCESS_KEY_ID="put aws access key here"\n'
                 "#AWS_SECRET_ACCESS_KEY='put secret access key here'\n"
             )
@@ -512,8 +564,12 @@ class ManageAppName:
         # with this script
         for line in fileinput.input(composeFile, inplace=1):
             print line.replace("APP_NAME-ENV", targetEnvFile),
+        for line in fileinput.input(composeFile, inplace=1):
+            print line.replace("DC_UNIQUE_ID", self.uniqueStackName),
         for line in fileinput.input(composeDebugFile, inplace=1):
             print line.replace("APP_NAME-ENV", targetEnvFile),
+        for line in fileinput.input(composeDebugFile, inplace=1):
+            print line.replace("DC_UNIQUE_ID", self.uniqueStackName),
 
     def update(self, optionsMap):
         """takes an argument that dictates what needs to be updated and then
@@ -573,50 +629,16 @@ class ManageAppName:
                     "Please report this issue to the devops.center admins."
 
 
-def checkArgs():
-    parser = argparse.ArgumentParser(
-        description='This script provides an administrative interface to a ' +
-        'customers application set that is referred to as appName.  The ' +
-        'administrative functions implement some of the CRUD services ' +
-        '(ie, Create, Update, Delete).')
-    parser.add_argument('-a', '--appName', help='Name of the application ' +
-                        'to manage .',
-                        required=True)
-    parser.add_argument('-d', '--baseDirectory', help='The base directory ' +
-                        'to be used to access the appName. This needs to ' +
-                        'an absolute path unless the first part of the path ' +
-                        'is a tilde or $HOME',
-                        required=True)
-    parser.add_argument('-c', '--command', help='Command to execute' +
-                        'on the appName. Default [join]',
-                        choices=["join",
-                                 "create",
-                                 "update",
-                                 "delete",
-                                 "getUniqueID"],
-                        default='join',
-                        required=False)
-    parser.add_argument('-o', '--cmdOptions', help='Options for the ' +
-                        'command arg',
-                        default='',
-                        required=False)
-    args = parser.parse_args()
-
-    retAppName = args.appName
-    retCommand = args.command
-    retOptions = args.cmdOptions
-
-    # before going further we need to check whether there is a slash at the
-    # end of the value in destinationDir
-    if(args.baseDirectory.endswith('/')):
-        if args.baseDirectory.startswith('~'):
-            retBaseDir = args.baseDirectory.replace("~", expanduser("~"))
-        elif args.baseDirectory.startswith("$HOME"):
-            retBaseDir = args.baseDirectory.replace("$HOME", expanduser("~"))
+def checkBaseDirectory(baseDirectory):
+    if(baseDirectory.endswith('/')):
+        if baseDirectory.startswith('~'):
+            retBaseDir = baseDirectory.replace("~", expanduser("~"))
+        elif baseDirectory.startswith("$HOME"):
+            retBaseDir = baseDirectory.replace("$HOME", expanduser("~"))
         else:
-            retBaseDir = args.baseDirectory
+            retBaseDir = baseDirectory
     else:
-        tmpBaseDir = args.baseDirectory + '/'
+        tmpBaseDir = baseDirectory + '/'
         if tmpBaseDir.startswith('~'):
             retBaseDir = tmpBaseDir.replace("~", expanduser("~"))
         elif tmpBaseDir.startswith("$HOME"):
@@ -635,18 +657,88 @@ def checkArgs():
         print 'Unable to access base directory: ' + \
             retBaseDir
         sys.exit(1)
+
+    return retBaseDir
+
+
+def checkArgs():
+    parser = argparse.ArgumentParser(
+        description='This script provides an administrative interface to a ' +
+        'customers application set that is referred to as appName.  The ' +
+        'administrative functions implement some of the CRUD services ' +
+        '(ie, Create, Update, Delete).')
+    parser.add_argument('-a', '--appName', help='Name of the application ' +
+                        'to manage .',
+                        required=True)
+    parser.add_argument('-d', '--baseDirectory', help='The base directory ' +
+                        'to be used to access the appName. This needs to ' +
+                        'an absolute path unless the first part of the path ' +
+                        'is a tilde or $HOME',
+                        required=False)
+    parser.add_argument('-c', '--command', help='Command to execute' +
+                        'on the appName. Default [join]',
+                        choices=["join",
+                                 "create",
+                                 "update",
+                                 "delete",
+                                 "getUniqueID"],
+                        default='join',
+                        required=False)
+    parser.add_argument('-o', '--cmdOptions', help='Options for the ' +
+                        'command arg',
+                        default='',
+                        required=False)
+    parser.add_argument('-n', '--workspaceName',
+                        help='A unique name that identifies an alternate ' +
+                        'workspace. By default only one base directory is ' +
+                        'created and all applications created are put into ' +
+                        'that directory. By specifying this option an ' +
+                        'alternate base directory can be identified and it ' +
+                        'will be kept separate from any other base  ' +
+                        'directories. One usage is if you have multiple ' +
+                        'clients that you are building apps for then the ' +
+                        'apps can be in separate base directories ' +
+                        '(essentially applications associated by client)' +
+                        'with this option.',
+                        required=False)
+    parser.add_argument('-w', '--workspaceDir',
+                        help='An alternate base directory associated with ' +
+                        'the workspace name.  This option has to be used in ' +
+                        'conjunction with --workspaceName',
+                        required=False)
+    args = parser.parse_args()
+
+    retAppName = args.appName
+    retCommand = args.command
+    retOptions = args.cmdOptions
+
+    if args.baseDirectory and args.workspaceDir:
+        print "ERROR: you have provided two base directories at one time. " + \
+            "This is ambiguous and the script can not proceed."
+        sys.exit(1)
+
+    # before going further we need to check whether there is a slash at the
+    # end of the value in destinationDir
+    if args.baseDirectory:
+        retBaseDir = checkBaseDirectory(args.baseDirectory)
+        retWorkspaceName = ''
+        retWorkspaceDir = ''
+
+    if args.workspaceName and args.workspaceDir:
+        retBaseDir = ''
+        retWorkspaceName = args.workspaceName
+        retWorkspaceDir = checkBaseDirectory(args.workspaceDir)
+
     # if we get here then the
-    return (retAppName, retBaseDir, retCommand, retOptions)
+    return (retAppName, retBaseDir, retWorkspaceName, retWorkspaceDir,
+            retCommand, retOptions)
 
 
 def main(argv):
-    (appName, baseDir, command, options) = checkArgs()
-#    print 'appName is: ' + appName
-#    print 'baseDir is: ' + baseDir
-#    print 'command is: ' + command
-#    print 'options are: ' + options
+    (appName, baseDir, workspaceName, workspaceDir, command, options) = \
+        checkArgs()
 
-    customerApp = ManageAppName(appName, baseDir)
+    customerApp = ManageAppName(appName, baseDir, workspaceName, workspaceDir)
     customerApp.run(command, options)
 
 if __name__ == "__main__":
