@@ -32,7 +32,7 @@ function usage
 {
     echo -e "Usage: stop.sh [--customerAppName appName] [--env theEnv]"
     echo
-    echo -e "--customerAppDir is the name of the application that you want to"
+    echo -e "--customerAppName is the name of the application that you want to"
     echo -e "      run as the default app for the current session. This is "
     echo -e "      optional if you only have one application defined."
     echo -e "--env theEnv is one of local, dev, staging, prod. This is optional"

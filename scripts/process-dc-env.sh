@@ -303,6 +303,6 @@ if [[ ${dcDEFAULT_APP_NAME} == "__DEFAULT__" ]]; then
     echo -e "The dcDEFAULT_APP_NAME environment variable has not been set and has"
     echo -e "not been made available. This should be identified when running"
     echo -e "deployenv.sh by utilizing the option: "
-    echo -e "--customerAppDir customerUtilsDir/appname"
+    echo -e "--customerAppName appname"
     exit 1
 fi

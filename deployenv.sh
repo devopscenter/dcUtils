@@ -3,7 +3,7 @@
 #
 #          FILE: deployenv.sh
 #
-#         USAGE: ./deployenv.sh  --type TYPE --env ENV --customerAppDir CUSTAPPDIR
+#         USAGE: ./deployenv.sh  --type TYPE --env ENV --customerAppName CUSTAPPNAME
 #
 #
 #   DESCRIPTION: Establish the ENV vars for the current deployment.
