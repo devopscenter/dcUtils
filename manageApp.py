@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# flake8: noqa
 import os
 from os.path import expanduser
 import shutil
@@ -28,6 +29,7 @@ class ManageAppName:
     def __init__(self, theAppName, baseDirectory, altName, altDir):
         """ManageAppName constructor"""
         self.appName = theAppName
+        self.dcAppName = ''
         if baseDirectory:
             self.baseDir = baseDirectory
             self.altName = ''
@@ -78,7 +80,7 @@ class ManageAppName:
                 fileHandle.close()
             except IOError:
                 print "NOTE: There is a file that needs to be created: \n" + \
-                    "$HOME/.dcConfig/baseDirectory and could not be written" + \
+                    "$HOME/.dcConfig/baseDirectory and could not be written" +\
                     "\nPlease report this issue to the devops.center admins."
 
         elif os.path.isfile(baseConfigFile) and self.altName:
@@ -234,8 +236,9 @@ class ManageAppName:
     def create(self, optionsMap):
         """creates the directory structure and sets up the appropriate
         templates necessary to run a customers appliction set."""
-        self.createUtilDirectories()
+        self.createBaseDirectories()
         self.createWebDirectories()
+        self.createUtilDirectories()
         self.tmpGetStackDirectory()
         self.createDockerComposeFiles()
         # self.createStackDirectory()
@@ -247,7 +250,7 @@ class ManageAppName:
         # ones. So the .gitignore may need to be down in the appropriate sub
         # directory.
 
-    def createUtilDirectories(self):
+    def createBaseDirectories(self):
         basePath = self.baseDir + self.appName
         try:
             os.makedirs(basePath, 0755)
@@ -257,6 +260,8 @@ class ManageAppName:
                 'path does not already exist: \n' + basePath
             sys.exit(1)
 
+    def createUtilDirectories(self):
+        basePath = self.baseDir + self.appName
         commonDirs = ["local", "dev", "staging", "prod"]
 
         # create the dataload directory...this is a placeholder and can
@@ -325,8 +330,6 @@ class ManageAppName:
         os.chdir(originalDir)
 
     def createWebDirectories(self):
-        # TODO ask them if they need to have  a web directory created
-        # if no then ask them for the path/name of the web repository
         webName = self.appName + "-web"
 
         userResponse = raw_input(
@@ -339,7 +342,7 @@ class ManageAppName:
             "default name: (" + webName + ")\n")
         if userResponse:
             if '/' not in userResponse:
-
+                webName = userResponse
                 # web path to be created
                 baseWeb = self.baseDir + self.appName + "/" + userResponse
                 os.makedirs(baseWeb, 0755)
@@ -370,6 +373,10 @@ class ManageAppName:
             # web path to be created
             baseWeb = self.baseDir + self.appName + "/" + webName
             os.makedirs(baseWeb, 0755)
+
+        # set up the web name as the name for dcAPP that will be used to
+        # write in the personal.env file
+        self.dcAppName = webName
 
         fileToWrite = self.baseDir + self.appName + "/.dcDirMap.cnf"
         try:
@@ -513,7 +520,7 @@ class ManageAppName:
                 "# dcUtils directory\n"
                 "dcUTILS=" + self.baseDir + "dcUtils\n"
                 'dcDATA=${dcHOME}/dataload\n'
-                'dcAPP=${dcHOME}/' + self.appName + "-web\n"
+                'dcAPP=${dcHOME}/' + self.dcAppName + "\n"
                 "\n"
                 "#LOG_NAME=put the name you want to see in papertrail, "
                 "the default is hostname\n"
@@ -611,8 +618,8 @@ class ManageAppName:
             "-utils/environments/.generatedEnvFiles/dcEnv-" + \
             self.appName + "-local"
 
-        # need to change the env file name and path to represent what is created
-        # with this script
+        # need to change the env file name and path to represent what is
+        # created with this script
         for line in fileinput.input(composeFile, inplace=1):
             print line.replace("APP_NAME-ENV", targetEnvFile),
         for line in fileinput.input(composeFile, inplace=1):
@@ -791,6 +798,7 @@ def main(argv):
 
     customerApp = ManageAppName(appName, baseDir, workspaceName, workspaceDir)
     customerApp.run(command, options)
+
 
 if __name__ == "__main__":
     main(sys.argv[1:])
