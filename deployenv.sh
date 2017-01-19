@@ -217,10 +217,17 @@ if [[ $TYPE = "instance" ]]; then
     fi
 
     # put the /etc/environment in the current env for this session...normally would have to log out and log in to get it.
-    for line in $( cat /etc/environment ) ; do export $line ; done
+    set -x
+    for line in $( cat /etc/environment )
+    do 
+        if [[ $line != *"#"* ]]; then
+            export $line
+        fi
+    done
 
     echo "ENV vars for '${ENV}' added to /etc/environment and /etc/default/supervisor"
     echo $(env)
+    set +x
 
 
 #-------------------------------------------------------------------------------
