@@ -216,7 +216,11 @@ if [[ $TYPE = "instance" ]]; then
         sed -e 's/^/export /' ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/personal.env | sudo tee -a /etc/default/supervisor
     fi
 
+    # put the /etc/environment in the current env for this session...normally would have to log out and log in to get it.
+    for line in $( cat /etc/environment ) ; do export $line ; done
+
     echo "ENV vars for '${ENV}' added to /etc/environment and /etc/default/supervisor"
+    echo $(env)
 
 
 #-------------------------------------------------------------------------------
