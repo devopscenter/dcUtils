@@ -26,10 +26,11 @@ __status__ = "Development"
 
 class ManageAppName:
 
-    def __init__(self, theAppName, baseDirectory, altName, altDir):
+    def __init__(self, theAppName, baseDirectory, altName, altDir, repoURL):
         """ManageAppName constructor"""
         self.appName = theAppName
         self.dcAppName = ''
+        self.repoURL = repoURL
         if baseDirectory:
             self.baseDir = baseDirectory
             self.altName = ''
@@ -142,7 +143,7 @@ class ManageAppName:
 #                print "[{}] =>{}<=".format(item, optionsMap[item])
 
         if command == "join":
-            self.joinExistingDevelopment(optionsMap)
+            self.joinExistingDevelopment()
         elif command == "create":
             self.create(optionsMap)
         elif command == "update":
@@ -167,32 +168,10 @@ class ManageAppName:
 
         return retMap
 
-    def joinExistingDevelopment(self, optionsMap):
+    def joinExistingDevelopment(self):
         """This expects that the user is new and is joining development of an
         already exsiting repository.  So, this pulls down that existing repo
         with the given appName and puts it in the given baseDirectory"""
-
-        # in order to get the files we need to know where the appName
-        # repository is.  It had to be put in an owner directory, so that
-        # has to be passed on the command line in the -o argument and would
-        # be of the format owner=something
-        if not len(optionsMap.keys()):
-            print "In order to join an existing development effort, you" + \
-                " will need to provide the option \n" + \
-                "  -o 'owner=repositoryBaseName'" + \
-                " \nThis is required in order to do a git clone" + \
-                " of the appName repository. "
-            sys.exit(1)
-        if len(optionsMap.keys()) and "owner" not in optionsMap:
-            print "The owner=repositoryBaseName was not given in the -o" + \
-                " argument. This is required in order to do a git clone" + \
-                " of the appName repository. "
-            sys.exit(1)
-
-        gitRepo = "github.com"
-        if len(optionsMap.keys()) and "gitRepo" in optionsMap:
-            gitRepo = optionsMap["gitRepo"]
-        print "Going to use the git repo: {}\n".format(gitRepo)
 
         # create the base Directory
         self.createUtilDirectories()
@@ -202,35 +181,14 @@ class ManageAppName:
 
         webName = self.appName + "-web"
 
-        userResponse = raw_input(
-            "\n\nEnter the name of the web repository that has been set up\n"
-            "and it will be cloned from github. Or press return to accept\n"
-            "the default name: (" + webName + ")\n")
-        if userResponse:
-            webName = userResponse
-
-        # execute git clone on theAppName and put it in the baseDirectory
-        cmdToRunSSH = "git clone git@" + gitRepo + ":" + \
-            optionsMap["owner"] + "/" + webName + ".git"
-        cmdToRunHTTPS = "git clone https://" + gitRepo + "/" + \
-            optionsMap["owner"] + "/" + webName + ".git"
-
-        cmdToRun = cmdToRunHTTPS
-        if "transferType" in optionsMap:
-            if optionsMap["transferType"].lower() == "ssh":
-                cmdToRun = cmdToRunSSH
-            elif optionsMap["transferType"].lower() != "https":
-                print "ERROR transferType not one of ssh or https, not " + \
-                    "able to clone the repository\n"
-                sys.exit(1)
-
-        # print "[{}] =>{}<=".format(os.getcwd(), cmdToRun)
+        cmdToRun = "git clone " + self.repoURL
 
         try:
             subprocess.check_call(cmdToRun, shell=True)
         except subprocess.CalledProcessError:
             print "There was an issue with cloning the application you " + \
-                "specified.  Check that you specified\nthe correct owner " + \
+                "specified: " + self.repoURL + \
+                "\nCheck that you specified\nthe correct owner " + \
                 "and respository name."
 
     def create(self, optionsMap):
@@ -742,6 +700,10 @@ def checkArgs():
                                  "getUniqueID"],
                         default='join',
                         required=False)
+    parser.add_argument('-u', '--repoURL', help='The full repo URL' +
+                        'to use for the join command',
+                        default='',
+                        required=False)
     parser.add_argument('-o', '--cmdOptions', help='Options for the ' +
                         'command arg',
                         default='',
@@ -769,6 +731,7 @@ def checkArgs():
     retAppName = args.appName
     retCommand = args.command
     retOptions = args.cmdOptions
+    retRepoURL = args.repoURL
 
     if args.baseDirectory and args.workspaceDir:
         print "ERROR: you have provided two base directories at one time. " + \
@@ -789,14 +752,15 @@ def checkArgs():
 
     # if we get here then the
     return (retAppName, retBaseDir, retWorkspaceName, retWorkspaceDir,
-            retCommand, retOptions)
+            retCommand, retRepoURL,retOptions)
 
 
 def main(argv):
-    (appName, baseDir, workspaceName, workspaceDir, command, options) = \
-        checkArgs()
+    (appName, baseDir, workspaceName, workspaceDir, command, repoURL,
+        options) = checkArgs()
 
-    customerApp = ManageAppName(appName, baseDir, workspaceName, workspaceDir)
+    customerApp = ManageAppName(appName, baseDir, workspaceName,
+        workspaceDir, repoURL)
     customerApp.run(command, options)
 
 
