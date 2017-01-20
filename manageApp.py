@@ -43,7 +43,7 @@ class ManageAppName:
         # from when determining the environment for a session
         baseConfigDir = expanduser("~") + "/.dcConfig"
         if not os.path.exists(baseConfigDir):
-                os.makedirs(baseConfigDir)
+            os.makedirs(baseConfigDir)
         baseConfigFile = baseConfigDir + "/baseDirectory"
         adjustedBaseDir = self.baseDir[:-1]
 
@@ -226,7 +226,8 @@ class ManageAppName:
         # be a link to somewhere else with more diskspace.  But that is
         # currently up to the user.
         dataLoadDir = basePath + "/dataload"
-        os.makedirs(dataLoadDir, 0755)
+        if not os.path.exists(dataLoadDir):
+            os.makedirs(dataLoadDir, 0755)
 
         # utils path to be created
         baseUtils = self.baseDir + self.appName + "/" + self.appName + \
@@ -235,22 +236,26 @@ class ManageAppName:
         # and then the config directory and all the sub directories
         configDir = baseUtils + "config/"
         for item in commonDirs:
-            os.makedirs(configDir + item, 0755)
+            if not os.path.exists(configDir + item):
+                os.makedirs(configDir + item, 0755)
 
         # and the enviornments directory
         envDir = baseUtils + "environments"
-        os.makedirs(envDir, 0755)
+        if not os.path.exists(envDir):
+            os.makedirs(envDir, 0755)
 
         # and then create the individiual env files in that directory
         self.createEnvFiles(envDir)
 
         # create a directory to hold the generated env files
         generatedEnvDir = envDir + "/.generatedEnvFiles"
-        os.makedirs(generatedEnvDir, 0755)
+        if not os.path.exists(generatedEnvDir):
+            os.makedirs(generatedEnvDir, 0755)
 
         # and then the keys directory and all the sub directories
         keyDir = baseUtils + "keys/"
-        os.makedirs(keyDir, 0755)
+        if not os.path.exists(keyDir):
+            os.makedirs(keyDir, 0755)
 
         fileToWrite = basePath + "/.dcDirMap.cnf"
         try:
@@ -303,7 +308,8 @@ class ManageAppName:
                 webName = userResponse
                 # web path to be created
                 baseWeb = self.baseDir + self.appName + "/" + userResponse
-                os.makedirs(baseWeb, 0755)
+                if not os.path.exists(baseWeb):
+                    os.makedirs(baseWeb, 0755)
             else:
                 if '~' in userResponse or '$HOME' in userResponse:
                     userRepo = userResponse.replace("~", expanduser("~"))
@@ -330,7 +336,8 @@ class ManageAppName:
         else:
             # web path to be created
             baseWeb = self.baseDir + self.appName + "/" + webName
-            os.makedirs(baseWeb, 0755)
+                if not os.path.exists(baseWeb):
+                    os.makedirs(baseWeb, 0755)
 
         # set up the web name as the name for dcAPP that will be used to
         # write in the personal.env file
@@ -376,14 +383,17 @@ class ManageAppName:
 
         # stack path to be created
         baseStack = self.baseDir + self.appName + "/" + stackName
-        os.makedirs(baseStack, 0755)
+            if not os.path.exists(baseStack):
+                os.makedirs(baseStack, 0755)
 
         # make the web and worker directories
         for item in ["web", "web-debug", "worker"]:
-            os.makedirs(baseStack + "/" + item, 0755)
+            if not os.path.exists(baseStack + "/" + item):
+                os.makedirs(baseStack + "/" + item, 0755)
 
         # create the  web/wheelhouse directory
-        os.makedirs(baseStack + "/web/wheelhouse", 0755)
+        if not os.path.exists(baseStack + "/web/wheelhouse"):
+            os.makedirs(baseStack + "/web/wheelhouse", 0755)
 
         # and the .gitignore to ignore the wheelhouse directoryo
         gitIgnoreFile = baseStack + "/web/.gitignore"
@@ -516,7 +526,8 @@ class ManageAppName:
                 credentialFileWriteFlag = 'a'
         else:
             # create the directory
-            os.makedirs(awsBaseDir)
+            if not os.path.exists(awsBaseDir):
+                os.makedirs(awsBaseDir)
 
         # now add the necessary entries in config
         awsConfigFile = awsBaseDir + "/config"
@@ -600,7 +611,7 @@ class ManageAppName:
         #   - remove the entry from the .aws config and credentials files
 
     def getUniqueStackID(self):
-            return hex(int(time()*10000000))[9:]
+        return hex(int(time() * 10000000))[9:]
 
     def registerStackID(self, stackName):
         """This will make not of the mapping between appName and stackName"""
@@ -752,7 +763,7 @@ def checkArgs():
 
     # if we get here then the
     return (retAppName, retBaseDir, retWorkspaceName, retWorkspaceDir,
-            retCommand, retRepoURL,retOptions)
+            retCommand, retRepoURL, retOptions)
 
 
 def main(argv):
@@ -760,7 +771,7 @@ def main(argv):
         options) = checkArgs()
 
     customerApp = ManageAppName(appName, baseDir, workspaceName,
-        workspaceDir, repoURL)
+                                workspaceDir, repoURL)
     customerApp.run(command, options)
 
 
