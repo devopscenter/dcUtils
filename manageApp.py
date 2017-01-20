@@ -26,11 +26,13 @@ __status__ = "Development"
 
 class ManageAppName:
 
-    def __init__(self, theAppName, baseDirectory, altName, altDir, repoURL):
+    def __init__(self, theAppName, baseDirectory, altName, altDir, appURL,
+                 utilsURL):
         """ManageAppName constructor"""
         self.appName = theAppName
         self.dcAppName = ''
-        self.repoURL = repoURL
+        self.appURL = appURL
+        self.utilsURL = utilsURL
         if baseDirectory:
             self.baseDir = baseDirectory
             self.altName = ''
@@ -173,21 +175,40 @@ class ManageAppName:
         already exsiting repository.  So, this pulls down that existing repo
         with the given appName and puts it in the given baseDirectory"""
 
-        # create the base Directory
-        self.createUtilDirectories()
+        if (not self.appURL) or (not self.utilsURL):
+            print "ERROR: you must provide both --appURL and --utilsURL to" + \
+                " join and existing application."
+            sys.exit(1)
+
+        # create the dataload directory...this is a placeholder and can
+        # be a link to somewhere else with more diskspace.  But that is
+        # currently up to the user.
+        basePath = self.baseDir + self.appName
+        dataLoadDir = basePath + "/dataload"
+        if not os.path.exists(dataLoadDir):
+            os.makedirs(dataLoadDir, 0755)
+
 
         # change to the baseDirectory
         os.chdir(self.baseDir + "/" + self.appName)
 
-        webName = self.appName + "-web"
-
-        cmdToRun = "git clone " + self.repoURL
+        cmdToRun = "git clone " + self.appURL
 
         try:
             subprocess.check_call(cmdToRun, shell=True)
         except subprocess.CalledProcessError:
             print "There was an issue with cloning the application you " + \
-                "specified: " + self.repoURL + \
+                "specified: " + self.appURL + \
+                "\nCheck that you specified\nthe correct owner " + \
+                "and respository name."
+
+        cmdToRun = "git clone " + self.utilsURL
+
+        try:
+            subprocess.check_call(cmdToRun, shell=True)
+        except subprocess.CalledProcessError:
+            print "There was an issue with cloning the application you " + \
+                "specified: " + self.utilsURL + \
                 "\nCheck that you specified\nthe correct owner " + \
                 "and respository name."
 
@@ -336,8 +357,8 @@ class ManageAppName:
         else:
             # web path to be created
             baseWeb = self.baseDir + self.appName + "/" + webName
-                if not os.path.exists(baseWeb):
-                    os.makedirs(baseWeb, 0755)
+            if not os.path.exists(baseWeb):
+                os.makedirs(baseWeb, 0755)
 
         # set up the web name as the name for dcAPP that will be used to
         # write in the personal.env file
@@ -383,8 +404,8 @@ class ManageAppName:
 
         # stack path to be created
         baseStack = self.baseDir + self.appName + "/" + stackName
-            if not os.path.exists(baseStack):
-                os.makedirs(baseStack, 0755)
+        if not os.path.exists(baseStack):
+            os.makedirs(baseStack, 0755)
 
         # make the web and worker directories
         for item in ["web", "web-debug", "worker"]:
@@ -711,8 +732,12 @@ def checkArgs():
                                  "getUniqueID"],
                         default='join',
                         required=False)
-    parser.add_argument('-u', '--repoURL', help='The full repo URL' +
-                        'to use for the join command',
+    parser.add_argument('-p', '--appURL', help='The customer application ' +
+                        'repo URL to use for the join command',
+                        default='',
+                        required=False)
+    parser.add_argument('-u', '--utilsURL', help='The customer utils ' +
+                        'repo URL to use for the join command',
                         default='',
                         required=False)
     parser.add_argument('-o', '--cmdOptions', help='Options for the ' +
@@ -742,7 +767,8 @@ def checkArgs():
     retAppName = args.appName
     retCommand = args.command
     retOptions = args.cmdOptions
-    retRepoURL = args.repoURL
+    retAppURL = args.appURL
+    retUtilsURL = args.utilsURL
 
     if args.baseDirectory and args.workspaceDir:
         print "ERROR: you have provided two base directories at one time. " + \
@@ -763,15 +789,15 @@ def checkArgs():
 
     # if we get here then the
     return (retAppName, retBaseDir, retWorkspaceName, retWorkspaceDir,
-            retCommand, retRepoURL, retOptions)
+            retCommand, retAppURL, retUtilsURL, retOptions)
 
 
 def main(argv):
-    (appName, baseDir, workspaceName, workspaceDir, command, repoURL,
-        options) = checkArgs()
+    (appName, baseDir, workspaceName, workspaceDir, command, appURL,
+        utilsURL, options) = checkArgs()
 
     customerApp = ManageAppName(appName, baseDir, workspaceName,
-                                workspaceDir, repoURL)
+                                workspaceDir, appURL, utilsURL)
     customerApp.run(command, options)
 
 
