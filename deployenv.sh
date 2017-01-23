@@ -138,12 +138,12 @@ done
 
 # for the local environment do some setup of the local enviornment variables
 # these aren't needed when the call this script inside an instance as the paths
-# are more hardcoded. 
+# are more hardcoded.
 # This is because that environment is completely auto generated
 if [[ $TYPE != "instance" ]]; then
     #-------------------------------------------------------------------------------
     # First we need to get the base location of the customers files.  This was created
-    # when the manageApp.py was run as one of the arguments is the directory and it 
+    # when the manageApp.py was run as one of the arguments is the directory and it
     # should be an absolute path
     #-------------------------------------------------------------------------------
     if [[ -f ~/.devops.center/config ]]; then
@@ -176,7 +176,7 @@ fi
 if [[ $TYPE = "instance" ]]; then
 
     # TODO look into the destination files below and see what would need to be done about
-    # duplicate key/value pairs.  See if this would benefit from the same kind of 
+    # duplicate key/value pairs.  See if this would benefit from the same kind of
     # processing that the docker (ie, the else of the TYPE if check) section has.
 
 
