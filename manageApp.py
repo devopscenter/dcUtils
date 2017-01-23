@@ -188,14 +188,34 @@ class ManageAppName:
         if not os.path.exists(dataLoadDir):
             os.makedirs(dataLoadDir, 0755)
 
-
         # change to the baseDirectory
         os.chdir(self.baseDir + "/" + self.appName)
 
         cmdToRun = "git clone " + self.appURL
 
+        appOutput = ''
         try:
-            subprocess.check_call(cmdToRun, shell=True)
+            appOutput = subprocess.check_output(cmdToRun,
+                stderr=subprocess.STDOUT,shell=True)
+
+            # get the newly created directory and put it in the
+            # CUSTOMER_APP_UTILS in the dcDirMap.cnf
+            if "Cloning" in appOutput:
+                self.appDirName = re.search("(?<=')[^']+(?=')",
+                    appOutput).group(0)
+
+                fileToWrite = basePath + "/.dcDirMap.cnf"
+                try:
+                    fileHandle = open(fileToWrite, 'a')
+                    strToWrite = "CUSTOMER_APP_WEB=" + self.appDirName + "\n"
+                    fileHandle.write(strToWrite)
+                    fileHandle.close()
+                except IOError:
+                    print ("NOTE: There is a file that needs to be created: \n"
+                        + self.basedir + self.appName + "/.dcDirMap.cnf and "
+                        "could not be written. \n"
+                        "Please report this issue to the devops.center admins.")
+
         except subprocess.CalledProcessError:
             print "There was an issue with cloning the application you " + \
                 "specified: " + self.appURL + \
@@ -204,13 +224,48 @@ class ManageAppName:
 
         cmdToRun = "git clone " + self.utilsURL
 
+        utilsOutput = ''
         try:
-            subprocess.check_call(cmdToRun, shell=True)
+            utilsOutput = subprocess.check_output(cmdToRun,
+                stderr=subprocess.STDOUT,shell=True)
+
+            # get the newly created directory and put it in the
+            # CUSTOMER_APP_WEB in the dcDirMap.cnf
+            if "Cloning" in utilsOutput:
+                self.utilsDirName = re.search("(?<=')[^']+(?=')",
+                    utilsOutput).group(0)
+
+                fileToWrite = basePath + "/.dcDirMap.cnf"
+                try:
+                    fileHandle = open(fileToWrite, 'a')
+                    strToWrite = "CUSTOMER_APP_UTILS=" + self.utilsDirName + "\n"
+                    fileHandle.write(strToWrite)
+                    fileHandle.close()
+                except IOError:
+                    print ("NOTE: There is a file that needs to be created: \n"
+                        + self.basedir + self.appName + "/.dcDirMap.cnf and "
+                        "could not be written. \n"
+                        "Please report this issue to the devops.center admins.")
+
         except subprocess.CalledProcessError:
             print "There was an issue with cloning the application you " + \
                 "specified: " + self.utilsURL + \
                 "\nCheck that you specified\nthe correct owner " + \
                 "and respository name."
+
+        # and the enviornments directory
+        envDir = basePath + "/" + self.utilsDirName + "/environments"
+        if not os.path.exists(envDir):
+            os.makedirs(envDir, 0755)
+
+            # and then create the individiual env files in that directory
+            self.createEnvFiles(envDir)
+
+        # create a directory to hold the generated env files
+        generatedEnvDir = envDir + "/.generatedEnvFiles"
+        if not os.path.exists(generatedEnvDir):
+            os.makedirs(generatedEnvDir, 0755)
+
 
     def create(self, optionsMap):
         """creates the directory structure and sets up the appropriate
