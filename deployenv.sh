@@ -3,7 +3,7 @@
 #
 #          FILE: deployenv.sh
 #
-#         USAGE: ./deployenv.sh  --type TYPE --env ENV --customerAppDir CUSTAPPDIR
+#         USAGE: ./deployenv.sh  --type TYPE --env ENV --customerAppName CUSTAPPNAME
 #
 #
 #   DESCRIPTION: Establish the ENV vars for the current deployment.
@@ -146,10 +146,10 @@ if [[ $TYPE != "instance" ]]; then
     # when the manageApp.py was run as one of the arguments is the directory and it
     # should be an absolute path
     #-------------------------------------------------------------------------------
-    if [[ -f ~/.devops.center/config ]]; then
-        source ~/.devops.center/config
+    if [[ -f ~/.dcConfig/baseDirectory ]]; then
+        source ~/.dcConfig/baseDirectory
     else
-        echo -e "Can not read the config file in ~/.devops.center, have you run manageApp.py"
+        echo -e "Can not read the config file in ~/.dcConfig, have you run manageApp.py"
         echo -e "yet? "
         exit 1
     fi
@@ -215,6 +215,14 @@ if [[ $TYPE = "instance" ]]; then
     if [[ -e ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/personal.env ]]; then
         sed -e 's/^/export /' ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/personal.env | sudo tee -a /etc/default/supervisor
     fi
+
+    # put the /etc/environment in the current env for this session...normally would have to log out and log in to get it.
+    while IFS='' read -r line || [[ -n "${line}" ]] 
+    do 
+        if [[ "${line}" && "${line}" != "#"* ]]; then
+            export "${line}"
+        fi
+    done < /etc/environment
 
     echo "ENV vars for '${ENV}' added to /etc/environment and /etc/default/supervisor"
 

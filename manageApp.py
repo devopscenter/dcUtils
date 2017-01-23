@@ -26,29 +26,116 @@ __status__ = "Development"
 
 class ManageAppName:
 
-    def __init__(self, theAppName, baseDirectory):
+    def __init__(self, theAppName, baseDirectory, altName, altDir, appURL,
+                 utilsURL):
         """ManageAppName constructor"""
         self.appName = theAppName
-        self.baseDir = baseDirectory
+        self.dcAppName = ''
+        self.appURL = appURL
+        self.utilsURL = utilsURL
+        if baseDirectory:
+            self.baseDir = baseDirectory
+            self.altName = ''
+        else:
+            self.baseDir = altDir
+            self.altName = altName
 
-        # put the baseDirectory path in the users $HOME/.devops.center
-        # directory so that subsequent scripts can use it as a base to work
+        # put the baseDirectory path in the users $HOME/.dcConfig/baseDirectory
+        # file so that subsequent scripts can use it as a base to work
         # from when determining the environment for a session
-        baseConfigDir = expanduser("~") + "/.devops.center"
+        baseConfigDir = expanduser("~") + "/.dcConfig"
         if not os.path.exists(baseConfigDir):
-                os.makedirs(baseConfigDir)
-        baseConfigFile = baseConfigDir + "/config"
+            os.makedirs(baseConfigDir)
+        baseConfigFile = baseConfigDir + "/baseDirectory"
+        adjustedBaseDir = self.baseDir[:-1]
 
+        if not os.path.isfile(baseConfigFile):
+            try:
+                fileHandle = open(baseConfigFile, 'w')
+
+                if self.altName:
+                    strToWrite = "CURRENT_WORKSPACE=" + self.altName + "\n"
+                else:
+                    strToWrite = "CURRENT_WORKSPACE=DEFAULT\n"
+                fileHandle.write(strToWrite)
+
+                strToWrite = "##### WORKSPACES ######\n"
+                fileHandle.write(strToWrite)
+
+                if self.altName:
+                    strToWrite = "_" + self.altName.upper() + \
+                        "_BASE_CUSTOMER_DIR=" + adjustedBaseDir + "\n"
+                else:
+                    strToWrite = "_DEFAULT_BASE_CUSTOMER_DIR=" + \
+                        adjustedBaseDir + "\n"
+                fileHandle.write(strToWrite)
+
+                strToWrite = "##### BASE DIR CONSTRUCTION NO TOUCH ######\n"
+                fileHandle.write(strToWrite)
+
+                strToWrite = "CONSTRUCTED_BASE_DIR=_${CURRENT_WORKSPACE}" + \
+                    "_BASE_CUSTOMER_DIR\n"
+                fileHandle.write(strToWrite)
+
+                strToWrite = "BASE_CUSTOMER_DIR=${!CONSTRUCTED_BASE_DIR}\n"
+                fileHandle.write(strToWrite)
+
+                fileHandle.close()
+            except IOError:
+                print "NOTE: There is a file that needs to be created: \n" + \
+                    "$HOME/.dcConfig/baseDirectory and could not be written" +\
+                    "\nPlease report this issue to the devops.center admins."
+
+        elif os.path.isfile(baseConfigFile) and self.altName:
+            # the file exists and they are adding a new base directory
+            self.insertIntoBaseDirectoryFile(baseConfigFile, adjustedBaseDir)
+
+    def insertIntoBaseDirectoryFile(self, baseConfigFile, adjustedBaseDir):
+        # so we need to read in the file into an array
+        with open(baseConfigFile) as f:
+            lines = [line.rstrip('\n') for line in f]
+
+        # first go through and check to see if we already have an alternate
+        # base directory by this name and if so, set a flag so we dont add
+        # again
+        flagToAdd = 1
+        strToSearch = "_" + self.altName.upper() + "_BASE_CUSTOMER_DIR"
+        for aLine in lines:
+            if strToSearch in aLine:
+                flagToAdd = 0
+                break
+
+        # then open the same file for writting
         try:
             fileHandle = open(baseConfigFile, 'w')
-            adjustedBaseDir = self.baseDir[:-1]
-            strToWrite = "BASE_CUSTOMER_DIR=" + adjustedBaseDir + "\n"
-            fileHandle.write(strToWrite)
+
+            # then loop through the  array
+            for aLine in lines:
+                # look for the CURRENT_WORKSPACE and set it to the new name
+                if "CURRENT_WORKSPACE=" in aLine:
+                    strToWrite = "CURRENT_WORKSPACE=" + self.altName + "\n"
+                    fileHandle.write(strToWrite)
+                    continue
+
+                # then look for the line that has  WORKSPACES in it
+                if "WORKSPACES" in aLine:
+                    fileHandle.write(aLine + "\n")
+                    if flagToAdd:
+                        strToWrite = "_" + self.altName.upper() + \
+                            "_BASE_CUSTOMER_DIR=" + adjustedBaseDir + "\n"
+                        fileHandle.write(strToWrite)
+                    continue
+
+                # other wise write the line as it came from the file
+                fileHandle.write(aLine + "\n")
+
             fileHandle.close()
         except IOError:
             print "NOTE: There is a file that needs to be created: \n" + \
-                "$HOME/.devops.center/config and could not be written. \n" + \
-                "Please report this issue to the devops.center admins."
+                "$HOME/.dcConfig/baseDirectory and could not be written" + \
+                "\nPlease report this issue to the devops.center admins."
+        # and add a new line with the new altName and the adjustBasedir
+        # then write out the rest of the file
 
     def run(self, command, options):
         optionsMap = self.parseOptions(options)
@@ -58,7 +145,7 @@ class ManageAppName:
 #                print "[{}] =>{}<=".format(item, optionsMap[item])
 
         if command == "join":
-            self.joinExistingDevelopment(optionsMap)
+            self.joinExistingDevelopment()
         elif command == "create":
             self.create(optionsMap)
         elif command == "update":
@@ -83,77 +170,55 @@ class ManageAppName:
 
         return retMap
 
-    def joinExistingDevelopment(self, optionsMap):
+    def joinExistingDevelopment(self):
         """This expects that the user is new and is joining development of an
         already exsiting repository.  So, this pulls down that existing repo
         with the given appName and puts it in the given baseDirectory"""
 
-        # in order to get the files we need to know where the appName
-        # repository is.  It had to be put in an owner directory, so that
-        # has to be passed on the command line in the -o argument and would
-        # be of the format owner=something
-        if not len(optionsMap.keys()):
-            print "In order to join an existing development effort, you" + \
-                " will need to provide the option \n" + \
-                "  -o 'owner=repositoryBaseName'" + \
-                " \nThis is required in order to do a git clone" + \
-                " of the appName repository. "
-            sys.exit(1)
-        if len(optionsMap.keys()) and "owner" not in optionsMap:
-            print "The owner=repositoryBaseName was not given in the -o" + \
-                " argument. This is required in order to do a git clone" + \
-                " of the appName repository. "
+        if (not self.appURL) or (not self.utilsURL):
+            print "ERROR: you must provide both --appURL and --utilsURL to" + \
+                " join and existing application."
             sys.exit(1)
 
-        gitRepo = "github.com"
-        if len(optionsMap.keys()) and "gitRepo" in optionsMap:
-            gitRepo = optionsMap["gitRepo"]
-        print "Going to use the git repo: {}\n".format(gitRepo)
+        # create the dataload directory...this is a placeholder and can
+        # be a link to somewhere else with more diskspace.  But that is
+        # currently up to the user.
+        basePath = self.baseDir + self.appName
+        dataLoadDir = basePath + "/dataload"
+        if not os.path.exists(dataLoadDir):
+            os.makedirs(dataLoadDir, 0755)
 
-        # create the base Directory
-        self.createUtilDirectories()
 
         # change to the baseDirectory
         os.chdir(self.baseDir + "/" + self.appName)
 
-        webName = self.appName + "-web"
-
-        userResponse = raw_input(
-            "\n\nEnter the name of the web repository that has been set up\n"
-            "and it will be cloned from github. Or press return to accept\n"
-            "the default name: (" + webName + ")\n")
-        if userResponse:
-            webName = userResponse
-
-        # execute git clone on theAppName and put it in the baseDirectory
-        cmdToRunSSH = "git clone git@" + gitRepo + ":" + \
-            optionsMap["owner"] + "/" + webName + ".git"
-        cmdToRunHTTPS = "git clone https://" + gitRepo + "/" + \
-            optionsMap["owner"] + "/" + webName + ".git"
-
-        cmdToRun = cmdToRunHTTPS
-        if "transferType" in optionsMap:
-            if optionsMap["transferType"].lower() == "ssh":
-                cmdToRun = cmdToRunSSH
-            elif optionsMap["transferType"].lower() != "https":
-                print "ERROR transferType not one of ssh or https, not " + \
-                    "able to clone the repository\n"
-                sys.exit(1)
-
-        # print "[{}] =>{}<=".format(os.getcwd(), cmdToRun)
+        cmdToRun = "git clone " + self.appURL
 
         try:
             subprocess.check_call(cmdToRun, shell=True)
         except subprocess.CalledProcessError:
             print "There was an issue with cloning the application you " + \
-                "specified.  Check that you specified\nthe correct owner " + \
+                "specified: " + self.appURL + \
+                "\nCheck that you specified\nthe correct owner " + \
+                "and respository name."
+
+        cmdToRun = "git clone " + self.utilsURL
+
+        try:
+            subprocess.check_call(cmdToRun, shell=True)
+        except subprocess.CalledProcessError:
+            print "There was an issue with cloning the application you " + \
+                "specified: " + self.utilsURL + \
+                "\nCheck that you specified\nthe correct owner " + \
                 "and respository name."
 
     def create(self, optionsMap):
         """creates the directory structure and sets up the appropriate
         templates necessary to run a customers appliction set."""
-        self.createUtilDirectories()
+        self.createBaseDirectories()
         self.createWebDirectories()
+        self.createUtilDirectories()
+        self.tmpGetStackDirectory()
         self.createDockerComposeFiles()
         # self.createStackDirectory()
         # self.createAWSProfile()
@@ -164,7 +229,7 @@ class ManageAppName:
         # ones. So the .gitignore may need to be down in the appropriate sub
         # directory.
 
-    def createUtilDirectories(self):
+    def createBaseDirectories(self):
         basePath = self.baseDir + self.appName
         try:
             os.makedirs(basePath, 0755)
@@ -174,13 +239,16 @@ class ManageAppName:
                 'path does not already exist: \n' + basePath
             sys.exit(1)
 
+    def createUtilDirectories(self):
+        basePath = self.baseDir + self.appName
         commonDirs = ["local", "dev", "staging", "prod"]
 
         # create the dataload directory...this is a placeholder and can
         # be a link to somewhere else with more diskspace.  But that is
         # currently up to the user.
         dataLoadDir = basePath + "/dataload"
-        os.makedirs(dataLoadDir, 0755)
+        if not os.path.exists(dataLoadDir):
+            os.makedirs(dataLoadDir, 0755)
 
         # utils path to be created
         baseUtils = self.baseDir + self.appName + "/" + self.appName + \
@@ -189,22 +257,26 @@ class ManageAppName:
         # and then the config directory and all the sub directories
         configDir = baseUtils + "config/"
         for item in commonDirs:
-            os.makedirs(configDir + item, 0755)
+            if not os.path.exists(configDir + item):
+                os.makedirs(configDir + item, 0755)
 
         # and the enviornments directory
         envDir = baseUtils + "environments"
-        os.makedirs(envDir, 0755)
+        if not os.path.exists(envDir):
+            os.makedirs(envDir, 0755)
 
         # and then create the individiual env files in that directory
         self.createEnvFiles(envDir)
 
         # create a directory to hold the generated env files
         generatedEnvDir = envDir + "/.generatedEnvFiles"
-        os.makedirs(generatedEnvDir, 0755)
+        if not os.path.exists(generatedEnvDir):
+            os.makedirs(generatedEnvDir, 0755)
 
         # and then the keys directory and all the sub directories
         keyDir = baseUtils + "keys/"
-        os.makedirs(keyDir, 0755)
+        if not os.path.exists(keyDir):
+            os.makedirs(keyDir, 0755)
 
         fileToWrite = basePath + "/.dcDirMap.cnf"
         try:
@@ -242,8 +314,6 @@ class ManageAppName:
         os.chdir(originalDir)
 
     def createWebDirectories(self):
-        # TODO ask them if they need to have  a web directory created
-        # if no then ask them for the path/name of the web repository
         webName = self.appName + "-web"
 
         userResponse = raw_input(
@@ -256,10 +326,11 @@ class ManageAppName:
             "default name: (" + webName + ")\n")
         if userResponse:
             if '/' not in userResponse:
-
+                webName = userResponse
                 # web path to be created
                 baseWeb = self.baseDir + self.appName + "/" + userResponse
-                os.makedirs(baseWeb, 0755)
+                if not os.path.exists(baseWeb):
+                    os.makedirs(baseWeb, 0755)
             else:
                 if '~' in userResponse or '$HOME' in userResponse:
                     userRepo = userResponse.replace("~", expanduser("~"))
@@ -286,7 +357,12 @@ class ManageAppName:
         else:
             # web path to be created
             baseWeb = self.baseDir + self.appName + "/" + webName
-            os.makedirs(baseWeb, 0755)
+            if not os.path.exists(baseWeb):
+                os.makedirs(baseWeb, 0755)
+
+        # set up the web name as the name for dcAPP that will be used to
+        # write in the personal.env file
+        self.dcAppName = webName
 
         fileToWrite = self.baseDir + self.appName + "/.dcDirMap.cnf"
         try:
@@ -300,6 +376,24 @@ class ManageAppName:
                 "could not be written. \n" + \
                 "Please report this issue to the devops.center admins."
 
+    def tmpGetStackDirectory(self):
+        """This method is put in place to be called instead of the
+        createStackDirectory method.  This will just ask for the unique stack
+        name that you want to use for this appliacation"""
+        userResponse = raw_input(
+            "\n\nEnter the name of the unique stack repository that has been "
+            "set up for this app\nand it will be used in the "
+            "docker-compoase.yml files\n"
+            "for the web and worker images:\n")
+        if userResponse:
+            # take the userResponse and use it to edit the docker-compose.yml
+            self.uniqueStackName = userResponse
+        else:
+            print "You will need to have a stack name that corresponds " + \
+                "with the name of a repository that has the web " + \
+                "(and worker) that is with dcStack"
+            sys.exit(1)
+
     def createStackDirectory(self):
         """create the dcStack directory that will contain the necessary files
         to create the web and worker containers"""
@@ -310,14 +404,17 @@ class ManageAppName:
 
         # stack path to be created
         baseStack = self.baseDir + self.appName + "/" + stackName
-        os.makedirs(baseStack, 0755)
+        if not os.path.exists(baseStack):
+            os.makedirs(baseStack, 0755)
 
         # make the web and worker directories
         for item in ["web", "web-debug", "worker"]:
-            os.makedirs(baseStack + "/" + item, 0755)
+            if not os.path.exists(baseStack + "/" + item):
+                os.makedirs(baseStack + "/" + item, 0755)
 
         # create the  web/wheelhouse directory
-        os.makedirs(baseStack + "/web/wheelhouse", 0755)
+        if not os.path.exists(baseStack + "/web/wheelhouse"):
+            os.makedirs(baseStack + "/web/wheelhouse", 0755)
 
         # and the .gitignore to ignore the wheelhouse directoryo
         gitIgnoreFile = baseStack + "/web/.gitignore"
@@ -412,9 +509,10 @@ class ManageAppName:
                 "# dcUtils directory\n"
                 "dcUTILS=" + self.baseDir + "dcUtils\n"
                 'dcDATA=${dcHOME}/dataload\n'
-                'dcAPP=${dcHOME}/' + self.appName + "-web\n"
+                'dcAPP=${dcHOME}/' + self.dcAppName + "\n"
                 "\n"
-                "LOG_NAME=" + self.appName + "\n"
+                "#LOG_NAME=put the name you want to see in papertrail, "
+                "the default is hostname\n"
                 '#AWS_ACCESS_KEY_ID="put aws access key here"\n'
                 "#AWS_SECRET_ACCESS_KEY='put secret access key here'\n"
             )
@@ -449,7 +547,8 @@ class ManageAppName:
                 credentialFileWriteFlag = 'a'
         else:
             # create the directory
-            os.makedirs(awsBaseDir)
+            if not os.path.exists(awsBaseDir):
+                os.makedirs(awsBaseDir)
 
         # now add the necessary entries in config
         awsConfigFile = awsBaseDir + "/config"
@@ -509,12 +608,16 @@ class ManageAppName:
             "-utils/environments/.generatedEnvFiles/dcEnv-" + \
             self.appName + "-local"
 
-        # need to change the env file name and path to represent what is created
-        # with this script
+        # need to change the env file name and path to represent what is
+        # created with this script
         for line in fileinput.input(composeFile, inplace=1):
             print line.replace("APP_NAME-ENV", targetEnvFile),
+        for line in fileinput.input(composeFile, inplace=1):
+            print line.replace("DC_UNIQUE_ID", self.uniqueStackName),
         for line in fileinput.input(composeDebugFile, inplace=1):
             print line.replace("APP_NAME-ENV", targetEnvFile),
+        for line in fileinput.input(composeDebugFile, inplace=1):
+            print line.replace("DC_UNIQUE_ID", self.uniqueStackName),
 
     def update(self, optionsMap):
         """takes an argument that dictates what needs to be updated and then
@@ -529,7 +632,7 @@ class ManageAppName:
         #   - remove the entry from the .aws config and credentials files
 
     def getUniqueStackID(self):
-            return hex(int(time()*10000000))[9:]
+        return hex(int(time() * 10000000))[9:]
 
     def registerStackID(self, stackName):
         """This will make not of the mapping between appName and stackName"""
@@ -574,50 +677,16 @@ class ManageAppName:
                     "Please report this issue to the devops.center admins."
 
 
-def checkArgs():
-    parser = argparse.ArgumentParser(
-        description='This script provides an administrative interface to a ' +
-        'customers application set that is referred to as appName.  The ' +
-        'administrative functions implement some of the CRUD services ' +
-        '(ie, Create, Update, Delete).')
-    parser.add_argument('-a', '--appName', help='Name of the application ' +
-                        'to manage .',
-                        required=True)
-    parser.add_argument('-d', '--baseDirectory', help='The base directory ' +
-                        'to be used to access the appName. This needs to ' +
-                        'an absolute path unless the first part of the path ' +
-                        'is a tilde or $HOME',
-                        required=True)
-    parser.add_argument('-c', '--command', help='Command to execute' +
-                        'on the appName. Default [join]',
-                        choices=["join",
-                                 "create",
-                                 "update",
-                                 "delete",
-                                 "getUniqueID"],
-                        default='join',
-                        required=False)
-    parser.add_argument('-o', '--cmdOptions', help='Options for the ' +
-                        'command arg',
-                        default='',
-                        required=False)
-    args = parser.parse_args()
-
-    retAppName = args.appName
-    retCommand = args.command
-    retOptions = args.cmdOptions
-
-    # before going further we need to check whether there is a slash at the
-    # end of the value in destinationDir
-    if(args.baseDirectory.endswith('/')):
-        if args.baseDirectory.startswith('~'):
-            retBaseDir = args.baseDirectory.replace("~", expanduser("~"))
-        elif args.baseDirectory.startswith("$HOME"):
-            retBaseDir = args.baseDirectory.replace("$HOME", expanduser("~"))
+def checkBaseDirectory(baseDirectory):
+    if(baseDirectory.endswith('/')):
+        if baseDirectory.startswith('~'):
+            retBaseDir = baseDirectory.replace("~", expanduser("~"))
+        elif baseDirectory.startswith("$HOME"):
+            retBaseDir = baseDirectory.replace("$HOME", expanduser("~"))
         else:
-            retBaseDir = args.baseDirectory
+            retBaseDir = baseDirectory
     else:
-        tmpBaseDir = args.baseDirectory + '/'
+        tmpBaseDir = baseDirectory + '/'
         if tmpBaseDir.startswith('~'):
             retBaseDir = tmpBaseDir.replace("~", expanduser("~"))
         elif tmpBaseDir.startswith("$HOME"):
@@ -636,19 +705,101 @@ def checkArgs():
         print 'Unable to access base directory: ' + \
             retBaseDir
         sys.exit(1)
+
+    return retBaseDir
+
+
+def checkArgs():
+    parser = argparse.ArgumentParser(
+        description='This script provides an administrative interface to a ' +
+        'customers application set that is referred to as appName.  The ' +
+        'administrative functions implement some of the CRUD services ' +
+        '(ie, Create, Update, Delete).')
+    parser.add_argument('-a', '--appName', help='Name of the application ' +
+                        'to manage .',
+                        required=True)
+    parser.add_argument('-d', '--baseDirectory', help='The base directory ' +
+                        'to be used to access the appName. This needs to ' +
+                        'an absolute path unless the first part of the path ' +
+                        'is a tilde or $HOME',
+                        required=False)
+    parser.add_argument('-c', '--command', help='Command to execute' +
+                        'on the appName. Default [join]',
+                        choices=["join",
+                                 "create",
+                                 "update",
+                                 "delete",
+                                 "getUniqueID"],
+                        default='join',
+                        required=False)
+    parser.add_argument('-p', '--appURL', help='The customer application ' +
+                        'repo URL to use for the join command',
+                        default='',
+                        required=False)
+    parser.add_argument('-u', '--utilsURL', help='The customer utils ' +
+                        'repo URL to use for the join command',
+                        default='',
+                        required=False)
+    parser.add_argument('-o', '--cmdOptions', help='Options for the ' +
+                        'command arg',
+                        default='',
+                        required=False)
+    parser.add_argument('-n', '--workspaceName',
+                        help='A unique name that identifies an alternate ' +
+                        'workspace. By default only one base directory is ' +
+                        'created and all applications created are put into ' +
+                        'that directory. By specifying this option an ' +
+                        'alternate base directory can be identified and it ' +
+                        'will be kept separate from any other base  ' +
+                        'directories. One usage is if you have multiple ' +
+                        'clients that you are building apps for then the ' +
+                        'apps can be in separate base directories ' +
+                        '(essentially applications associated by client)' +
+                        'with this option.',
+                        required=False)
+    parser.add_argument('-w', '--workspaceDir',
+                        help='An alternate base directory associated with ' +
+                        'the workspace name.  This option has to be used in ' +
+                        'conjunction with --workspaceName',
+                        required=False)
+    args = parser.parse_args()
+
+    retAppName = args.appName
+    retCommand = args.command
+    retOptions = args.cmdOptions
+    retAppURL = args.appURL
+    retUtilsURL = args.utilsURL
+
+    if args.baseDirectory and args.workspaceDir:
+        print "ERROR: you have provided two base directories at one time. " + \
+            "This is ambiguous and the script can not proceed."
+        sys.exit(1)
+
+    # before going further we need to check whether there is a slash at the
+    # end of the value in destinationDir
+    if args.baseDirectory:
+        retBaseDir = checkBaseDirectory(args.baseDirectory)
+        retWorkspaceName = ''
+        retWorkspaceDir = ''
+
+    if args.workspaceName and args.workspaceDir:
+        retBaseDir = ''
+        retWorkspaceName = args.workspaceName
+        retWorkspaceDir = checkBaseDirectory(args.workspaceDir)
+
     # if we get here then the
-    return (retAppName, retBaseDir, retCommand, retOptions)
+    return (retAppName, retBaseDir, retWorkspaceName, retWorkspaceDir,
+            retCommand, retAppURL, retUtilsURL, retOptions)
 
 
 def main(argv):
-    (appName, baseDir, command, options) = checkArgs()
-#    print 'appName is: ' + appName
-#    print 'baseDir is: ' + baseDir
-#    print 'command is: ' + command
-#    print 'options are: ' + options
+    (appName, baseDir, workspaceName, workspaceDir, command, appURL,
+        utilsURL, options) = checkArgs()
 
-    customerApp = ManageAppName(appName, baseDir)
+    customerApp = ManageAppName(appName, baseDir, workspaceName,
+                                workspaceDir, appURL, utilsURL)
     customerApp.run(command, options)
+
 
 if __name__ == "__main__":
     main(sys.argv[1:])

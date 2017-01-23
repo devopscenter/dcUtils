@@ -86,11 +86,11 @@ done
 # when the manageApp.py was run as one of the arguments is the directory and it 
 # should be an absolute path
 #-------------------------------------------------------------------------------
-if [[ -f ~/.devops.center/config ]]; then
-    source ~/.devops.center/config
+if [[ -f ~/.dcConfig/baseDirectory ]]; then
+    source ~/.dcConfig/baseDirectory
 else
-    echo -e "Can not read the config file in ~/.devops.center, have you run manageApp.py"
-    echo -e "yet? "
+    echo -e "Can not read the baseDirectory file in ~/.dcConfig.center, have you run"
+    echo -e "manageApp.py yet? "
     exit 1
 fi
 
@@ -115,7 +115,7 @@ done < <(ls ${FILES_TO_FIND} 2>/dev/null)
 
 if [[ ${#appArray[@]} -eq 0 ]]; then
     echo -e "There are no applications defined in the base directory: ${BASE_CUSTOMER_DIR}"
-    echo -e "This would be defined in the ~/devops.center/config file and points to the"
+    echo -e "This would be defined in the ~/.dcConfig/baseDirectory file and points to the"
     echo -e "base directory where the applications to be used with the devops.center"
     echo -e "framework are located.  This is initialized by running manageApp.py."
     echo -e "See the documentation for further initialization instructions."
@@ -303,6 +303,6 @@ if [[ ${dcDEFAULT_APP_NAME} == "__DEFAULT__" ]]; then
     echo -e "The dcDEFAULT_APP_NAME environment variable has not been set and has"
     echo -e "not been made available. This should be identified when running"
     echo -e "deployenv.sh by utilizing the option: "
-    echo -e "--customerAppDir customerUtilsDir/appname"
+    echo -e "--customerAppName appname"
     exit 1
 fi
