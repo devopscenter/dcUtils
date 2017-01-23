@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# flake8: noqa
 import os
 from os.path import expanduser
 import shutil
