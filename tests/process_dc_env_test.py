@@ -17,6 +17,11 @@ script.  Any other arguments passed in are ignored by the process_dc_env script
 and it is expected that the python script would handle the rest of them.  The
 pythonGetEnv will return a enviornment list presented in a dictionary with the
 environment variable set as the key and the value, is, well, the value.
+
+Note that the argparse statement for processing arguments needs to be a bit
+different than what you probably normally use.  We need to ignore some of the
+commands that are processed in the proces_dc_env.py (ie appName, env and
+workspaceName if used).  to do this use parse_known_args instead of parse_args
 """
 __version__ = "0.1"
 
@@ -41,8 +46,10 @@ def checkArgs():
                         'alternate path and use it directly',
                         required=False)
 
+    # old way
     # args = parser.parse_args()
-    # args, unknown = parser.parse_known_args(['--foo', '--bar'])
+
+    # new way and the extra options are in the unknown part
     args, unknown = parser.parse_known_args()
 
     # if we get here then the
