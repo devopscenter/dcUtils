@@ -20,13 +20,17 @@ __status__ = "Development"
 
 
 class Process_dc_Env:
-    def __init__(self, envList):
+    def __init__(self, envList, generateEnvFiles):
         """ Process_dc_Env constructor """
         self.envList = envList
         self.baseDir = ""
         self.baseAppName = ""
         self.dcBaseConfig = ""
         self.baseAppUtilsDir = ""
+        if generateEnvFiles:
+            self.generateEnvFiles = True
+        else:
+            self.generateEnvFiles = False
 
     def process_dc_env(self):
 
@@ -70,19 +74,21 @@ class Process_dc_Env:
         # more than one. If it doesn't exist exit and instruct the user to run
         # deployenv.sh
         # ---------------------------------------------------------------------
-        self.getEnvFile()
+        if self.generateEnvFiles:
+            self.getEnvFile()
 
-        # ---------------------------------------------------------------------
-        # check for the DEFAULT_APP_NAME. If not given set it to the appname
-        # from the input.  If the --appName is not given then check the
-        # one from the env and make sure it is not the __DEFAULT__ one.
-        # ---------------------------------------------------------------------
-        if self.envList["dcDEFAULT_APP_NAME"] == "__DEFAULT__":
-            print ("The dcDEFAULT_APP_NAME environment variable has not " +
-                   "been set and has not been made available. This should " +
-                   "be identified when running deployenv.sh by utilizing " +
-                   "the option: --appName appname")
-            sys.exit(1)
+            # -----------------------------------------------------------------
+            # check for the DEFAULT_APP_NAME. If not given set it to the
+            # appname from the input.  If the --appName is not given then
+            # check the # one from the env and make sure it is not the
+            # __DEFAULT__ one.
+            # -----------------------------------------------------------------
+            if self.envList["dcDEFAULT_APP_NAME"] == "__DEFAULT__":
+                print ("The dcDEFAULT_APP_NAME environment variable has not " +
+                       "been set and has not been made available. This " +
+                       "should be identified when running deployenv.sh by " +
+                       "utilizing the option: --appName appname")
+                sys.exit(1)
 
         return self.envList
 
@@ -101,6 +107,7 @@ class Process_dc_Env:
                     if itemToLookFor in line:
                         key, value = line.split('=', 1)
                         self.baseDir = value
+                        self.envList["BASE_CUSTOMER_DIR"] = self.baseDir
                         flagFound = 1
                         break
 
@@ -287,6 +294,7 @@ class Process_dc_Env:
             except subprocess.CalledProcessError:
                 logging.exception("There was an issue with sourcing " +
                                   fileToSource)
+        return 1
 
 
 def pythonGetEnv(initialCreate=False):
@@ -302,12 +310,12 @@ def pythonGetEnv(initialCreate=False):
 
 
 def shellGetEnv():
-    (envList, initialCreate) = checkArgs(type=1)
+    (envList, initialCreate, generateEnvFiles) = checkArgs(type=1)
 
     if initialCreate:
         returnEnvList = envList
     else:
-        anEnv = Process_dc_Env(envList)
+        anEnv = Process_dc_Env(envList, generateEnvFiles)
         returnEnvList = anEnv.process_dc_env()
 
     returnStr = "export"
@@ -353,6 +361,12 @@ def checkArgs(type=0):
                         'script and probably should not be run this way',
                         action="store_true",
                         required=False)
+    parser.add_argument('-g', '--generateEnvFiles', help='The flag to say ' +
+                        'that this is being invoked by deployEnv.sh ' +
+                        'and that we need to generate the env files rather ' +
+                        'then read them.',
+                        action="store_false",
+                        required=False)
 
     # args = parser.parse_args()
     args, unknown = parser.parse_known_args()
@@ -366,11 +380,11 @@ def checkArgs(type=0):
         returnList["ENV"] = args.env
 
     if args.workspaceName:
-        returnList["WORKSPACE_NAME"] = args.workspaceName
+        returnList["WORKSPACE_NAME"] = args.workspaceName.upper()
 
     # if we get here then the return the necessary arguments
     if type:
-        return (returnList, args.initialCreate)
+        return (returnList, args.initialCreate, args.generateEnvFiles)
     else:
         return (returnList)
 
