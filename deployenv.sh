@@ -3,7 +3,7 @@
 #
 #          FILE: deployenv.sh
 #
-#         USAGE: ./deployenv.sh  --type TYPE --env ENV --customerAppName CUSTAPPNAME
+#         USAGE: ./deployenv.sh  --type TYPE --env ENV --appName CUSTAPPNAME
 #
 #
 #   DESCRIPTION: Establish the ENV vars for the current deployment.
@@ -41,7 +41,7 @@
 
 #set -o nounset     # Treat unset variables as an error
 #set -o errexit      # exit immediately if command exits with a non-zero status
-#set -x             # essentially debug mode
+set -x             # essentially debug mode
 
 
 #---  FUNCTION  ----------------------------------------------------------------
@@ -53,7 +53,7 @@
 #-------------------------------------------------------------------------------
 function usage
 {
-    echo -e "Usage: deployenv.sh --type TYPE --env ENV --customerAppName CUSTOMER_APP_NAME"
+    echo -e "Usage: deployenv.sh --type TYPE --env ENV --appName CUSTOMER_APP_NAME"
     echo
     echo -e "--type is one of: instance|docker. Where instance implies that the code will"
     echo -e "run in an AWS instance and docker implies it will run on a local docker "
@@ -63,7 +63,7 @@ function usage
     echo -e "and corresponds to which environment variable file will be used. "
     echo -e "It is one of: local|dev|staging|prod"
     echo
-    echo -e "--customerAppName is the application name that you wish to configure the "
+    echo -e "--appName is the application name that you wish to configure the "
     echo -e "environment for"
     exit 1
 }
@@ -110,15 +110,19 @@ function fixUpFile
 }
 
 #-------------------------------------------------------------------------------
-# Make sure there are the exact number of arguments
-#-------------------------------------------------------------------------------
-if [[ $# -ne 6 ]]; then
-    usage
-fi
-
-#-------------------------------------------------------------------------------
 # Loop through the arguments and assign input args with the appropriate variables
 #-------------------------------------------------------------------------------
+NEW=${@}" --generateEnvFiles"
+dcUTILS=${dcUTILS:-"."}
+
+envToSource=$(${dcUTILS}/scripts/process_dc_env.py ${NEW})
+
+if [[ $? -ne 0 ]]; then
+    echo $envToSource
+else
+    eval $envToSource
+fi
+
 while [[ $# -gt 0 ]]; do
     case $1 in
       --type )   shift
@@ -127,48 +131,9 @@ while [[ $# -gt 0 ]]; do
       --env )    shift
                     ENV=$1
                     ;;
-      --customerAppName|--customerappname )    shift
-                    CUSTOMER_APP_NAME=$1
-                    ;;
-      * )           usage
-                    exit 1
     esac
     shift
 done
-
-# for the local environment do some setup of the local enviornment variables
-# these aren't needed when the call this script inside an instance as the paths
-# are more hardcoded.
-# This is because that environment is completely auto generated
-if [[ $TYPE != "instance" ]]; then
-    #-------------------------------------------------------------------------------
-    # First we need to get the base location of the customers files.  This was created
-    # when the manageApp.py was run as one of the arguments is the directory and it
-    # should be an absolute path
-    #-------------------------------------------------------------------------------
-    if [[ -f ~/.dcConfig/baseDirectory ]]; then
-        source ~/.dcConfig/baseDirectory
-    else
-        echo -e "Can not read the config file in ~/.dcConfig, have you run manageApp.py"
-        echo -e "yet? "
-        exit 1
-    fi
-
-    if [[ -d "${BASE_CUSTOMER_DIR}/${CUSTOMER_APP_NAME}" ]]; then
-        source "${BASE_CUSTOMER_DIR}/${CUSTOMER_APP_NAME}/.dcDirMap.cnf"
-    else
-        echo -e "ERROR: the customer application direct is not found: ${BASE_CUSTOMER_DIR}/${CUSTOMER_APP_NAME}"
-        exit 1
-    fi
-
-    BASE_CUSTOMER_APP_UTILS_DIR="${BASE_CUSTOMER_DIR}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_UTILS}"
-
-    #-------------------------------------------------------------------------------
-    # first off copy the health_checks template to the appropriate place for the
-    # application
-    #-------------------------------------------------------------------------------
-    cp templates/health_checks ${BASE_CUSTOMER_APP_UTILS_DIR}/config/health_checks
-fi
 
 #-------------------------------------------------------------------------------
 # handle the case where the type is an instance
@@ -242,8 +207,17 @@ else
     # The docker-current.env file will be used by the docker-compose up script and any
     # devops.center script will read in the docker-current.sh
     #-------------------------------------------------------------------------------
+    BASE_CUSTOMER_APP_UTILS_DIR="${BASE_CUSTOMER_DIR}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_UTILS}"
 
-    # start off with the devops.center common env.
+    #-------------------------------------------------------------------------------
+    # copy the health_checks template to the appropriate place for the  application
+    # if it doesn't already exist
+    #-------------------------------------------------------------------------------
+    if [[ ! -f ${BASE_CUSTOMER_APP_UTILS_DIR}/config/health_checks ]]; then
+        cp templates/health_checks ${BASE_CUSTOMER_APP_UTILS_DIR}/config/health_checks
+    fi
+
+    # next set up the devops.center common env.
     TEMP_FILE="./.tmp-local.env"
     cp environments/common.env ${TEMP_FILE}
 
