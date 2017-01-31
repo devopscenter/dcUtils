@@ -9,6 +9,7 @@ import subprocess
 from time import time
 import fileinput
 import re
+from scripts.process_dc_env import pythonGetEnv
 # ==============================================================================
 """
 This script provides an administrative interface to a customers application set
@@ -26,19 +27,14 @@ __status__ = "Development"
 
 class ManageAppName:
 
-    def __init__(self, theAppName, baseDirectory, altName, altDir, appURL,
-                 utilsURL):
+    def __init__(self, theAppName, baseDirectory, altName, appURL, utilsURL):
         """ManageAppName constructor"""
         self.appName = theAppName
         self.dcAppName = ''
         self.appURL = appURL
         self.utilsURL = utilsURL
-        if baseDirectory:
-            self.baseDir = baseDirectory
-            self.altName = ''
-        else:
-            self.baseDir = altDir
-            self.altName = altName
+        self.baseDir = baseDirectory
+        self.altName = altName
 
         # put the baseDirectory path in the users $HOME/.dcConfig/baseDirectory
         # file so that subsequent scripts can use it as a base to work
@@ -170,10 +166,12 @@ class ManageAppName:
 
         return retMap
 
-    def joinExistingDevelopment(self):
+    def joinExistingDevelopment(self): # noqa
         """This expects that the user is new and is joining development of an
         already exsiting repository.  So, this pulls down that existing repo
-        with the given appName and puts it in the given baseDirectory"""
+        with the given appName and puts it in the given baseDirectory.
+        NOTE: the pound noqa after the method name will turn off the warning
+        that the method is to complex."""
 
         if (not self.appURL) or (not self.utilsURL):
             print "ERROR: you must provide both --appURL and --utilsURL to" + \
@@ -196,13 +194,14 @@ class ManageAppName:
         appOutput = ''
         try:
             appOutput = subprocess.check_output(cmdToRun,
-                stderr=subprocess.STDOUT,shell=True)
+                                                stderr=subprocess.STDOUT,
+                                                shell=True)
 
             # get the newly created directory and put it in the
             # CUSTOMER_APP_UTILS in the dcDirMap.cnf
             if "Cloning" in appOutput:
                 self.appDirName = re.search("(?<=')[^']+(?=')",
-                    appOutput).group(0)
+                                            appOutput).group(0)
 
                 fileToWrite = basePath + "/.dcDirMap.cnf"
                 try:
@@ -211,10 +210,11 @@ class ManageAppName:
                     fileHandle.write(strToWrite)
                     fileHandle.close()
                 except IOError:
-                    print ("NOTE: There is a file that needs to be created: \n"
-                        + self.basedir + self.appName + "/.dcDirMap.cnf and "
-                        "could not be written. \n"
-                        "Please report this issue to the devops.center admins.")
+                    print ("NOTE: There is a file that needs to be " +
+                           "created: \n" + self.basedir + self.appName +
+                           "/.dcDirMap.cnf and could not be written. \n" +
+                           "Please report this issue to the devops.center " +
+                           "admins.")
 
         except subprocess.CalledProcessError:
             print "There was an issue with cloning the application you " + \
@@ -227,25 +227,28 @@ class ManageAppName:
         utilsOutput = ''
         try:
             utilsOutput = subprocess.check_output(cmdToRun,
-                stderr=subprocess.STDOUT,shell=True)
+                                                  stderr=subprocess.STDOUT,
+                                                  shell=True)
 
             # get the newly created directory and put it in the
             # CUSTOMER_APP_WEB in the dcDirMap.cnf
             if "Cloning" in utilsOutput:
                 self.utilsDirName = re.search("(?<=')[^']+(?=')",
-                    utilsOutput).group(0)
+                                              utilsOutput).group(0)
 
                 fileToWrite = basePath + "/.dcDirMap.cnf"
                 try:
                     fileHandle = open(fileToWrite, 'a')
-                    strToWrite = "CUSTOMER_APP_UTILS=" + self.utilsDirName + "\n"
+                    strToWrite = "CUSTOMER_APP_UTILS=" + self.utilsDirName + \
+                                 "\n"
                     fileHandle.write(strToWrite)
                     fileHandle.close()
                 except IOError:
-                    print ("NOTE: There is a file that needs to be created: \n"
-                        + self.basedir + self.appName + "/.dcDirMap.cnf and "
-                        "could not be written. \n"
-                        "Please report this issue to the devops.center admins.")
+                    print ("NOTE: There is a file that needs to be created: " +
+                           "\n" + self.basedir + self.appName +
+                           "/.dcDirMap.cnf and could not be written. \n"
+                           "Please report this issue to the devops.center " +
+                           "admins.")
 
         except subprocess.CalledProcessError:
             print "There was an issue with cloning the application you " + \
@@ -265,7 +268,6 @@ class ManageAppName:
         generatedEnvDir = envDir + "/.generatedEnvFiles"
         if not os.path.exists(generatedEnvDir):
             os.makedirs(generatedEnvDir, 0755)
-
 
     def create(self, optionsMap):
         """creates the directory structure and sets up the appropriate
@@ -769,19 +771,20 @@ def checkBaseDirectory(baseDirectory):
 
 
 def checkArgs():
+    retEnvList = pythonGetEnv(initialCreate=True)
     parser = argparse.ArgumentParser(
         description='This script provides an administrative interface to a ' +
         'customers application set that is referred to as appName.  The ' +
         'administrative functions implement some of the CRUD services ' +
         '(ie, Create, Update, Delete).')
-    parser.add_argument('-a', '--appName', help='Name of the application ' +
-                        'to manage .',
-                        required=True)
+#    parser.add_argument('-a', '--appName', help='Name of the application ' +
+#                        'to manage .',
+#                        required=True)
     parser.add_argument('-d', '--baseDirectory', help='The base directory ' +
                         'to be used to access the appName. This needs to ' +
                         'an absolute path unless the first part of the path ' +
                         'is a tilde or $HOME',
-                        required=False)
+                        required=True)
     parser.add_argument('-c', '--command', help='Command to execute' +
                         'on the appName. Default [join]',
                         choices=["join",
@@ -816,47 +819,34 @@ def checkArgs():
                         '(essentially applications associated by client)' +
                         'with this option.',
                         required=False)
-    parser.add_argument('-w', '--workspaceDir',
-                        help='An alternate base directory associated with ' +
-                        'the workspace name.  This option has to be used in ' +
-                        'conjunction with --workspaceName',
-                        required=False)
-    args = parser.parse_args()
+    args, unknown = parser.parse_known_args()
 
-    retAppName = args.appName
+    if retEnvList["CUSTOMER_APP_NAME"]:
+        retAppName = retEnvList["CUSTOMER_APP_NAME"]
     retCommand = args.command
     retOptions = args.cmdOptions
     retAppURL = args.appURL
     retUtilsURL = args.utilsURL
 
-    if args.baseDirectory and args.workspaceDir:
-        print "ERROR: you have provided two base directories at one time. " + \
-            "This is ambiguous and the script can not proceed."
-        sys.exit(1)
-
     # before going further we need to check whether there is a slash at the
     # end of the value in destinationDir
     if args.baseDirectory:
         retBaseDir = checkBaseDirectory(args.baseDirectory)
-        retWorkspaceName = ''
-        retWorkspaceDir = ''
 
-    if args.workspaceName and args.workspaceDir:
-        retBaseDir = ''
+    if args.workspaceName:
         retWorkspaceName = args.workspaceName
-        retWorkspaceDir = checkBaseDirectory(args.workspaceDir)
 
     # if we get here then the
-    return (retAppName, retBaseDir, retWorkspaceName, retWorkspaceDir,
-            retCommand, retAppURL, retUtilsURL, retOptions)
+    return (retAppName, retBaseDir, retWorkspaceName, retCommand, retAppURL,
+            retUtilsURL, retOptions)
 
 
 def main(argv):
-    (appName, baseDir, workspaceName, workspaceDir, command, appURL,
-        utilsURL, options) = checkArgs()
+    (appName, baseDir, workspaceName, command, appURL, utilsURL,
+     options) = checkArgs()
 
-    customerApp = ManageAppName(appName, baseDir, workspaceName,
-                                workspaceDir, appURL, utilsURL)
+    customerApp = ManageAppName(appName, baseDir, workspaceName, appURL,
+                                utilsURL)
     customerApp.run(command, options)
 
 
