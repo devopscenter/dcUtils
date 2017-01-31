@@ -1,10 +1,22 @@
 #!/usr/bin/env python
 import sys
+import os
 import argparse
+sys.path.append(os.path.abspath('../scripts'))
+# There is a PEP8 warning about this next line not being at the top of the file.
+# The better answer is to append the $dcUTILS/scripts directory to the sys.path
+# but I wanted to illustrate it here...so your mileage may vary how you want
 from process_dc_env import pythonGetEnv
 # ==============================================================================
 """
-docstring for module
+This script provides an example of how to use the process_dc_env.py in a python
+script.   In a python script, the  pythonGetEnv is imported from the
+process_dc_env script and then called directly in the script. That function will
+do the necessary handling of some of the arguments on behalf of the python
+script.  Any other arguments passed in are ignored by the process_dc_env script
+and it is expected that the python script would handle the rest of them.  The
+pythonGetEnv will return a enviornment list presented in a dictionary with the
+environment variable set as the key and the value, is, well, the value.
 """
 __version__ = "0.1"
 
@@ -40,6 +52,7 @@ def checkArgs():
 def main(argv):
     #  for manageApp.py only ... or designed to only be used by manageApp.py
     # retVals = pythonGetEnv(initialCreate=True)
+
     # normal call for all other python scripts
     retVals = pythonGetEnv()
     (foo, workspaceName) = checkArgs()
