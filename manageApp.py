@@ -206,7 +206,7 @@ class ManageAppName:
 
                 fileToWrite = basePath + "/.dcDirMap.cnf"
                 try:
-                    fileHandle = open(fileToWrite, 'a')
+                    fileHandle = open(fileToWrite, 'w')
                     strToWrite = "CUSTOMER_APP_WEB=" + self.appDirName + "\n"
                     fileHandle.write(strToWrite)
                     fileHandle.close()
@@ -335,7 +335,7 @@ class ManageAppName:
 
         fileToWrite = basePath + "/.dcDirMap.cnf"
         try:
-            fileHandle = open(fileToWrite, 'w')
+            fileHandle = open(fileToWrite, 'a')
             strToWrite = "CUSTOMER_APP_UTILS=" + self.appName + "-utils\n"
             fileHandle.write(strToWrite)
             fileHandle.close()
@@ -376,8 +376,8 @@ class ManageAppName:
             "and a directory will be created with that name.\n\n"
             "NOTE: If you already have a repository checked out on this \n"
             "machine, we can create a link from there into our directory\n"
-            "structure.  Provide the full path to your"
-            "existing directory.\nOr press return to accept the \n"
+            "structure.  Provide the full path to your "
+            "existing directory.\nOr press return to accept the "
             "default name: (" + webName + ")\n")
         if userResponse:
             if '/' not in userResponse:
@@ -387,8 +387,12 @@ class ManageAppName:
                 if not os.path.exists(baseWeb):
                     os.makedirs(baseWeb, 0755)
             else:
-                if '~' in userResponse or '$HOME' in userResponse:
+                if '~' in userResponse:
                     userRepo = userResponse.replace("~", expanduser("~"))
+                elif '$HOME' in userResponse:
+                    userRepo = userResponse.replace("$HOME", expanduser("~"))
+                else:
+                    userRepo = userResponse
                 if not os.path.exists(userRepo):
                     print "ERROR: That directory does not exist: {}".format(
                         userRepo)
@@ -402,8 +406,8 @@ class ManageAppName:
                 print "will be linked to: {}\n".format(
                     baseWeb)
                 yesResponse = raw_input(
-                    "If this is correct press Y/y:(Any other response"
-                    " will NOT create this directory)")
+                    "If this is correct press Y/y (Any other response"
+                    " will NOT create this directory): ")
                 if yesResponse.lower() == 'y':
                     # and the destination directory
                     os.symlink(userRepo, baseWeb)
@@ -421,8 +425,8 @@ class ManageAppName:
 
         fileToWrite = self.baseDir + self.appName + "/.dcDirMap.cnf"
         try:
-            fileHandle = open(fileToWrite, 'a')
-            strToWrite = "CUSTOMER_APP_WEB=" + webName + "\n"
+            fileHandle = open(fileToWrite, 'w')
+            strToWrite = "CUSTOMER_APP_WEB=" + self.dcAppName + "\n"
             fileHandle.write(strToWrite)
             fileHandle.close()
         except IOError:
