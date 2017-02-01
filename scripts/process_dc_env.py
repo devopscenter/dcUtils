@@ -7,8 +7,8 @@ import argparse
 import subprocess
 # ==============================================================================
 """
-process-dc-env process the arguments and passes them back to put them in the
-environment
+process_dc_env.py process the arguments and passes them back to put them in the
+environment along with other environment variables defined in .env files.
 """
 __version__ = "0.1"
 
