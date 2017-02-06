@@ -34,7 +34,7 @@ class ManageAppName:
         self.appURL = appURL
         self.utilsURL = utilsURL
         self.baseDir = baseDirectory
-        self.altName = altName
+        self.altName = altName.upper()
 
         # put the baseDirectory path in the users $HOME/.dcConfig/baseDirectory
         # file so that subsequent scripts can use it as a base to work
@@ -59,7 +59,7 @@ class ManageAppName:
                 fileHandle.write(strToWrite)
 
                 if self.altName:
-                    strToWrite = "_" + self.altName.upper() + \
+                    strToWrite = "_" + self.altName + \
                         "_BASE_CUSTOMER_DIR=" + adjustedBaseDir + "\n"
                 else:
                     strToWrite = "_DEFAULT_BASE_CUSTOMER_DIR=" + \
@@ -95,7 +95,7 @@ class ManageAppName:
         # base directory by this name and if so, set a flag so we dont add
         # again
         flagToAdd = 1
-        strToSearch = "_" + self.altName.upper() + "_BASE_CUSTOMER_DIR"
+        strToSearch = "_" + self.altName + "_BASE_CUSTOMER_DIR"
         for aLine in lines:
             if strToSearch in aLine:
                 flagToAdd = 0
@@ -117,7 +117,7 @@ class ManageAppName:
                 if "WORKSPACES" in aLine:
                     fileHandle.write(aLine + "\n")
                     if flagToAdd:
-                        strToWrite = "_" + self.altName.upper() + \
+                        strToWrite = "_" + self.altName + \
                             "_BASE_CUSTOMER_DIR=" + adjustedBaseDir + "\n"
                         fileHandle.write(strToWrite)
                     continue

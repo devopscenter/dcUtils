@@ -56,7 +56,7 @@ NEW_WORKSPACE_NAME=""
 while [[ $# -gt 0 ]]; do
     case ${1} in
       "-n" )   shift
-             NEW_WORKSPACE_NAME=$1
+             A_WORKSPACE_NAME=$1
              ;;
       * )    usage
              exit 1
@@ -64,6 +64,8 @@ while [[ $# -gt 0 ]]; do
     shift
 done
 
+# make sure it is uppercase
+NEW_WORKSPACE_NAME=${A_WORKSPACE_NAME^^}
 #echo ${NEW_WORKSPACE_NAME}
 
 #-------------------------------------------------------------------------------
