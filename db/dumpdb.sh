@@ -42,51 +42,28 @@ function usage
 #-------------------------------------------------------------------------------
 # Loop through the argument(s) and assign input args with the appropriate variables
 #-------------------------------------------------------------------------------
+
+NEW=${@}
+dcUTILS=${dcUTILS:-".."}
+
+envToSource=$(${dcUTILS}/scripts/process_dc_env.py ${NEW})
+
+if [[ $? -ne 0 ]]; then
+    echo $envToSource
+else
+    eval $envToSource
+fi
+
 BACKUP=backup.sql
-CUSTOMER_APP_NAME=""
 
 while [[ $# -gt 0 ]]; do
     case $1 in
         --backupFileName|--backupfilename ) shift
             BACKUP=$1
             ;;
-        --customerAppName|--customerappname )    shift
-            CUSTOMER_APP_NAME=$1
-            ;;
-        --env )    shift
-            ENV=$1
-            ;;
-        * ) usage
-            exit 1
     esac
     shift
 done
-
-
-#-------------------------------------------------------------------------------
-# Check the environment first
-#-------------------------------------------------------------------------------
-echo "Checking environment..."
-# turn on error on exit incase the process-dc-env.sh exists this script
-# needs to exit
-set -e  
-if [[ -z ${CUSTOMER_APP_NAME} ]]; then
-    if [[ -z ${ENV} ]]; then
-        . ./scripts/process-dc-env.sh
-    else
-        . ./scripts/process-dc-env.sh --env ${ENV}
-    fi
-else
-    if [[ -z ${ENV} ]]; then
-        . ./scripts/process-dc-env.sh --customerAppName ${CUSTOMER_APP_NAME}
-    else
-        . ./scripts/process-dc-env.sh --customerAppName ${CUSTOMER_APP_NAME} --env ${ENV}
-    fi
-fi
-set +e  # turn off error on exit
-#-------------------------------------------------------------------------------
-# end checking environment
-#-------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------
 # Draw attention to the appName that is being used by this session!!
