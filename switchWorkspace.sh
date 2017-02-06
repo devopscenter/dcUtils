@@ -34,7 +34,9 @@ usage ()
     echo -e "Usage: switchWorkspace.sh -n newWorkspaceName"
     echo
     echo -e "This script will switch the workspace to the new workspacename"
-    echo -e "    if it exists in the .dcConfig/basedirectory"
+    echo -e "    if it exists in the $HOME/.dcConfig/baseDirectory"
+    echo -e "NOTE: use 'default' if the workspace is unknown.  This can be "
+    echo -e "    checked by looking at the $HOME/.dcConfig/baseDirectory file"
     echo
 }
 
