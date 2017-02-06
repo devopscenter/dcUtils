@@ -157,7 +157,7 @@ if [[ $TYPE != "instance" ]]; then
     if [[ -d "${BASE_CUSTOMER_DIR}/${CUSTOMER_APP_NAME}" ]]; then
         source "${BASE_CUSTOMER_DIR}/${CUSTOMER_APP_NAME}/.dcDirMap.cnf"
     else
-        echo -e "ERROR: the customer application direct is not found: ${BASE_CUSTOMER_DIR}/${CUSTOMER_APP_NAME}"
+        echo -e "ERROR: the customer application directory is not found: ${BASE_CUSTOMER_DIR}/${CUSTOMER_APP_NAME}"
         exit 1
     fi
 
