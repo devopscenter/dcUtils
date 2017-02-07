@@ -7,6 +7,7 @@ version: '2'
 services:
     web:
         container_name: "${dcDEFAULT_APP_NAME}_${CUSTOMER_APP_ENV}_web-1"
+        hostname: "${dcDEFAULT_APP_NAME}_${CUSTOMER_APP_ENV}_web-1"
         image: devopscenter/DC_UNIQUE_ID.web-debug:${dcSTACK_VERSION}
         ports:
             - "80:80"
@@ -27,6 +28,7 @@ services:
 
     pgmaster-1:
         container_name: "${dcDEFAULT_APP_NAME}_${CUSTOMER_APP_ENV}_pgmaster-1"
+        hostname: "${dcDEFAULT_APP_NAME}_${CUSTOMER_APP_ENV}_pgmaster-1"
         image: devopscenter/db_postgres:${dcSTACK_VERSION}
         ports:
             - "5432:5432"
@@ -41,6 +43,7 @@ services:
 
     syslog:
         container_name: "${dcDEFAULT_APP_NAME}_${CUSTOMER_APP_ENV}_syslog"
+        hostname: "${dcDEFAULT_APP_NAME}_${CUSTOMER_APP_ENV}_syslog"
         image: devopscenter/syslog:${dcSTACK_VERSION}
         env_file:
             - "APP_NAME-ENV.env"
