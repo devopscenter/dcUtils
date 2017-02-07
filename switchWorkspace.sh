@@ -1,13 +1,13 @@
-#!/usr/bin/env bash 
+#!/usr/bin/env bash
 #===============================================================================
 #
 #          FILE: switchWorkspace.sh
-# 
+#
 #         USAGE: ./switchWorkspace.sh newWorkspaceName
-# 
+#
 #   DESCRIPTION: This script will switch the workspace to the new workspacename
 #                if it exists in the .dcConfig/basedirectory
-# 
+#
 #       OPTIONS: ---
 #  REQUIREMENTS: ---
 #          BUGS: ---
@@ -37,6 +37,9 @@ usage ()
     echo -e "    if it exists in the $HOME/.dcConfig/baseDirectory"
     echo -e "NOTE: use 'default' if the workspace is unknown.  This can be "
     echo -e "    checked by looking at the $HOME/.dcConfig/baseDirectory file"
+    echo
+    CURRENT=$(grep "CURRENT_WORKSPACE=" ${HOME}/.dcConfig/baseDirectory)
+    echo  -e "Current workspace is: ${CURRENT#CURRENT_WORKSPACE=}"
     echo
 }
 
@@ -69,7 +72,7 @@ NEW_WORKSPACE_NAME=${A_WORKSPACE_NAME^^}
 #echo ${NEW_WORKSPACE_NAME}
 
 #-------------------------------------------------------------------------------
-# check for the existance of the devops.center config (.dcConfig) directory in 
+# check for the existance of the devops.center config (.dcConfig) directory in
 # the users home directory. Also, check for the baseDirectory file
 #-------------------------------------------------------------------------------
 if [[ ! -d ${HOME}/.dcConfig ]]; then
@@ -100,4 +103,3 @@ fi
 # change the CURRENT_WORKSPACE to be equal to the NEW_WORKSPACE_NAME
 #-------------------------------------------------------------------------------
 sed -i -e "s/CURRENT_WORKSPACE=.*/CURRENT_WORKSPACE=${NEW_WORKSPACE_NAME}/" "${CONFIG_FILE}"
-
