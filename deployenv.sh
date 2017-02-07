@@ -41,8 +41,10 @@
 
 #set -o nounset     # Treat unset variables as an error
 #set -o errexit      # exit immediately if command exits with a non-zero status
-set -x             # essentially debug mode
+#set -x             # essentially debug mode
 
+# set up the dcUTILS environment variable if not already set
+dcUTILS=${dcUTILS:-"."}
 
 #---  FUNCTION  ----------------------------------------------------------------
 #          NAME:  usage
@@ -53,7 +55,9 @@ set -x             # essentially debug mode
 #-------------------------------------------------------------------------------
 function usage
 {
-    echo -e "Usage: deployenv.sh --type TYPE --env ENV --appName CUSTOMER_APP_NAME"
+#    dcProcessEnv=$(${dcUTILS}/scripts/process_dc_env.py -h)
+#    echo ${dcProcessEnv}
+    echo -e "Usage: deployenv.sh --type TYPE --env ENV --appName CUSTOMER_APP_NAME [--workspaceName WORKSPACENAME]"
     echo
     echo -e "--type is one of: instance|docker. Where instance implies that the code will"
     echo -e "run in an AWS instance and docker implies it will run on a local docker "
@@ -65,7 +69,9 @@ function usage
     echo
     echo -e "--appName is the application name that you wish to configure the "
     echo -e "environment for"
-    exit 1
+    echo
+    echo -e "--workspaceName is the optional workspace name that can be used if"
+    echo -e "your environment uses alternate workspaces for applications"
 }
 
 
@@ -112,8 +118,18 @@ function fixUpFile
 #-------------------------------------------------------------------------------
 # Loop through the arguments and assign input args with the appropriate variables
 #-------------------------------------------------------------------------------
+if [[ $1 == '-h' ]]; then
+    usage
+    exit 1
+fi
+
+# basic defaults
+TYPE="docker"
+ENV="local"
+
+#-------------------------------------------------------------------------------
+# set up the environment
 NEW=${@}" --generateEnvFiles"
-dcUTILS=${dcUTILS:-"."}
 
 envToSource=$(${dcUTILS}/scripts/process_dc_env.py ${NEW})
 
@@ -122,14 +138,13 @@ if [[ $? -ne 0 ]]; then
 else
     eval $envToSource
 fi
+#-------------------------------------------------------------------------------
 
+# now handle the arguemnts for this script
 while [[ $# -gt 0 ]]; do
     case $1 in
       --type )   shift
                     TYPE=$1
-                    ;;
-      --env )    shift
-                    ENV=$1
                     ;;
     esac
     shift
@@ -182,8 +197,8 @@ if [[ $TYPE = "instance" ]]; then
     fi
 
     # put the /etc/environment in the current env for this session...normally would have to log out and log in to get it.
-    while IFS='' read -r line || [[ -n "${line}" ]] 
-    do 
+    while IFS='' read -r line || [[ -n "${line}" ]]
+    do
         if [[ "${line}" && "${line}" != "#"* ]]; then
             export "${line}"
         fi
