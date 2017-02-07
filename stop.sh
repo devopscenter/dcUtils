@@ -30,7 +30,7 @@
 #-------------------------------------------------------------------------------
 function usage
 {
-    echo -e "Usage: stop.sh [--customerAppName appName] [--env theEnv]"
+    echo -e "Usage: stop.sh [--appName appName] [--env theEnv]"
     echo
     echo -e "--appName is the name of the application that you want to"
     echo -e "      run as the default app for the current session. This is "
@@ -46,6 +46,11 @@ function usage
 #-------------------------------------------------------------------------------
 # Loop through the argument(s) and assign input args with the appropriate variables
 #-------------------------------------------------------------------------------
+if [[ $1 == '-h' || $# -eq 0 ]]; then
+    usage
+    exit 1
+fi
+
 NEW=${@}
 dcUTILS=${dcUTILS:-"."}
 
@@ -74,7 +79,7 @@ echo "NOTICE: Using appName: ${dcDEFAULT_APP_NAME}"
 
 #-------------------------------------------------------------------------------
 # We have all the information for this so lets run the docker-compose down with
-# the appropriate appName 
+# the appropriate appName
 #-------------------------------------------------------------------------------
 
 # TODO - determine if we want to run in the customers directory
@@ -99,12 +104,11 @@ fi
 
 #-------------------------------------------------------------------------------
 # get the number of applications running by the name of the specialized network
-# bridge created.  
+# bridge created.
 #-------------------------------------------------------------------------------
 NUM_NETWORKS=$(docker network ls | grep -c "_dcnet" )
-export NET_NUMBER=$((20+$NUM_NETWORKS-1)) 
+export NET_NUMBER=$((20+$NUM_NETWORKS-1))
 
 CMDTORUN="docker-compose -f ${DOCKER_COMPOSE_FILE} -p ${dcDEFAULT_APP_NAME} stop"
 #echo  ${CMDTORUN}
 ${CMDTORUN}
-

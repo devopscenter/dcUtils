@@ -32,7 +32,7 @@
 #-------------------------------------------------------------------------------
 function usage
 {
-    echo -e "Usage: start.sh [--customerAppName appName] [--env theEnv] [-d]"
+    echo -e "Usage: start.sh [--appName appName] [--env theEnv] [-d]"
     echo
     echo -e "--appName is the name of the application that you want to"
     echo -e "      run as the default app for the current session. This is "
@@ -48,6 +48,11 @@ function usage
 #-------------------------------------------------------------------------------
 # Loop through the argument(s) and assign input args with the appropriate variables
 #-------------------------------------------------------------------------------
+if [[ $1 == '-h' || $# -eq 0 ]]; then
+    usage
+    exit 1
+fi
+
 NEW=${@}
 dcUTILS=${dcUTILS:-"."}
 
@@ -71,7 +76,7 @@ done
 
 
 #-------------------------------------------------------------------------------
-# first we need to see if postgresql is running locally, and if so stop and 
+# first we need to see if postgresql is running locally, and if so stop and
 # let the user know that we can't run the db containers and the local postgresql
 # at the same time.  The ports will collide and the db container will not start.
 #-------------------------------------------------------------------------------
@@ -114,7 +119,7 @@ if [[ ! -f ${DOCKER_COMPOSE_FILE} ]]; then
 fi
 
 NUM_NETWORKS=$(docker network ls | grep -sc "_dcnet")
-export NET_NUMBER=$((20+$NUM_NETWORKS)) 
+export NET_NUMBER=$((20+$NUM_NETWORKS))
 #echo "Network subnet used: 172.${NET_NUMBER}.0"
 
 
