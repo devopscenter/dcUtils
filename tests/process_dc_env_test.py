@@ -15,7 +15,7 @@ process_dc_env script and then called directly in the script. That function will
 do the necessary handling of some of the arguments on behalf of the python
 script.  Any other arguments passed in are ignored by the process_dc_env script
 and it is expected that the python script would handle the rest of them.  The
-pythonGetEnv will return a enviornment list presented in a dictionary with the
+pythonGetEnv will return a environment list presented in a dictionary with the
 environment variable set as the key and the value, is, well, the value.
 
 Note that the argparse statement for processing arguments needs to be a bit

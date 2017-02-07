@@ -60,7 +60,7 @@ function usage
     echo -e "      run as the default app for the current session. This is "
     echo -e "      optional if you only have one application defined."
     echo -e "--env theEnv is one of local, dev, staging, prod. This is optional"
-    echo -e "      unless you have defined an enviornment other than local."
+    echo -e "      unless you have defined an environment other than local."
     echo -e "--database (or -d) is the name of the database that needs to be "
     echo -e "      restored."
     echo -e "--backup (or -b) is the name of the backup file that will be used"

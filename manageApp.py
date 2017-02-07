@@ -256,7 +256,7 @@ class ManageAppName:
                 "\nCheck that you specified\nthe correct owner " + \
                 "and respository name."
 
-        # and the enviornments directory
+        # and the environments directory
         envDir = basePath + "/" + self.utilsDirName + "/environments"
         if not os.path.exists(envDir):
             os.makedirs(envDir, 0755)
@@ -317,7 +317,7 @@ class ManageAppName:
             if not os.path.exists(configDir + item):
                 os.makedirs(configDir + item, 0755)
 
-        # and the enviornments directory
+        # and the environments directory
         envDir = baseUtils + "environments"
         if not os.path.exists(envDir):
             os.makedirs(envDir, 0755)
