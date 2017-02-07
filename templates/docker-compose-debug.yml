@@ -55,7 +55,7 @@ services:
                 syslog-address: "${SYSLOG_PROTO}://${SYSLOG_SERVER}:${SYSLOG_PORT}"
                 syslog-facility: local0
                 env: LOG_NAME
-                tag: "{{ (.ExtraAttributes nil).LOG_NAME}} {{.DaemonName}}"
+                tag: "{{ (.ExtraAttributes nil).LOG_NAME}} {{.Name}}"
 
 # Must include all named volumes in V2 compose file format.
 volumes:
