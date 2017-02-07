@@ -78,7 +78,7 @@ function usage
 # Loop through the argument(s) and assign input args with the appropriate variables
 #-------------------------------------------------------------------------------
 NEW=${@}
-dcUTILS=${dcUTILS:-".."}
+dcUTILS=".."
 
 envToSource=$(${dcUTILS}/scripts/process_dc_env.py ${NEW})
 

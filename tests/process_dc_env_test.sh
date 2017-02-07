@@ -37,7 +37,7 @@ set -x
 # normal call ..the way it is meant to be for all shell scripts ...hopefully
 NEW=${@}
 
-dcUTILS=${dcUTILS:-".."}
+dcUTILS=".."
 
 envToSource=$(${dcUTILS}/scripts/process_dc_env.py ${NEW})
 

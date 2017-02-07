@@ -43,8 +43,8 @@
 #set -o errexit      # exit immediately if command exits with a non-zero status
 #set -x             # essentially debug mode
 
-# set up the dcUTILS environment variable if not already set
-dcUTILS=${dcUTILS:-"."}
+# set up the dcUTILS to point to this directory
+dcUTILS="."
 
 #---  FUNCTION  ----------------------------------------------------------------
 #          NAME:  usage

@@ -44,7 +44,7 @@ function usage
 #-------------------------------------------------------------------------------
 
 NEW=${@}
-dcUTILS=${dcUTILS:-".."}
+dcUTILS=".."
 
 envToSource=$(${dcUTILS}/scripts/process_dc_env.py ${NEW})
 

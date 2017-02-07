@@ -54,7 +54,7 @@ if [[ $1 == '-h' || $# -eq 0 ]]; then
 fi
 
 NEW=${@}
-dcUTILS=${dcUTILS:-"."}
+dcUTILS="."
 
 envToSource=$(${dcUTILS}/scripts/process_dc_env.py ${NEW})
 
