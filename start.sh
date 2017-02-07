@@ -87,7 +87,7 @@ if [ -n "$postgres" ]; then
     echo "postgres running on os/x, please exit and try starting again."
     return 1 2> /dev/null || exit 1
 fi
-
+set +e
 
 #-------------------------------------------------------------------------------
 # Draw attention to the appName that is being used by this session!!
