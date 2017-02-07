@@ -118,7 +118,7 @@ function fixUpFile
 #-------------------------------------------------------------------------------
 # Loop through the arguments and assign input args with the appropriate variables
 #-------------------------------------------------------------------------------
-if [[ $1 == '-h' ]]; then
+if [[ $1 == '-h' || $# -eq 0 ]]; then
     usage
     exit 1
 fi
