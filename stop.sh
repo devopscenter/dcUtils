@@ -46,7 +46,7 @@ function usage
 #-------------------------------------------------------------------------------
 # Loop through the argument(s) and assign input args with the appropriate variables
 #-------------------------------------------------------------------------------
-if [[ $1 == '-h' || $# -eq 0 ]]; then
+if [[ $1 == '-h' ]]; then
     usage
     exit 1
 fi
