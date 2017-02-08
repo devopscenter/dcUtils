@@ -272,7 +272,7 @@ class Process_dc_Env:
 
                 theWholeEnv = tmpOutput.split('\n')
                 # -------------------------------------------------------------
-                # now go through the whole environemtn and only get the ones
+                # now go through the whole environment and only get the ones
                 # that are in the envFile that we sourced
                 # how this happens is that the sourcing command above spits
                 # out the entire environment at that time.  So that will have a
@@ -320,7 +320,7 @@ def shellGetEnv():
 
     returnStr = "export"
     for key, value in returnEnvList.iteritems():
-        returnStr += " " + key + "=" + value
+        returnStr += " " + key + '="' + value + '"'
 
     print returnStr
 
