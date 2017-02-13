@@ -8,7 +8,7 @@ services:
     web:
         container_name: "${dcDEFAULT_APP_NAME}_${CUSTOMER_APP_ENV}_web-1"
         hostname: "${dcDEFAULT_APP_NAME}_${CUSTOMER_APP_ENV}_web-1"
-        image: devopscenter/DC_UNIQUE_ID.web-debug:${dcSTACK_VERSION}
+        image: "devopscenter/DC_UNIQUE_ID.web-debug:${dcSTACK_VERSION}"
         ports:
             - "80:80"
             - "8000:8000"
@@ -16,10 +16,12 @@ services:
         links:
             - "pgmaster-1"
         volumes:
-            - "$dcAPP:/data/deploy/current"
+            - "${dcAPP}:/data/deploy/current"
             - "/wheelhouse"
-            - "$dcDATA:/dataload"
-            - "$dcUTILS:/utils"
+            - "${dcDATA}:/dataload"
+            - "${dcUTILS}:/utils"
+            - "${APP_UTILS_CONFIG}:/app-utils/conf"
+            - "${APP_UTILS_KEYS}:/app-utils/keys"
         working_dir: "/data/deploy/current"
         env_file:
             - "APP_NAME-ENV.env"
@@ -29,14 +31,14 @@ services:
     pgmaster-1:
         container_name: "${dcDEFAULT_APP_NAME}_${CUSTOMER_APP_ENV}_pgmaster-1"
         hostname: "${dcDEFAULT_APP_NAME}_${CUSTOMER_APP_ENV}_pgmaster-1"
-        image: devopscenter/db_postgres:${dcSTACK_VERSION}
+        image: "devopscenter/db_postgres:${dcSTACK_VERSION}"
         ports:
             - "5432:5432"
         env_file:
             - "APP_NAME-ENV.env"
         volumes:
             - pg-db:/media/data/postgres/
-            - "$dcUTILS:/utils"
+            - "${dcUTILS}:/utils"
         volumes_from:
             - syslog
 
@@ -44,7 +46,7 @@ services:
     syslog:
         container_name: "${dcDEFAULT_APP_NAME}_${CUSTOMER_APP_ENV}_syslog"
         hostname: "${dcDEFAULT_APP_NAME}_${CUSTOMER_APP_ENV}_syslog"
-        image: devopscenter/syslog:${dcSTACK_VERSION}
+        image: "devopscenter/syslog:${dcSTACK_VERSION}"
         env_file:
             - "APP_NAME-ENV.env"
         environment:
