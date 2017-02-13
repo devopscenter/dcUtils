@@ -25,9 +25,9 @@ __status__ = "Development"
 
 def diffFiles(customerFiles, dcFiles):
     customerList = readFilesIntoList(customerFiles)
-    # print "=>{}<=".format(customerList)
+#   print "=>{}<=".format(customerList)
     dcList = readFilesIntoList(dcFiles)
-    # print "=>{}<=\n\n".format(dcList)
+#   print "=>{}<=\n\n".format(dcList)
     diffFromCustomerFiles(customerList, dcList)
     diffFromDCFiles(customerList, dcList)
 
@@ -91,8 +91,8 @@ def checkArgs(inputArgs):
 
 def main(argv):
     (customerFiles, dcFiles) = checkArgs(argv)
-    print "customer files: =>{}<=".format(customerFiles)
-    print "devops.center files: =>{}<=".format(dcFiles)
+#    print "customer files: =>{}<=".format(customerFiles)
+#    print "devops.center files: =>{}<=".format(dcFiles)
 
     diffFiles(customerFiles, dcFiles)
 
