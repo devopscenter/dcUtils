@@ -203,7 +203,16 @@ And then to stop the application (from within dcUtils):
     ./stop.sh
 
 #### Additional information on the internals of dcUtils
-- process-dc-env.sh
+- process_dc_env.py
+NOTE: This script will take the key/value pairs from the environment files and
+make them available to the running script's environment.  The process that is
+used to get those key/value pairs into the environment may have an impact on
+values that have spaces in them.  In order to selectively isolate the items for
+the value with spaces, the value is quoted.  So, there is a possibility that
+the downstream use/access to these values may need to be aware of these quotes
+and strip them if necessary.  This is intended to be used by either shell 
+scripts of python scripts.  See the test scripts in ${dcUTILS}/tests for 
+examples of each type of script and the usage.
 
 - $HOME/.dcConfig/baseDirectory
 This file provides the base directory for the applications that are created
