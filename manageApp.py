@@ -332,8 +332,9 @@ class ManageAppName:
 
         # and then the keys directory and all the sub directories
         keyDir = baseUtils + "keys/"
-        if not os.path.exists(keyDir):
-            os.makedirs(keyDir, 0755)
+        for item in commonDirs:
+            if not os.path.exists(keyDir + item):
+                os.makedirs(keyDir + item, 0755)
 
         fileToWrite = basePath + "/.dcDirMap.cnf"
         try:
@@ -513,6 +514,7 @@ class ManageAppName:
             print line.replace("CUSTOMER_STACK", uniqueStackName),
 
     def createEnvFiles(self, envDir):
+        appUtilsDir = self.appName + "-utils/"
         commonFiles = ["dev", "local", "staging", "prod"]
         for name in commonFiles:
             envFile = envDir + "/" + name + ".env"
@@ -521,6 +523,13 @@ class ManageAppName:
                 strToWrite = (
                     "#\n"
                     "# ENV vars specific to the " + name + " environment\n"
+                    "#\n"
+                    "dcHOME=" + self.baseDir + self.appName + "\n"
+                    "APP_UTILS_CONFIG=${dcHOME}/" + appUtilsDir + "config/" +
+                    name + "\n"
+                    "APP_UTILS_KEYS=${dcHOME}/" + appUtilsDir + "config/" +
+                    name + "\n"
+                    "#\n"
                     "#\n")
                 fileHandle.write(strToWrite)
             except IOError:
@@ -533,6 +542,10 @@ class ManageAppName:
         try:
             fileHandle = open(envLocalFile, 'w')
             strToWrite = (
+                "# some app env vars specific to the environment\n"
+                "dcHOME=" + self.baseDir + self.appName + "\n"
+                "APP_UTILS_CONFIG=${dcHOME}/" + appUtilsDir + "config/local\n"
+                "APP_UTILS_KEYS=${dcHOME}/" + appUtilsDir + "config/keys\n"
                 "#\n"
                 "# Papertrail settings\n"
                 "#\n"
@@ -562,9 +575,14 @@ class ManageAppName:
                 "# NOTE: if you change anything in this file you will need\n"
                 "#       to run deployenv.sh to make sure the environment\n"
                 "#       files get genereated with the latest changes\n"
+                "# NOTE2: dcHOME is defined in the environment specific env\n"
+                "#       files so that there can be other environment\n"
+                "#       specific locations that can be defined, which are\n"
+                "#       different between enviornments.\n"
+                "#       ...the application-utils directories are defined\n"
+                "#       in those other environemnt specific files\n"
                 "#\n"
                 "dcDEFAULT_APP_NAME=" + self.appName + "\n"
-                "dcHOME=" + self.baseDir + self.appName + "\n"
                 "\n"
                 "# change dcUTILS to where you have put the devops.center\n"
                 "# dcUtils directory\n"
@@ -835,6 +853,8 @@ def checkArgs():
 
     if args.workspaceName:
         retWorkspaceName = args.workspaceName
+    else:
+        retWorkspaceName = ''
 
     # if we get here then the
     return (retAppName, retBaseDir, retWorkspaceName, retCommand, retAppURL,
