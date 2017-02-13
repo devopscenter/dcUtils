@@ -25,9 +25,9 @@ __status__ = "Development"
 
 def diffFiles(customerFiles, dcFiles):
     customerList = readFilesIntoList(customerFiles)
-    print "=>{}<=".format(customerList)
+    # print "=>{}<=".format(customerList)
     dcList = readFilesIntoList(dcFiles)
-    print "=>{}<=\n\n".format(dcList)
+    # print "=>{}<=\n\n".format(dcList)
     diffFromCustomerFiles(customerList, dcList)
     diffFromDCFiles(customerList, dcList)
 
@@ -74,24 +74,19 @@ def checkArgs(inputArgs):
     parser.add_argument('-c', '--customerFiles', help='The customers '
                         'requirements.txt files.  Should be given as a '
                         'comma separated list (ie, "file1, file2, file3")',
+                        nargs='+',
                         required=True)
     parser.add_argument('-d', '--dcFiles', help='The devops.center'
                         ' requirements.txt files.  Should be given as a'
                         'comma separated list (ie, "file1, file2, file3")',
+                        nargs='+',
                         required=True)
     args = parser.parse_args()
 
-    customerFiles = args.customerFiles.split(',')
-    retCustFiles = []
-    for files in customerFiles:
-        retCustFiles.append(files.lstrip())
+    retCustFiles = args.customerFiles
+    retDCFiles = args.dcFiles
 
-    retDcFiles = []
-    dcFiles = args.dcFiles.split(',')
-    for files in dcFiles:
-        retDcFiles.append(files.lstrip())
-
-    return (retCustFiles, retDcFiles)
+    return (retCustFiles, retDCFiles)
 
 
 def main(argv):
