@@ -368,8 +368,11 @@ def checkArgs(type=0):
                         action="store_false",
                         required=False)
 
-    # args = parser.parse_args()
-    args, unknown = parser.parse_known_args()
+    # args, unknown = parser.parse_known_args()
+    try:
+        args, unknown = parser.parse_known_args()
+    except SystemExit:
+        sys.exit(1)
 
     returnList = {}
 
