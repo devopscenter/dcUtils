@@ -34,6 +34,8 @@ services:
         container_name: "${dcDEFAULT_APP_NAME}_${CUSTOMER_APP_ENV}_worker-1"
         hostname: "${dcDEFAULT_APP_NAME}_${CUSTOMER_APP_ENV}_worker-1"
         image: "devopscenter/DC_UNIQUE_ID.worker:${dcSTACK_VERSION}"
+        ports:
+            - "5555:5555"
         links:
             - "pgmaster-1"
             - "redismaster"
