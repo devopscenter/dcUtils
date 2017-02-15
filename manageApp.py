@@ -198,15 +198,15 @@ class ManageAppName:
                                                 shell=True)
 
             # get the newly created directory and put it in the
-            # CUSTOMER_APP_UTILS in the dcDirMap.cnf
+            # CUSTOMER_APP_WEB in the dcDirMap.cnf
             if "Cloning" in appOutput:
-                self.appDirName = re.search("(?<=')[^']+(?=')",
-                                            appOutput).group(0)
+                self.dcAppName = re.search("(?<=')[^']+(?=')",
+                                           appOutput).group(0)
 
                 fileToWrite = basePath + "/.dcDirMap.cnf"
                 try:
                     fileHandle = open(fileToWrite, 'w')
-                    strToWrite = "CUSTOMER_APP_WEB=" + self.appDirName + "\n"
+                    strToWrite = "CUSTOMER_APP_WEB=" + self.dcAppName + "\n"
                     fileHandle.write(strToWrite)
                     fileHandle.close()
                 except IOError:
@@ -231,7 +231,7 @@ class ManageAppName:
                                                   shell=True)
 
             # get the newly created directory and put it in the
-            # CUSTOMER_APP_WEB in the dcDirMap.cnf
+            # CUSTOMER_APP_UTILS in the dcDirMap.cnf
             if "Cloning" in utilsOutput:
                 self.utilsDirName = re.search("(?<=')[^']+(?=')",
                                               utilsOutput).group(0)
@@ -263,6 +263,11 @@ class ManageAppName:
 
             # and then create the individiual env files in that directory
             self.createEnvFiles(envDir)
+        else:
+            # the environments directory exists so as long as there is a
+            # personal.env make a change to the dcHOME  defined there
+            # to be the one that is passed into this script.
+            self.createPersonalEnv(envDir)
 
         # create a directory to hold the generated env files
         generatedEnvDir = envDir + "/.generatedEnvFiles"
@@ -567,36 +572,7 @@ class ManageAppName:
             sys.exit(1)
 
         # and now for the personal.env file
-        personalFile = envDir + "/personal.env"
-        try:
-            fileHandle = open(personalFile, 'w')
-            strToWrite = (
-                "#\n"
-                "# Personal env settings that take precedence over other\n"
-                "# env files.\n"
-                "# NOTE: if you change anything in this file you will need\n"
-                "#       to run deployenv.sh to make sure the environment\n"
-                "#       files get genereated with the latest changes\n"
-                "#\n"
-                "dcDEFAULT_APP_NAME=" + self.appName + "\n"
-                "dcHOME=" + self.baseDir + self.appName + "\n"
-                "\n"
-                "# change dcUTILS to where you have put the devops.center\n"
-                "# dcUtils directory\n"
-                "dcUTILS=" + self.baseDir + "dcUtils\n"
-                'dcDATA=${dcHOME}/dataload\n'
-                'dcAPP=${dcHOME}/' + self.dcAppName + "\n"
-                "\n"
-                "#LOG_NAME=put the name you want to see in papertrail, "
-                "the default is hostname\n"
-                '#AWS_ACCESS_KEY_ID="put aws access key here"\n'
-                "#AWS_SECRET_ACCESS_KEY='put secret access key here'\n"
-            )
-            fileHandle.write(strToWrite)
-        except IOError:
-            print 'Unable to write to the {} file in the' + \
-                ' given configDir: {} \n'.format(personalFile, envDir)
-            sys.exit(1)
+        self.createPersonalEnv()
 
     def createAWSProfile(self):
         """This method will create the necessary skeleton in the .aws directory
@@ -694,6 +670,39 @@ class ManageAppName:
             print line.replace("APP_NAME-ENV", targetEnvFile),
         for line in fileinput.input(composeDebugFile, inplace=1):
             print line.replace("DC_UNIQUE_ID", self.uniqueStackName),
+
+    def createPersonalEnv(self, envDir):
+        """create the personal.env file when joinExistingDevelopment"""
+        personalFile = envDir + "/personal.env"
+        try:
+            fileHandle = open(personalFile, 'w')
+            strToWrite = (
+                "#\n"
+                "# Personal env settings that take precedence over other\n"
+                "# env files.\n"
+                "# NOTE: if you change anything in this file you will need\n"
+                "#       to run deployenv.sh to make sure the environment\n"
+                "#       files get genereated with the latest changes\n"
+                "#\n"
+                "dcDEFAULT_APP_NAME=" + self.appName + "\n"
+                "dcHOME=" + self.baseDir + self.appName + "\n"
+                "\n"
+                "# change dcUTILS to where you have put the devops.center\n"
+                "# dcUtils directory\n"
+                "dcUTILS=" + self.baseDir + "dcUtils\n"
+                'dcDATA=${dcHOME}/dataload\n'
+                'dcAPP=${dcHOME}/' + self.dcAppName + "\n"
+                "\n"
+                "#LOG_NAME=put the name you want to see in papertrail, "
+                "the default is hostname\n"
+                '#AWS_ACCESS_KEY_ID="put aws access key here"\n'
+                "#AWS_SECRET_ACCESS_KEY='put secret access key here'\n"
+            )
+            fileHandle.write(strToWrite)
+        except IOError:
+            print 'Unable to write to the {} file in the' + \
+                ' given configDir: {} \n'.format(personalFile, envDir)
+            sys.exit(1)
 
     def update(self, optionsMap):
         """takes an argument that dictates what needs to be updated and then
