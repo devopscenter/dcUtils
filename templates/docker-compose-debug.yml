@@ -39,6 +39,9 @@ services:
         volumes:
             - pg-db:/media/data/postgres/
             - "${dcUTILS}:/utils"
+            - "${APP_UTILS_CONFIG}:/app-utils/conf"
+            - "${APP_UTILS_KEYS}:/app-utils/keys"
+        working_dir: "/data/deploy/current"
         volumes_from:
             - syslog
 
