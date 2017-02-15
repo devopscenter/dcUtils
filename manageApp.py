@@ -580,7 +580,7 @@ class ManageAppName:
             sys.exit(1)
 
         # and now for the personal.env file
-        self.createPersonalEnv()
+        self.createPersonalEnv(envDir)
 
     def createAWSProfile(self):
         """This method will create the necessary skeleton in the .aws directory
@@ -715,6 +715,55 @@ class ManageAppName:
     def update(self, optionsMap):
         """takes an argument that dictates what needs to be updated and then
         what items that are associated with the change"""
+        if "newEnv" in optionsMap:
+            self.createNewEnvDirs(optionsMap["newEnv"])
+
+    def createNewEnvDirs(self, newEnvName):
+        # utils path to be created
+        baseUtils = self.baseDir + self.appName + "/" + self.appName + \
+            "-utils/"
+        appUtilsDir = self.appName + "-utils/"
+
+        # and then the config directory and all the sub directories
+        configDir = baseUtils + "config/"
+        if not os.path.exists(configDir + newEnvName):
+            os.makedirs(configDir + newEnvName, 0755)
+            # and touch a file so that this isn't an empty directory
+            open(configDir + newEnvName + "/.keep", 'a').close()
+
+        # and the environments directory
+        envDir = baseUtils + "environments"
+        if not os.path.exists(envDir):
+            os.makedirs(envDir, 0755)
+
+        # and then create the individiual env files in that directory
+        envFile = envDir + "/" + newEnvName + ".env"
+        try:
+            fileHandle = open(envFile, 'w')
+            strToWrite = (
+                "#\n"
+                "# ENV vars specific to the " + newEnvName + " environment\n"
+                "#\n"
+                "APP_UTILS_CONFIG=${dcHOME}/" + appUtilsDir + "config/" +
+                newEnvName + "\n"
+                "APP_UTILS_KEYS=${dcHOME}/" + appUtilsDir + "config/" +
+                newEnvName + "\n"
+                "\n#\n"
+                "#\n")
+            fileHandle.write(strToWrite)
+        except IOError:
+            print 'Unable to write to the {} file in the' + \
+                ' given configDir: {} \n'.format(envFile, envDir)
+            sys.exit(1)
+
+        # and then the keys directory and all the sub directories
+        keyDir = baseUtils + "keys/"
+        if not os.path.exists(keyDir + newEnvName):
+            os.makedirs(keyDir + newEnvName, 0755)
+            # and touch a file so that this isn't an empty directory
+            open(keyDir + newEnvName + "/.keep", 'a').close()
+
+        print "New Environment created: " + newEnvName
 
     def delete(self, optionsMap):
         """delete all the necessary items that are associated with the
