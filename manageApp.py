@@ -189,6 +189,7 @@ class ManageAppName:
         # change to the baseDirectory
         os.chdir(self.baseDir + "/" + self.appName)
 
+        print "Cloning: " + self.appURL
         cmdToRun = "git clone " + self.appURL
 
         appOutput = ''
@@ -222,6 +223,7 @@ class ManageAppName:
                 "\nCheck that you specified\nthe correct owner " + \
                 "and respository name."
 
+        print "Done\n\nCloning: " + self.utilsURL
         cmdToRun = "git clone " + self.utilsURL
 
         utilsOutput = ''
@@ -256,14 +258,17 @@ class ManageAppName:
                 "\nCheck that you specified\nthe correct owner " + \
                 "and respository name."
 
+        print "Done\n"
         # and the environments directory
         envDir = basePath + "/" + self.utilsDirName + "/environments"
         if not os.path.exists(envDir):
             os.makedirs(envDir, 0755)
 
+            print "Creating environment files"
             # and then create the individiual env files in that directory
             self.createEnvFiles(envDir)
         else:
+            print "Creating personal.env file"
             # the environments directory exists so as long as there is a
             # personal.env make a change to the dcHOME  defined there
             # to be the one that is passed into this script.
@@ -274,6 +279,8 @@ class ManageAppName:
         if not os.path.exists(generatedEnvDir):
             os.makedirs(generatedEnvDir, 0755)
 
+        print "Completed successfully\n"
+
     def create(self, optionsMap):
         """creates the directory structure and sets up the appropriate
         templates necessary to run a customers appliction set."""
@@ -282,6 +289,7 @@ class ManageAppName:
         self.createUtilDirectories()
         self.tmpGetStackDirectory()
         self.createDockerComposeFiles()
+        print "\n\nDone"
         # self.createStackDirectory()
         # self.createAWSProfile()
 

@@ -156,11 +156,13 @@ done
 #-------------------------------------------------------------------------------
 if [[ $TYPE = "instance" ]]; then
 
+    echo "Deploying for type: instance"
     # TODO look into the destination files below and see what would need to be done about
     # duplicate key/value pairs.  See if this would benefit from the same kind of
     # processing that the docker (ie, the else of the TYPE if check) section has.
 
 
+    echo -n "combining common.env"
     # Add common env vars to instance environment file
     cat environments/common.env | sudo tee -a  /etc/environment
 
@@ -171,17 +173,20 @@ if [[ $TYPE = "instance" ]]; then
     #echo "CUSTOMER_APP_UTILS=${CUSTOMER_APP_UTILS}"  >> ${TEMP_FILE}
     #echo "CUSTOMER_APP_WEB=${CUSTOMER_APP_WEB}" >> ${TEMP_FILE}
 
+    echo -n "...${ENV}.env"
     # Add env vars for this environment, if it exists
     if [[ -e ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/${ENV}.env ]]; then
         cat ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/${ENV}.env | sudo tee -a /etc/environment
     fi
 
+    echo -n "...personal.env into global environment file"
     # only bring in the personal.env if one exists for the environment and if not there
     # check the base environments directory as a last resort (in case they have only one)
     if [[ -e ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/personal.env ]]; then
         cat ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/personal.env | sudo tee -a /etc/environment
     fi
 
+    echo "...and configuring supervisor config file"
     # Add the environment variables to the Supervisor, when started by init.d
     if [[ -e "/etc/default/supervisor" ]]; then
         sed -e 's/^/export /'  environments/common.env | sudo tee -a /etc/default/supervisor
@@ -206,12 +211,14 @@ if [[ $TYPE = "instance" ]]; then
     done < /etc/environment
 
     echo "ENV vars for '${ENV}' added to /etc/environment and /etc/default/supervisor"
+    echo "Completed successfully"
 
 
 #-------------------------------------------------------------------------------
 #  The else case is that the type is docker for a local docker deploy
 #-------------------------------------------------------------------------------
 else
+    echo "Deploying for type: docker"
     #-------------------------------------------------------------------------------
     # the flow of what will happen is that each of the env files will be pulled together
     # in one file (ie, ./.tmp-local.env).  Then the next step is to read that file, ignore
@@ -234,6 +241,7 @@ else
     fi
 
     # next set up the devops.center common env.
+    echo -n "combining common.env"
     TEMP_FILE="./.tmp-local.env"
     cp environments/common.env ${TEMP_FILE}
 
@@ -243,22 +251,27 @@ else
     echo "CUSTOMER_APP_WEB=${CUSTOMER_APP_WEB}" >> ${TEMP_FILE}
     echo "CUSTOMER_APP_ENV=${ENV}" >> ${TEMP_FILE}
 
+    echo -n "...${ENV}.env"
     if [[ -e ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/${ENV}.env ]]; then
         cat ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/${ENV}.env >> ${TEMP_FILE}
     fi
 
+    echo -n "...personal.env into a single file"
     # only bring in the personal.env if one exists for the environment and if not there
     # check the base environments directory as a last resort (in case they have only one)
     if [[ -e ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/personal.env ]]; then
         cat ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/personal.env >> ${TEMP_FILE}
     fi
 
+    echo -n "...cleaning file to get rid of duplicates"
+    # only bring in the personal.env if one exists for the environment and if not there
     # now read in the ./.tmp-local.env file and remove comments/spaces and duplicates
     # and create the new files with appname and env.  Then create the links and finally
     # remove the temporary working file
     fixUpFile ${TEMP_FILE}
 
     # Now create the links
+    echo "...creating final files"
     if [[ -f ${TEMP_FILE} ]]; then
         TARGET_ENV_FILE="${BASE_CUSTOMER_APP_UTILS_DIR}/environments/.generatedEnvFiles/dcEnv-${CUSTOMER_APP_NAME}-${ENV}.env"
         mv ${TEMP_FILE} ${TARGET_ENV_FILE}
@@ -274,6 +287,7 @@ else
     TARGET_SH_FILE="${BASE_CUSTOMER_APP_UTILS_DIR}/environments/.generatedEnvFiles/dcEnv-${CUSTOMER_APP_NAME}-${ENV}.sh"
     sed -e 's/^/export /'  ${TARGET_ENV_FILE} > ${TARGET_SH_FILE}
 
+    echo "Completed successfully"
     # TODO need to figure out how to get the users keys so that "paws" will work
     # probably need another script to manage them (ie, manageKeys.py)
 
