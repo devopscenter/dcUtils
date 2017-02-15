@@ -58,9 +58,15 @@ def main(argv):
             envDict[key] = val
 
     with open(outputFile, 'w') as outEnvFile:
+        # first write out the dcHOME so that it is at the top of the file
+        strToWrite = '{}={}\n'.format("dcHOME", envDict["dcHOME"])
+        outEnvFile.write(strToWrite)
+
         for item in envDict:
-            strToWrite = '{}={}\n'.format(item, envDict[item])
-            outEnvFile.write(strToWrite)
+            # make sure we skip the dcHOME since we already wrote it out
+            if item != "dcHOME":
+                strToWrite = '{}={}\n'.format(item, envDict[item])
+                outEnvFile.write(strToWrite)
 
 
 if __name__ == "__main__":
