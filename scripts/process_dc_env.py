@@ -20,7 +20,7 @@ __status__ = "Development"
 
 
 class Process_dc_Env:
-    def __init__(self, envList, generateEnvFiles):
+    def __init__(self, envList, generateEnvFiles=0):
         """ Process_dc_Env constructor """
         self.envList = envList
         self.baseDir = ""
