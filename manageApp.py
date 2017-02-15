@@ -316,6 +316,8 @@ class ManageAppName:
         for item in commonDirs:
             if not os.path.exists(configDir + item):
                 os.makedirs(configDir + item, 0755)
+                # and touch a file so that this isn't an empty directory
+                open(configDir + item + "/.keep", 'a').close()
 
         # and the environments directory
         envDir = baseUtils + "environments"
@@ -335,6 +337,8 @@ class ManageAppName:
         for item in commonDirs:
             if not os.path.exists(keyDir + item):
                 os.makedirs(keyDir + item, 0755)
+                # and touch a file so that this isn't an empty directory
+                open(keyDir + item + "/.keep", 'a').close()
 
         fileToWrite = basePath + "/.dcDirMap.cnf"
         try:
