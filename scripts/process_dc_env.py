@@ -368,7 +368,7 @@ def checkArgs(type=0):
                         'that this is being invoked by deployEnv.sh ' +
                         'and that we need to generate the env files rather ' +
                         'then read them.',
-                        action="store_false",
+                        action="store_true",
                         required=False)
 
     # args, unknown = parser.parse_known_args()
