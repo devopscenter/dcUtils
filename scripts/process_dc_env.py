@@ -327,7 +327,10 @@ def shellGetEnv():
 
 def checkArgs(type=0):
     parser = argparse.ArgumentParser(
-        description='This script will ensure that there is an environment ' +
+        description='The core argument processing is handled by a separate ' +
+                    'process (process_dc_env.py) and is called by this ' +
+                    'script.  This core process will ensure that there ' +
+                    'is an environment ' +
                     'file that is set and can be utilized for the running ' +
                     'of this session.  The intent of this script is that it ' +
                     'would be put at the top of all devops.center scripts ' +

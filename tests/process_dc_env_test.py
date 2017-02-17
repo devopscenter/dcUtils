@@ -61,8 +61,13 @@ def main(argv):
     # retVals = pythonGetEnv(initialCreate=True)
 
     # normal call for all other python scripts
+    try:
+        (foo, workspaceName) = checkArgs()
+    except SystemExit:
+        pythonGetEnv()
+        sys.exit(1)
+
     retVals = pythonGetEnv()
-    (foo, workspaceName) = checkArgs()
 
     print "=>{}<=".format(retVals)
     print "foo={}".format(foo)

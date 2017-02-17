@@ -852,15 +852,11 @@ def checkBaseDirectory(baseDirectory):
 
 
 def checkArgs():
-    retEnvList = pythonGetEnv(initialCreate=True)
     parser = argparse.ArgumentParser(
         description='This script provides an administrative interface to a ' +
         'customers application set that is referred to as appName.  The ' +
         'administrative functions implement some of the CRUD services ' +
         '(ie, Create, Update, Delete).')
-#    parser.add_argument('-a', '--appName', help='Name of the application ' +
-#                        'to manage .',
-#                        required=True)
     parser.add_argument('-d', '--baseDirectory', help='The base directory ' +
                         'to be used to access the appName. This needs to ' +
                         'an absolute path unless the first part of the path ' +
@@ -900,7 +896,14 @@ def checkArgs():
                         '(essentially applications associated by client)' +
                         'with this option.',
                         required=False)
-    args, unknown = parser.parse_known_args()
+
+    try:
+        args, unknown = parser.parse_known_args()
+    except SystemExit:
+        pythonGetEnv()
+        sys.exit(1)
+
+    retEnvList = pythonGetEnv(initialCreate=True)
 
     if retEnvList["CUSTOMER_APP_NAME"]:
         retAppName = retEnvList["CUSTOMER_APP_NAME"]
