@@ -127,29 +127,36 @@ fi
 TYPE="docker"
 ENV="local"
 
-#-------------------------------------------------------------------------------
-# set up the environment
-NEW=${@}" --generateEnvFiles"
-
-envToSource=$(${dcUTILS}/scripts/process_dc_env.py ${NEW})
-
-if [[ $? -ne 0 ]]; then
-    echo $envToSource
-    exit 1
-else
-    eval $envToSource
-fi
-#-------------------------------------------------------------------------------
-
 # now handle the arguemnts for this script
 while [[ $# -gt 0 ]]; do
     case $1 in
-      --type )   shift
-                    TYPE=$1
-                    ;;
+      --type )    shift
+                  TYPE=$1
+                  ;;
+      --appName ) shift
+                  CUSTOMER_APP_NAME=$1
+                  ;;
+      --env )     shift
+                  ENV=$1
+                  ;;
     esac
     shift
 done
+
+if [[ $TYPE != "instance" ]]; then
+    #-------------------------------------------------------------------------------
+    # set up the environment
+    NEW=${@}" --generateEnvFiles"
+
+    envToSource=$(${dcUTILS}/scripts/process_dc_env.py ${NEW})
+
+    if [[ $? -ne 0 ]]; then
+        echo $envToSource
+        exit 1
+    else
+        eval $envToSource
+    fi
+fi
 
 #-------------------------------------------------------------------------------
 # handle the case where the type is an instance
