@@ -127,6 +127,9 @@ fi
 TYPE="docker"
 ENV="local"
 
+# set up the environment
+NEW=${@}" --generateEnvFiles"
+
 # now handle the arguemnts for this script
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -145,8 +148,6 @@ done
 
 if [[ $TYPE != "instance" ]]; then
     #-------------------------------------------------------------------------------
-    # set up the environment
-    NEW=${@}" --generateEnvFiles"
 
     envToSource=$(${dcUTILS}/scripts/process_dc_env.py ${NEW})
 
