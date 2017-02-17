@@ -139,7 +139,7 @@ def checkArgs():
     parser = argparse.ArgumentParser(
         description='Script that provides a facility to execute various ' +
                     'AWS commands and show the output')
-    parser.add_argument('--customerAppName', help='Name of the appName  ' +
+    parser.add_argument('--appName', help='Name of the appName  ' +
                         'in which to execute the AWS command',
                         required=True)
     parser.add_argument('-c', '--command', help='The AWS command action ' +
@@ -150,7 +150,7 @@ def checkArgs():
                         default='container')
     args = parser.parse_args()
 
-    retProfileName = args.customerAppName
+    retProfileName = args.appName
     retCommand = args.command
 
     # if we get here then the
