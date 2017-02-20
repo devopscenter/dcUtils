@@ -74,7 +74,7 @@ class Process_dc_Env:
         # more than one. If it doesn't exist exit and instruct the user to run
         # deployenv.sh
         # ---------------------------------------------------------------------
-        if self.generateEnvFiles:
+        if not self.generateEnvFiles:
             self.getEnvFile()
 
             # -----------------------------------------------------------------
