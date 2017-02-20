@@ -698,8 +698,8 @@ class ManageAppName:
                 "# change dcUTILS to where you have put the devops.center\n"
                 "# dcUtils directory\n"
                 "dcUTILS=" + self.baseDir + "dcUtils\n"
-                'dcDATA=${dcHOME}/dataload\n'
-                'dcAPP=${dcHOME}/' + self.dcAppName + "\n"
+                'dcDATA=${dcHOME}/${dcDEFAULT_APP_NAME}/dataload\n'
+                'dcAPP=${dcHOME}/${dcDEFAULT_APP_NAME}/' + self.dcAppName + "\n"
                 "\n"
                 "#LOG_NAME=put the name you want to see in papertrail, "
                 "the default is hostname\n"
