@@ -545,6 +545,11 @@ class ManageAppName:
                     name + "\n"
                     "APP_UTILS_KEYS=${dcHOME}/" + appUtilsDir + "config/" +
                     name + "\n"
+                    "\n# Papertrail settings\n"
+                    "#\n"
+                    "SYSLOG_SERVER='yourserver.papertrailapp.com'\n"
+                    "SYSLOG_PORT='99999'\n"
+                    "SYSLOG_PROTO='udp'\n"
                     "\n#\n"
                     "#\n")
                 fileHandle.write(strToWrite)
@@ -565,7 +570,7 @@ class ManageAppName:
                 "# Papertrail settings\n"
                 "#\n"
                 "SYSLOG_SERVER='yourserver.papertrailapp.com'\n"
-                "SYSLOG_PORT='48809'\n"
+                "SYSLOG_PORT='99999'\n"
                 "SYSLOG_PROTO='udp'\n"
                 "\n"
                 "#\n"
@@ -748,6 +753,11 @@ class ManageAppName:
                 newEnvName + "\n"
                 "APP_UTILS_KEYS=${dcHOME}/" + appUtilsDir + "config/" +
                 newEnvName + "\n"
+                "\n# Papertrail settings\n"
+                "#\n"
+                "SYSLOG_SERVER='yourserver.papertrailapp.com'\n"
+                "SYSLOG_PORT='99999'\n"
+                "SYSLOG_PROTO='udp'\n"
                 "\n#\n"
                 "#\n")
             fileHandle.write(strToWrite)
