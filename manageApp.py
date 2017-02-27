@@ -927,8 +927,8 @@ def checkArgs():
     if args.baseDirectory:
         retBaseDir = checkBaseDirectory(args.baseDirectory)
 
-    if args.workspaceName:
-        retWorkspaceName = args.workspaceName
+    if retEnvList["WORKSPACE_NAME"]:
+        retWorkspaceName = retEnvList["WORKSPACE_NAME"]
     else:
         retWorkspaceName = ''
 
