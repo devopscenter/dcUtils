@@ -287,7 +287,7 @@ class ManageAppName:
         self.createBaseDirectories()
         self.createWebDirectories()
         self.createUtilDirectories()
-        # self.tmpGetStackDirectory()
+        self.tmpGetStackDirectory()
         self.createDockerComposeFiles()
         print "\n\nDone"
         # self.createStackDirectory()
