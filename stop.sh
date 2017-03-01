@@ -93,6 +93,8 @@ else
 fi
 #echo ${DOCKER_COMPOSE_FILE}
 
+export GENERATED_ENV_FILE="${dcHOME}/${CUSTOMER_APP_UTILS}/environments/.generatedEnvFiles/dcEnv-${CUSTOMER_APP_NAME}-local.env"
+
 #-------------------------------------------------------------------------------
 # check to see if the compose file exists
 #-------------------------------------------------------------------------------
