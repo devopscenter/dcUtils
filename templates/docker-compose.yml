@@ -26,7 +26,7 @@ services:
             - "${APP_UTILS_KEYS}:/app-utils/keys"
         working_dir: "/data/deploy/current"
         env_file:
-            - "APP_NAME-ENV.env"
+            - "${GENERATED_ENV_FILE}"
         volumes_from:
             - syslog
 
@@ -47,7 +47,7 @@ services:
             - "${APP_UTILS_KEYS}:/app-utils/keys"
         working_dir: "/data/deploy/current"
         env_file:
-            - "APP_NAME-ENV.env"
+            - "${GENERATED_ENV_FILE}"
         volumes_from:
             - syslog
 
@@ -58,7 +58,7 @@ services:
         ports:
             - "5432:5432"
         env_file:
-            - "APP_NAME-ENV.env"
+            - "${GENERATED_ENV_FILE}"
         volumes:
             - pg-db:/media/data/postgres/
             - "${dcUTILS}:/utils"
@@ -74,7 +74,7 @@ services:
         hostname: "${dcDEFAULT_APP_NAME}_${CUSTOMER_APP_ENV}_redismaster"
         image: "devopscenter/db_redis:${dcSTACK_VERSION}"
         env_file:
-            - "APP_NAME-ENV.env"
+            - "${GENERATED_ENV_FILE}"
         ports:
             - "6379:6379"
         volumes:
@@ -90,7 +90,7 @@ services:
         hostname: "${dcDEFAULT_APP_NAME}_${CUSTOMER_APP_ENV}_syslog"
         image: "devopscenter/syslog:${dcSTACK_VERSION}"
         env_file:
-            - "APP_NAME-ENV.env"
+            - "${GENERATED_ENV_FILE}"
         environment:
             LOG_NAME:
         logging:
