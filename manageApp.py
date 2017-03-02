@@ -667,20 +667,10 @@ class ManageAppName:
         composeDebugFile = baseConfig + "/docker-compose-debug.yml"
         shutil.copyfile("templates/docker-compose-debug.yml", composeDebugFile)
 
-        # set up the targetEnvFile name based upon  the name and the
-        # path to get there
-        targetEnvFile = self.baseDir + self.appName + "/" + self.appName + \
-            "-utils/environments/.generatedEnvFiles/dcEnv-" + \
-            self.appName + "-local"
-
         # need to change the env file name and path to represent what is
         # created with this script
         for line in fileinput.input(composeFile, inplace=1):
-            print line.replace("APP_NAME-ENV", targetEnvFile),
-        for line in fileinput.input(composeFile, inplace=1):
             print line.replace("DC_UNIQUE_ID", self.uniqueStackName),
-        for line in fileinput.input(composeDebugFile, inplace=1):
-            print line.replace("APP_NAME-ENV", targetEnvFile),
         for line in fileinput.input(composeDebugFile, inplace=1):
             print line.replace("DC_UNIQUE_ID", self.uniqueStackName),
 
