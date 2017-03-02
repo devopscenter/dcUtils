@@ -68,7 +68,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 # make sure it is uppercase
-NEW_WORKSPACE_NAME=${A_WORKSPACE_NAME^^}
+NEW_WORKSPACE_NAME=$(echo "${A_WORKSPACE_NAME}" | tr "[a-z]" "[A-Z]")
 #echo ${NEW_WORKSPACE_NAME}
 
 #-------------------------------------------------------------------------------
