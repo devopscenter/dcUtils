@@ -146,7 +146,6 @@ repository name for the --appPath parameter and the utilsPath for the --utilsPat
 parameter.  The appPath and utilsPath can EITHER be a git repo URL or an absolute
 path to an existing application or utils directory that you already have.  This 
 will create the application directory structure to allow the new devleoper to 
-begin from a known point in the code.
 
 
 #### Edit personal.env
