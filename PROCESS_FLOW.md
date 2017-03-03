@@ -16,13 +16,17 @@ dcUtils is described here.
     - Optional create a local directory that will be the base for the application
       directory structure that will be created by manageApp.py. If you choose an
       existing directory note that you will have to provide the name of the
-      application with each dcUtils command.  
-    - Create the application by using manageApp.py with the create command using a
-      base directory path to be used to put the application directory structure in
-          This will do create a git repository and it once it is working will need
-          to be pushed to github so others can join the development.
+      application with each dcUtils command.
+    - Create the application by using manageApp.py with the create command and a
+      base directory path and an application name.  This will create a standardized
+      directory structure that houses configurations and keys for the different
+      environemnts that the application will run in.  There will be two main directories
+      one for the frontend application and another for the utility configurations.
+      Once it is determined to be an appropriate state the two directories can be pushed
+      to a git repository.  This will put it in a state that others than can join in
+      development on the code as explained in the Joining Development section
     - Change directory to the newly created directory structure and navigate to the
-      appName-utils/environments directory.  
+      appName-utils/environments directory.
     - Edit personal.env as appropriate
         make sure dcUTILS is pointing to the directory where you have pulled
             the dcUtils repo
@@ -30,8 +34,7 @@ dcUtils is described here.
         definitions.  And add the PGPOOL_CONFIG_FILE as well
     - Change to the devops.center dcUtils and run the deployenv.sh script to set
       up the environment for the application.
-    - Modify the docker-compose.yml as necessary  
-    - Execute start.sh (possibly will need --customerAppName appName)
+    - Execute start.sh
 
 ### High level flow for joining development already in progress
 
@@ -51,13 +54,13 @@ dcUtils is described here.
       is the configs that are personal to the individual developer.  This is
       located in the app-name-utils/environments directory in the personal.env
       file
-    - Change directory to the appName-utils/environments directory.  
+    - Change directory to the appName-utils/environments directory.
     - Edit the personal.env file and modify the dcUtils variable to point to the
       location where you cloned the devops.center/dcUtils directory
     - Change to the devops.center dcUtils directory and run deployenv.sh to set
       up the environment for the application.
-    - Modify the docker-compose.yml as necessary  
-    - Execute start.sh (possibly will need --customerAppName appName)
+    - Modify the docker-compose.yml as necessary
+    - Execute start.sh
 
 #### Clone devops.center dcUtils
 The devops.center application framework is manipulated by the scripts that are found
@@ -72,8 +75,8 @@ application directory structure.  This will be the base directory for any/all
 of the applications that will be created. Make note of this location as this will
 be used in the next step
 NOTE: if you choose to use an existing directory that has existing files in it,
-you will need to add the --customerAppName appName option to single out the
-specific directory for your application.  
+you will need to add the --appName applicationName option to single out the
+specific directory for your application.
 
 #### *(new applications)* Create the application
 In order to create a new application the script manageApp.py needs to be run.  This
@@ -95,15 +98,25 @@ where the options are:
 Doing a create will take the arguments and create a new directory in the base
 directory and use the appName as the name of the directory.  The base directory
 is stored in .dcConfig/baseDirectory which will be created (if it doesn't exist)
-in your $HOME directory.  
+in your $HOME directory.
 
-...take in a name for the web application.
-.... it can be a name that would be different then the default
-.... it can include a path and if found it will symbolically link that location
-      to the application directory
-....  or you can accept the automatically generated name
+There will be prompt that you will need to answer about the frontend of the application.
+In most applications the front end is implemented as a web page, so the default is
+listed as the application name  with a suffix of -web attached to it.  This doesn't
+have to be taken and you can provide any name you want.  Or, if you happen to already
+have the front end code available in some other location on your machine then that
+name can be used.  You will need to provide the full absolute path to that code at
+the prompt and that location will be symbolically linked to this directory structure.
+Or, if you want to accept the default just hit return.
 
-... the utils directory and it's contents will be automatically generated
+A last prompt will be to ask which devops.center unique stack name is to be used for
+the web (and worker) component of the application.  This is the ID of the stack number
+that contains the necessary code modules that you will need to use for your application.
+You can look at the repository of available stacks and choose the one that best suits
+your needs.
+
+After that the directory structure will be built with the applicationName-utils fully
+fleshed out with sane defaults.
 
 
 #### *(existing applications)* Join the development
@@ -128,10 +141,10 @@ subsequently create a repository for each of the application directory and the
 utils directory.  They probably would have set up the configurations and may
 have done work on setting up the application and then checked it all in.  Then
 a new developer comes along to assist, and they will run the manageApp.py on
-their development machine with a join.  They will enter the appURL repository
-name for the --appURL parameter and the utilsURL for the --utilsURL parameter.
-This will create the application directory structure to allow the new devleoper
-to begin from a known point in the code.
+their development machine with a  command of join.  They will enter the appURL
+repository name for the --appURL parameter and the utilsURL for the --utilsURL
+parameter.  This will create the application directory structure to allow the new
+devleoper to begin from a known point in the code.
 
 
 #### Edit personal.env
@@ -169,17 +182,17 @@ was found in.  The resultant file will then be placed in the directory:
 
 The script and arguments to set up this environment file is(from within dcUtils):
 
-    deployenv.sh --type TYPE --env ENV --customerAppName CUSTOMER_APP_NAME
+    deployenv.sh --type TYPE --env ENV --appName CUSTOMER_APP_NAME
 
 where the options are:
 
     --type TYPE                          # TYPE is one of instance or docker
     --env ENV                            # ENV is one of local, dev, staging, prod
-    --customerAppName CUSTOMER_APP_NAME  # application name you have wish to configure
+    --appName CUSTOMER_APP_NAME  # application name you have wish to configure
                                          # the environment for
 
 For local development the options will be --type docker --env local  and then
-whatever you have as the appName will be the value for the customerAppName argument
+whatever you have as the appName will be the value for the appName argument
 This will create containers that make up the application and run on your local
 machine.
 
@@ -210,13 +223,13 @@ used to get those key/value pairs into the environment may have an impact on
 values that have spaces in them.  In order to selectively isolate the items for
 the value with spaces, the value is quoted.  So, there is a possibility that
 the downstream use/access to these values may need to be aware of these quotes
-and strip them if necessary.  This is intended to be used by either shell 
-scripts of python scripts.  See the test scripts in ${dcUTILS}/tests for 
+and strip them if necessary.  This is intended to be used by either shell
+scripts of python scripts.  See the test scripts in ${dcUTILS}/tests for
 examples of each type of script and the usage.
 
 - $HOME/.dcConfig/baseDirectory
 This file provides the base directory for the applications that are created
-using the devops.center framework.  
+using the devops.center framework.
 
 - additional workspaces and switchWorkspace.sh
 
