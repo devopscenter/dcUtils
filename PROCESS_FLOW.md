@@ -161,6 +161,11 @@ And then there is the personal.env file.  This is where you can put the settings
 you would like to be specific to your development and meant to be different from others
 on your team.  This will will be ignored when working with git.
 
+Of special note about these is the order in which they are read in; commone, the environment
+specific one and then the personal. If a variable appears in two of the env files, the one
+in the file that is read in last will be the one with the value when it is written to the 
+appName-utils/environments/.genereratedEnvFile/dcEnv-appName-ENV file.
+
 So, you can either update the environment specific file or you can do the personal.env
 file.  At least, change the personal.env file, modifying the dcUTILS variable to point
 to where you cloned the devops.center dcUtils repository.
@@ -192,18 +197,20 @@ where the options are:
     --appName THE_APPLICATION_NAME  # application name you have wish to configure
                                          # the environment for
 
-For local development the options will be --type docker --env local  and then
-whatever you have as the appName will be the value for the appName argument
-This will create containers that make up the application and run on your local
-machine.
+For local development the options will be --type docker --env local (which are both
+the default values so if you are building for this enviornment than you don't have to
+specify the optinos)  and then whatever you have as the appName will be the value for
+the appName argument. 
 
 #### Modify the docker-compose.yml
 A basic template is provided for the docker-compose.yml and is placed in the directory:
 
     /baseDirectory/appName/appName-utils/config/local
 
-This will will need to reflect the services that you are using for the application. If
-assistance is needed, reach out to devops.center support.
+This will will need to reflect the services that you are using for the application.
+Most likely the only thing you would have to do with these is to comment a container
+if you are not going to be using it for your local development if assistance is needed,
+reach out to devops.center support.
 
 #### Start the application
 At this point all the necessary administrative duties have been addressed and starting
@@ -211,14 +218,48 @@ the application is as simple as using the command (from within dcUtils):
 
     ./start.sh
 
+NOTE: if you have multilpe applications in your base directory you will need to add
+the --appName option to signify which one you are starting
+
 #### Stop the application
 And then to stop the application (from within dcUtils):
 
     ./stop.sh
 
+NOTE: if you have multilpe applications in your base directory you will need to add
+the --appName option to signify which one you are stopping
+
+### Multiple base directories - Work Spaces
+By default the idea of working with the devops.center environment is that there is 
+one default workspace named: default.  This default workspace has a directory 
+associated with it, and all the applications would reside side by side in this
+directory.  By doing this, it is easier to automate setting up environment variables
+specific to an application.  The framework knows this because the information is 
+written in: $HOME/.dcConfig/baseDirectory.  When you create your first application
+this file will be constructed and the directory will placed into the file with the
+workspace name set to 'default'.  
+
+If you have the need or desire to support multiple workspaces (say you have two 
+customers and want to keep the applications separate), you can use the --workspaceName
+(-w) option on any of the scripts and specify the workspace you want to reference. 
+The script will read the $HOME/.dcConfig file and determine the base path for that
+name and use it appropriately.
+
+Also, if you are going to be doing a lot of work in this workspace you can use the
+switchWorkspace.sh script to change the default workspace to this name.  Then you 
+would not have to give the --workspaceName option each time you execute a script.
+To set the default to the new workspaceName execute:
+
+    switchWorkspace.sh -n new-name
+
+If you don't provide an option it will give you a help message and show you what the
+current default workspace name is.  If you want to go back to the default unnamed 
+workspace, enter the word "default" as the new name.
+
+
 #### Additional information on the internals of dcUtils
 - process_dc_env.py
-NOTE: This script will take the key/value pairs from the environment files and
+This script will take the key/value pairs from the environment files and
 make them available to the running script's environment.  The process that is
 used to get those key/value pairs into the environment may have an impact on
 values that have spaces in them.  In order to selectively isolate the items for
@@ -228,12 +269,8 @@ and strip them if necessary.  This is intended to be used by either shell
 scripts of python scripts.  See the test scripts in ${dcUTILS}/tests for
 examples of each type of script and the usage.
 
-TODO ... need more 
-- $HOME/.dcConfig/baseDirectory
-This file provides the base directory for the applications that are created
-using the devops.center framework.
 
-- additional workspaces and switchWorkspace.sh
+TODO ... need more 
 
 - appName/.dcMapDir
 
