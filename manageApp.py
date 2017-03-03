@@ -858,17 +858,18 @@ def checkArgs():
         'administrative functions implement some of the CRUD services ' +
         '(ie, Create, Update, Delete).')
     parser.add_argument('-d', '--baseDirectory', help='The base directory ' +
-                        'to be used to access the appName. This needs to ' +
+                        'to be used to access the appName. This needs to be ' +
                         'an absolute path unless the first part of the path ' +
-                        'is a tilde or $HOME',
-                        required=True)
+                        'is a tilde or $HOME.   This option is not required ' +
+                        'but is needed when doing a create or when using the' +
+                        ' workspaceName option.',
+                        required=False)
     parser.add_argument('-c', '--command', help='Command to execute' +
                         'on the appName. Default [join]',
                         choices=["join",
                                  "create",
                                  "update",
-                                 "delete",
-                                 "getUniqueID"],
+                                 "delete" ],
                         default='join',
                         required=False)
     parser.add_argument('-p', '--appURL', help='The customer application ' +
@@ -882,19 +883,6 @@ def checkArgs():
     parser.add_argument('-o', '--cmdOptions', help='Options for the ' +
                         'command arg',
                         default='',
-                        required=False)
-    parser.add_argument('-n', '--workspaceName',
-                        help='A unique name that identifies an alternate ' +
-                        'workspace. By default only one base directory is ' +
-                        'created and all applications created are put into ' +
-                        'that directory. By specifying this option an ' +
-                        'alternate base directory can be identified and it ' +
-                        'will be kept separate from any other base  ' +
-                        'directories. One usage is if you have multiple ' +
-                        'clients that you are building apps for then the ' +
-                        'apps can be in separate base directories ' +
-                        '(essentially applications associated by client)' +
-                        'with this option.',
                         required=False)
 
     try:
