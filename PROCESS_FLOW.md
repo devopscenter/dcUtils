@@ -183,13 +183,13 @@ was found in.  The resultant file will then be placed in the directory:
 
 The script and arguments to set up this environment file is(from within dcUtils):
 
-    deployenv.sh --type TYPE --env ENV --appName CUSTOMER_APP_NAME
+    deployenv.sh --type TYPE --env ENV --appName THE_APPLICATION_NAME
 
 where the options are:
 
     --type TYPE                          # TYPE is one of instance or docker
     --env ENV                            # ENV is one of local, dev, staging, prod
-    --appName CUSTOMER_APP_NAME  # application name you have wish to configure
+    --appName THE_APPLICATION_NAME  # application name you have wish to configure
                                          # the environment for
 
 For local development the options will be --type docker --env local  and then
