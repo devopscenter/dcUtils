@@ -352,11 +352,18 @@ def checkArgs(type=0):
                         'staging, prod. DEFAULT: local',
                         default='local',
                         required=False)
-    parser.add_argument('-w', '--workspaceName', help='The alternate ' +
-                        'directory name to find the application env files ' +
-                        'in. This will not change the .dcConfig/' +
-                        'baseDiretory file but will read it for the ' +
-                        'alternate path and use it directly',
+    parser.add_argument('-w', '--workspaceName',
+                        help='A unique name that identifies an alternate ' +
+                        'workspace. By default only one base directory is ' +
+                        'created and all applications created are put into ' +
+                        'that directory. By specifying this option an ' +
+                        'alternate base directory can be identified and it ' +
+                        'will be kept separate from any other base  ' +
+                        'directories. One usage is if you have multiple ' +
+                        'clients that you are building apps for then the ' +
+                        'apps can be in separate base directories ' +
+                        '(essentially applications associated by client)' +
+                        'with this option.',
                         required=False)
     parser.add_argument('-i', '--initialCreate', help='The flag to say ' +
                         'that this is being invoked by a start up script' +
