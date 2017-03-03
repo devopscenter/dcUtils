@@ -27,12 +27,12 @@ __status__ = "Development"
 
 class ManageAppName:
 
-    def __init__(self, theAppName, baseDirectory, altName, appURL, utilsURL):
+    def __init__(self, theAppName, baseDirectory, altName, appPath, utilsPath):
         """ManageAppName constructor"""
         self.appName = theAppName
         self.dcAppName = ''
-        self.appURL = appURL
-        self.utilsURL = utilsURL
+        self.appPath = appPath
+        self.utilsPath = utilsPath
         self.baseDir = baseDirectory
         self.altName = altName.upper()
 
@@ -173,9 +173,9 @@ class ManageAppName:
         NOTE: the pound noqa after the method name will turn off the warning
         that the method is to complex."""
 
-        if (not self.appURL) or (not self.utilsURL):
-            print "ERROR: you must provide both --appURL and --utilsURL to" + \
-                " join and existing application."
+        if (not self.appPath) or (not self.utilsPath):
+            print "ERROR: you must provide both --appPath and --utilsPath" + \
+                " to join and existing application."
             sys.exit(1)
 
         # create the dataload directory...this is a placeholder and can
@@ -189,76 +189,20 @@ class ManageAppName:
         # change to the baseDirectory
         os.chdir(self.baseDir + "/" + self.appName)
 
-        print "Cloning: " + self.appURL
-        cmdToRun = "git clone " + self.appURL
+        if re.match("http", self.appPath) or re.match("git", self.appPath):
+            # they have entered a git repo for the existing front end directory
+            self.joinWithGit(basePath, "web", self.appPath)
+        else:
+            # they have entered a path to an existing front end directory
+            self.joinWithPath(basePath, "web", self.appPath)
 
-        appOutput = ''
-        try:
-            appOutput = subprocess.check_output(cmdToRun,
-                                                stderr=subprocess.STDOUT,
-                                                shell=True)
+        if re.match("http", self.utilsPath) or re.match("git", self.utilsPath):
+            # they have entered a git repo for the existing utilities directory
+            self.joinWithGit(basePath, "utils", self.utilsPath)
+        else:
+            # they have entered a path to an existing utilies directory
+            self.joinWithPath(basePath, "utils", self.utilsPath)
 
-            # get the newly created directory and put it in the
-            # CUSTOMER_APP_WEB in the dcDirMap.cnf
-            if "Cloning" in appOutput:
-                self.dcAppName = re.search("(?<=')[^']+(?=')",
-                                           appOutput).group(0)
-
-                fileToWrite = basePath + "/.dcDirMap.cnf"
-                try:
-                    fileHandle = open(fileToWrite, 'w')
-                    strToWrite = "CUSTOMER_APP_WEB=" + self.dcAppName + "\n"
-                    fileHandle.write(strToWrite)
-                    fileHandle.close()
-                except IOError:
-                    print ("NOTE: There is a file that needs to be " +
-                           "created: \n" + self.basedir + self.appName +
-                           "/.dcDirMap.cnf and could not be written. \n" +
-                           "Please report this issue to the devops.center " +
-                           "admins.")
-
-        except subprocess.CalledProcessError:
-            print "There was an issue with cloning the application you " + \
-                "specified: " + self.appURL + \
-                "\nCheck that you specified\nthe correct owner " + \
-                "and respository name."
-
-        print "Done\n\nCloning: " + self.utilsURL
-        cmdToRun = "git clone " + self.utilsURL
-
-        utilsOutput = ''
-        try:
-            utilsOutput = subprocess.check_output(cmdToRun,
-                                                  stderr=subprocess.STDOUT,
-                                                  shell=True)
-
-            # get the newly created directory and put it in the
-            # CUSTOMER_APP_UTILS in the dcDirMap.cnf
-            if "Cloning" in utilsOutput:
-                self.utilsDirName = re.search("(?<=')[^']+(?=')",
-                                              utilsOutput).group(0)
-
-                fileToWrite = basePath + "/.dcDirMap.cnf"
-                try:
-                    fileHandle = open(fileToWrite, 'a')
-                    strToWrite = "CUSTOMER_APP_UTILS=" + self.utilsDirName + \
-                                 "\n"
-                    fileHandle.write(strToWrite)
-                    fileHandle.close()
-                except IOError:
-                    print ("NOTE: There is a file that needs to be created: " +
-                           "\n" + self.basedir + self.appName +
-                           "/.dcDirMap.cnf and could not be written. \n"
-                           "Please report this issue to the devops.center " +
-                           "admins.")
-
-        except subprocess.CalledProcessError:
-            print "There was an issue with cloning the application you " + \
-                "specified: " + self.utilsURL + \
-                "\nCheck that you specified\nthe correct owner " + \
-                "and respository name."
-
-        print "Done\n"
         # and the environments directory
         envDir = basePath + "/" + self.utilsDirName + "/environments"
         if not os.path.exists(envDir):
@@ -707,6 +651,106 @@ class ManageAppName:
                 ' given configDir: {} \n'.format(personalFile, envDir)
             sys.exit(1)
 
+    def joinWithGit(self, basePath, theType, theURL):
+        print "Cloning: " + theURL
+        cmdToRun = "git clone " + theURL
+
+        appOutput = ''
+        try:
+            appOutput = subprocess.check_output(cmdToRun,
+                                                stderr=subprocess.STDOUT,
+                                                shell=True)
+
+            # get the newly created directory and put it in the
+            # appropriate ENV variable in the dcDirMap.cnf
+            if "Cloning" in appOutput:
+                aName = re.search("(?<=')[^']+(?=')", appOutput).group(0)
+
+                if theType == "web":
+                    theEnvVarToWrite = "CUSTOMER_APP_WEB="
+                    self.dcAppName = aName
+                    # NOTE VERY dependent on the order in which this method
+                    # is called.  Web is assumed to be first ... see the
+                    # joinExistingDevelopment method
+                    fileWriteMode = 'w'
+                else:
+                    theEnvVarToWrite = "CUSTOMER_APP_UTILS="
+                    self.utilsDirName = aName
+                    # NOTE VERY dependent on the order in which this method
+                    # is called.  Web is assumed to be first ... see the
+                    # joinExistingDevelopment method
+                    fileWriteMode = 'a'
+
+                fileToWrite = basePath + "/.dcDirMap.cnf"
+                try:
+                    fileHandle = open(fileToWrite, fileWriteMode)
+                    strToWrite = theEnvVarToWrite + self.dcAppName + "\n"
+                    fileHandle.write(strToWrite)
+                    fileHandle.close()
+                except IOError:
+                    print ("NOTE: There is a file that needs to be " +
+                           "created: \n" + self.basedir + self.appName +
+                           "/.dcDirMap.cnf and could not be written. \n" +
+                           "Please report this issue to the devops.center " +
+                           "admins.")
+
+        except subprocess.CalledProcessError:
+            print "There was an issue with cloning the application you " + \
+                "specified: " + theURL + \
+                "\nCheck that you specified\nthe correct owner " + \
+                "and respository name."
+
+        print "Done\n"
+
+    def joinWithPath(self, basePath, theType, thePath):
+        if thePath.startswith("~"):
+            adjustedPath = thePath.replace('~', expanduser('~'))
+        elif thePath.startswith("$HOME"):
+            adjustedPath = thePath.replace('$HOME', expanduser('~'))
+        elif thePath.startswith("${HOME}"):
+            adjustedPath = thePath.replace('${HOME}', expanduser('~'))
+        else:
+            adjustedPath = thePath
+
+        # and get the name at the end of the path
+        aName = os.path.basename(adjustedPath)
+        destPath = basePath + "/" + aName
+
+        print "Linking the path: " + adjustedPath
+        print "  to directory: " + destPath
+        os.symlink(adjustedPath, destPath)
+
+        # and now update the .dcDirMap.conf
+        if theType == "web":
+            theEnvVarToWrite = "CUSTOMER_APP_WEB="
+            self.dcAppName = aName
+            # NOTE VERY dependent on the order in which this method
+            # is called.  Web is assumed to be first ... see the
+            # joinExistingDevelopment method
+            fileWriteMode = 'w'
+        else:
+            theEnvVarToWrite = "CUSTOMER_APP_UTILS="
+            self.utilsDirName = aName
+            # NOTE VERY dependent on the order in which this method
+            # is called.  Web is assumed to be first ... see the
+            # joinExistingDevelopment method
+            fileWriteMode = 'a'
+
+        fileToWrite = basePath + "/.dcDirMap.cnf"
+        try:
+            fileHandle = open(fileToWrite, fileWriteMode)
+            strToWrite = theEnvVarToWrite + self.dcAppName + "\n"
+            fileHandle.write(strToWrite)
+            fileHandle.close()
+        except IOError:
+            print ("NOTE: There is a file that needs to be " +
+                   "created: \n" + self.basedir + self.appName +
+                   "/.dcDirMap.cnf and could not be written. \n" +
+                   "Please report this issue to the devops.center " +
+                   "admins.")
+
+        print "Done\n"
+
     def update(self, optionsMap):
         """takes an argument that dictates what needs to be updated and then
         what items that are associated with the change"""
@@ -869,15 +913,25 @@ def checkArgs():
                         choices=["join",
                                  "create",
                                  "update",
-                                 "delete" ],
+                                 "delete"],
                         default='join',
                         required=False)
-    parser.add_argument('-p', '--appURL', help='The customer application ' +
-                        'repo URL to use for the join command',
+    parser.add_argument('-p', '--appPath', help='The customer application ' +
+                        'repo URL or a path to an existing directory that ' +
+                        'houses the application front end. If you provide a ' +
+                        'path it should be an the full absolute path as it ' +
+                        'will be symobolically linked to the base directory ' +
+                        'given in this command. NOTE: tilde(~) or $HOME will ' +
+                        'be expanded appropriately',
                         default='',
                         required=False)
-    parser.add_argument('-u', '--utilsURL', help='The customer utils ' +
-                        'repo URL to use for the join command',
+    parser.add_argument('-u', '--utilsPath', help='The customer utils ' +
+                        'repo URL or a path to an existing directory that ' +
+                        'houses the application utilities. If you provide a ' +
+                        'path it should be an the full absolute path as it ' +
+                        'will be symobolically linked to the base directory ' +
+                        'given in this command. NOTE: tilde(~) or $HOME will ' +
+                        'be expanded appropriately',
                         default='',
                         required=False)
     parser.add_argument('-o', '--cmdOptions', help='Options for the ' +
@@ -897,8 +951,8 @@ def checkArgs():
         retAppName = retEnvList["CUSTOMER_APP_NAME"]
     retCommand = args.command
     retOptions = args.cmdOptions
-    retAppURL = args.appURL
-    retUtilsURL = args.utilsURL
+    retAppURL = args.appPath
+    retUtilsURL = args.utilsPath
 
     # before going further we need to check whether there is a slash at the
     # end of the value in destinationDir
@@ -916,11 +970,11 @@ def checkArgs():
 
 
 def main(argv):
-    (appName, baseDir, workspaceName, command, appURL, utilsURL,
+    (appName, baseDir, workspaceName, command, appPath, utilsPath,
      options) = checkArgs()
 
-    customerApp = ManageAppName(appName, baseDir, workspaceName, appURL,
-                                utilsURL)
+    customerApp = ManageAppName(appName, baseDir, workspaceName, appPath,
+                                utilsPath)
     customerApp.run(command, options)
 
 
