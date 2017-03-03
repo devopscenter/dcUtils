@@ -228,6 +228,7 @@ and strip them if necessary.  This is intended to be used by either shell
 scripts of python scripts.  See the test scripts in ${dcUTILS}/tests for
 examples of each type of script and the usage.
 
+TODO ... need more 
 - $HOME/.dcConfig/baseDirectory
 This file provides the base directory for the applications that are created
 using the devops.center framework.
