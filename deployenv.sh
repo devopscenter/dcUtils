@@ -136,9 +136,6 @@ while [[ $# -gt 0 ]]; do
       --type )    shift
                   TYPE=$1
                   ;;
-      --appName ) shift
-                  CUSTOMER_APP_NAME=$1
-                  ;;
       --env )     shift
                   ENV=$1
                   ;;
