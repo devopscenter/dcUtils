@@ -191,15 +191,15 @@ if [[ $TYPE = "instance" ]]; then
 
     echo -n "...${ENV}.env"
     # Add env vars for this environment, if it exists
-    if [[ -e ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/${ENV}.env ]]; then
-        cat ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/${ENV}.env | sudo tee -a /etc/environment
+    if [[ -e ${HOME}/${dcDEFAULT_APP_NAME}/${dcDEFAULT_APP_NAME}-utils/environments/${ENV}.env ]]; then
+        cat ${HOME}/${dcDEFAULT_APP_NAME}/${dcDEFAULT_APP_NAME}-utils/environments/${ENV}.env | sudo tee -a /etc/environment
     fi
 
     echo -n "...personal.env into global environment file"
     # only bring in the personal.env if one exists for the environment and if not there
     # check the base environments directory as a last resort (in case they have only one)
-    if [[ -e ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/personal.env ]]; then
-        cat ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/personal.env | sudo tee -a /etc/environment
+    if [[ -e ${HOME}/${dcDEFAULT_APP_NAME}/${dcDEFAULT_APP_NAME}-utils/environments/personal.env ]]; then
+        cat ${HOME}/${dcDEFAULT_APP_NAME}/${dcDEFAULT_APP_NAME}-utils/environments/personal.env | sudo tee -a /etc/environment
     fi
 
     echo "...and configuring supervisor config file"
@@ -210,12 +210,12 @@ if [[ $TYPE = "instance" ]]; then
         sed -e 's/^/export /'  environments/common.env | sudo tee  /etc/default/supervisor
     fi
 
-    if [[ -e ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/${ENV}.env ]]; then
-        sed -e 's/^/export /' ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/${ENV}.env | sudo tee -a /etc/default/supervisor
+    if [[ -e ${HOME}/${dcDEFAULT_APP_NAME}/${dcDEFAULT_APP_NAME}-utils/environments/${ENV}.env ]]; then
+        sed -e 's/^/export /' ${HOME}/${dcDEFAULT_APP_NAME}/${dcDEFAULT_APP_NAME}-utils/environments/${ENV}.env | sudo tee -a /etc/default/supervisor
     fi
 
-    if [[ -e ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/personal.env ]]; then
-        sed -e 's/^/export /' ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/personal.env | sudo tee -a /etc/default/supervisor
+    if [[ -e ${HOME}/${dcDEFAULT_APP_NAME}/${dcDEFAULT_APP_NAME}-utils/environments/personal.env ]]; then
+        sed -e 's/^/export /' ${HOME}/${dcDEFAULT_APP_NAME}/${dcDEFAULT_APP_NAME}-utils/environments/personal.env | sudo tee -a /etc/default/supervisor
     fi
 
     # put the /etc/environment in the current env for this session...normally would have to log out and log in to get it.
@@ -246,7 +246,7 @@ else
     # The docker-current.env file will be used by the docker-compose up script and any
     # devops.center script will read in the docker-current.sh
     #-------------------------------------------------------------------------------
-    BASE_CUSTOMER_APP_UTILS_DIR="${BASE_CUSTOMER_DIR}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_UTILS}"
+    BASE_CUSTOMER_APP_UTILS_DIR="${BASE_CUSTOMER_DIR}/${dcDEFAULT_APP_NAME}/${CUSTOMER_APP_UTILS}"
 
     #-------------------------------------------------------------------------------
     # copy the health_checks template to the appropriate place for the  application
@@ -289,7 +289,7 @@ else
     # Now create the links
     echo "...creating final files"
     if [[ -f ${TEMP_FILE} ]]; then
-        TARGET_ENV_FILE="${BASE_CUSTOMER_APP_UTILS_DIR}/environments/.generatedEnvFiles/dcEnv-${CUSTOMER_APP_NAME}-${ENV}.env"
+        TARGET_ENV_FILE="${BASE_CUSTOMER_APP_UTILS_DIR}/environments/.generatedEnvFiles/dcEnv-${dcDEFAULT_APP_NAME}-${ENV}.env"
         mv ${TEMP_FILE} ${TARGET_ENV_FILE}
     else
         echo -e "ERROR: the creation of the environments file was not successful."
@@ -300,7 +300,7 @@ else
     fi
 
     # Create a script to initialize the local shell
-    TARGET_SH_FILE="${BASE_CUSTOMER_APP_UTILS_DIR}/environments/.generatedEnvFiles/dcEnv-${CUSTOMER_APP_NAME}-${ENV}.sh"
+    TARGET_SH_FILE="${BASE_CUSTOMER_APP_UTILS_DIR}/environments/.generatedEnvFiles/dcEnv-${dcDEFAULT_APP_NAME}-${ENV}.sh"
     sed -e 's/^/export /'  ${TARGET_ENV_FILE} > ${TARGET_SH_FILE}
 
     echo "Completed successfully"
