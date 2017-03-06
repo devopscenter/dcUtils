@@ -204,7 +204,7 @@ if [[ $TYPE = "instance" ]]; then
 
     echo "...and configuring supervisor config file"
     # Add the environment variables to the Supervisor, when started by init.d
-    if [[ -e "/etc/default/supervisor" ]]; then
+    if [[ -f "/etc/default/supervisor" ]]; then
         sed -e 's/^/export /'  environments/common.env | sudo tee -a /etc/default/supervisor
     else
         sed -e 's/^/export /'  environments/common.env | sudo tee  /etc/default/supervisor
