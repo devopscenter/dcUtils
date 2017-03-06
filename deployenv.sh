@@ -110,7 +110,7 @@ function fixUpFile
 
     if [[ $? -ne 1 ]]; then
         echo "It was still default...changing"
-        sed -e "s/dcDEFAULT_APP_NAME=__DEFAULT__/dcDEFAULT_APP_NAME=${CUSTOMER_APP_NAME}/"  ${tmpFile}  > ${tmpFile2}
+        sed -e "s/dcDEFAULT_APP_NAME=__DEFAULT__/dcDEFAULT_APP_NAME=${dcDEFAULT_APP_NAME}/"  ${tmpFile}  > ${tmpFile2}
         mv ${tmpFile2} ${tmpFile}
     fi
 }
