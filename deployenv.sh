@@ -166,6 +166,17 @@ if [[ $TYPE = "instance" ]]; then
     # duplicate key/value pairs.  See if this would benefit from the same kind of
     # processing that the docker (ie, the else of the TYPE if check) section has.
 
+    # backup the /etc/enviornment so that we don't keep duplicating items past the very first time
+    # that we run deployenv.sh on an instance.  That is, the very first time we run this on a 
+    # newly created instance it will take whatever is in file and save it, so that can be the
+    # first thing put in after we remove it.
+    if [[ ! -f /etc/environment.ORIG ]]; then
+        sudo cp /etc/enviornment /etc/environment.ORIG
+    fi
+
+    # remove the /etc/environment file so we start from a known point each time
+    sudo rm /etc/environment
+    cat /etc/environment.ORIG | sudo tee -a  /etc/environment
 
     echo -n "combining common.env"
     # Add common env vars to instance environment file
