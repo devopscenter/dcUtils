@@ -204,10 +204,13 @@ if [[ $TYPE = "instance" ]]; then
 
     echo "...and configuring supervisor config file"
     # Add the environment variables to the Supervisor, when started by init.d
-    if [[ -f "/etc/default/supervisor" ]]; then
-        sed -e 's/^/export /'  environments/common.env | sudo tee -a /etc/default/supervisor
-    else
+    if [[ -e "/etc/default/supervisor" ]]; then
+        # if it exists it needs to be removed so that we don't keep adding to it.
+        # TODO if there is something in this file after the install and before we run this then we need to do the
+        # same steps for this file as was done by environment above
         sed -e 's/^/export /'  environments/common.env | sudo tee  /etc/default/supervisor
+    else
+        sed -e 's/^/export /'  environments/common.env | sudo tee -a /etc/default/supervisor
     fi
 
     if [[ -e ${HOME}/${dcDEFAULT_APP_NAME}/${dcDEFAULT_APP_NAME}-utils/environments/${ENV}.env ]]; then
