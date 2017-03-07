@@ -106,7 +106,6 @@ function fixUpFile
 
     mv ${tmpFile2} ${tmpFile}
 
-    set -x
     grep -q "dcDEFAULT_APP_NAME=__DEFAULT__" ${tmpFile}
 
     if [[ $? -ne 1 ]]; then
@@ -114,7 +113,6 @@ function fixUpFile
         sed -e "s/dcDEFAULT_APP_NAME=__DEFAULT__/dcDEFAULT_APP_NAME=${CUSTOMER_APP_NAME}/"  ${tmpFile}  > ${tmpFile2}
         mv ${tmpFile2} ${tmpFile}
     fi
-    set +x
 }
 
 #-------------------------------------------------------------------------------
