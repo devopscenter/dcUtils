@@ -684,7 +684,7 @@ class ManageAppName:
                 fileToWrite = basePath + "/.dcDirMap.cnf"
                 try:
                     fileHandle = open(fileToWrite, fileWriteMode)
-                    strToWrite = theEnvVarToWrite + self.dcAppName + "\n"
+                    strToWrite = theEnvVarToWrite + aName + "\n"
                     fileHandle.write(strToWrite)
                     fileHandle.close()
                 except IOError:
