@@ -27,22 +27,27 @@ class EnvironmentDescription:
     topLevelInstanceName = ''
     destinationDir = ''
 
-    def __init__(self, appNameIn,  envTypeIn, destDirIn):
+    def __init__(self, appNameIn,  envTypeIn, destDirIn, profileIn):
         """creates an instance of EnvironmentDescription that takes the
         customer or application name, environmentType (dev,test,staging,prod)
         and the destination directory for where the selected backup file will be
         downloaded to."""
         self.envType = envTypeIn
         self.appName = appNameIn
+        self.profile = profileIn
         self.destinationDir = destDirIn
-        self.topLevel = self.appName + "-postgres-backup-" + self.envType
+        self.topLevel = self.appName + "-" + self.envType + "-postgres-backup"
 
     def getInstanceNames(self):
         cmdToRun = 'aws --profile ' +  \
-            self.appName + \
-            ' s3 ls s3://' + \
-            self.topLevel
-        tmpNames = subprocess.check_output(cmdToRun, shell=True)
+            self.profile + ' s3 ls s3://' + self.topLevel
+        try:
+            tmpNames = subprocess.check_output(cmdToRun, shell=True)
+        except subprocess.CalledProcessError:
+            print "There was an problem retrieving the instances for the " + \
+                  "path: {}".format(self.topLevel)
+            sys.exit(1)
+
         tmpNamesList = tmpNames.split()
         i = 0
         returnNameList = []
@@ -109,6 +114,11 @@ def checkArgs(inputArgs):
         'would want to download')
     parser.add_argument('-d', '--destDir', help='Destination directory to ' +
                         'put the downloaded backup file into', required=True)
+    parser.add_argument('-e', '--env', help='Provide the environment name' +
+                        'to use to look for in the s3 bucket', required=False)
+    parser.add_argument('-p', '--profile', help='Provide the AWS profile ' +
+                        'name to use when looking for in the s3 bucket',
+                        required=False)
     parser.add_argument('-n', '--appName', help='application or database name' +
                         'for the customer.  This name will be used to filter' +
                         'the files on the S3 server.  THis is also the ' +
@@ -118,6 +128,8 @@ def checkArgs(inputArgs):
 
     print 'Destination directory is: ', args.destDir
     print 'Application name is: ', args.appName
+    print 'Environment name is: ', args.env
+    print 'AWS Profile name is: ', args.profile
 
     # before going further we need to check whether there is a slash at the
     # end of the value in destinationDir
@@ -138,27 +150,31 @@ def checkArgs(inputArgs):
             destinationDir
         sys.exit(1)
 
-    return destinationDir, args.appName
+    return destinationDir, args.appName, args.env, args.profile
 
 
 def main(argv):
     # get the destination directory for the backup file download and
     # make sure it is available and writeable by this user
-    destDir, appName = checkArgs(argv)
+    (destDir, appName, env, profile) = checkArgs(argv)
 
-    possibleEnvironments = ["dev", "test", "staging", "prod"]
-    # iterate over the possible environment names to have the user select one
-    for num, envType in enumerate(possibleEnvironments, start=1):
-        print('{}. {}'.format(num, envType))
+    if not env:
+        possibleEnvironments = ["dev", "staging", "prod"]
 
-    envResponse = int(raw_input(
-        "Enter the number to the environment for the backup (0 to exit): "))
-    if(envResponse == 0):
-        sys.exit(1)
-    envToUse = possibleEnvironments[envResponse-1]
+        # iterate over the possible environment names and have user select one
+        for num, envType in enumerate(possibleEnvironments, start=1):
+            print('{}. {}'.format(num, envType))
+
+        envResponse = int(raw_input(
+            "Enter the number to the environment for the backup (0 to exit): "))
+        if(envResponse == 0):
+            sys.exit(1)
+        envToUse = possibleEnvironments[envResponse-1]
+    else:
+        envToUse = env
     # print "You selected: ", envToUse
 
-    anEnv = EnvironmentDescription(appName, envToUse, destDir)
+    anEnv = EnvironmentDescription(appName, envToUse, destDir, profile)
     # print anEnv.getTopLevelName()
     instanceNames = anEnv.getInstanceNames()
 
