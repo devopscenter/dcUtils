@@ -188,6 +188,13 @@ if [[ $TYPE = "instance" ]]; then
     #echo "CUSTOMER_APP_UTILS=${CUSTOMER_APP_UTILS}"  >> ${TEMP_FILE}
     #echo "CUSTOMER_APP_WEB=${CUSTOMER_APP_WEB}" >> ${TEMP_FILE}
 
+    echo -n "...common.env into global environment file"
+    # only bring in the common.env if one exists for the environment and if not there
+    # check the base environments directory as a last resort (in case they have only one)
+    if [[ -e ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/common.env ]]; then
+        cat ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/common.env | sudo tee -a /etc/environment
+    fi
+
     echo -n "...${ENV}.env"
     # Add env vars for this environment, if it exists
     if [[ -e ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/${ENV}.env ]]; then
@@ -203,6 +210,10 @@ if [[ $TYPE = "instance" ]]; then
         sed -e 's/^/export /'  environments/common.env | sudo tee  /etc/default/supervisor
     else
         sed -e 's/^/export /'  environments/common.env | sudo tee -a /etc/default/supervisor
+    fi
+
+    if [[ -e ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/common.env ]]; then
+        sed -e 's/^/export /' ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/common.env | sudo tee -a /etc/default/supervisor
     fi
 
     if [[ -e ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/${ENV}.env ]]; then
