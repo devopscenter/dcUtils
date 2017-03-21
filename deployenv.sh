@@ -259,7 +259,7 @@ else
     fi
 
     # next set up the devops.center common env.
-    echo -n "combining common.env"
+    echo -n "combining global common.env"
     TEMP_FILE="./.tmp-local.env"
     cp environments/common.env ${TEMP_FILE}
 
@@ -269,7 +269,7 @@ else
     echo "CUSTOMER_APP_WEB=${CUSTOMER_APP_WEB}" >> ${TEMP_FILE}
     echo "CUSTOMER_APP_ENV=${ENV}" >> ${TEMP_FILE}
 
-    echo -n "...common.env into a single file"
+    echo -n "...application common.env "
     # only bring in the personal.env if one exists for the environment and if not there
     # check the base environments directory as a last resort (in case they have only one)
     if [[ -e ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/common.env ]]; then
@@ -289,7 +289,7 @@ else
             cat ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/personal.env >> ${TEMP_FILE}
         fi
     else
-        echo -n "...${ENV}.env"
+        echo -n "...${ENV}.env into a single file"
         if [[ -e ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/${ENV}.env ]]; then
             cat ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/${ENV}.env >> ${TEMP_FILE}
         fi
