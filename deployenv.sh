@@ -269,12 +269,19 @@ else
     echo "CUSTOMER_APP_WEB=${CUSTOMER_APP_WEB}" >> ${TEMP_FILE}
     echo "CUSTOMER_APP_ENV=${ENV}" >> ${TEMP_FILE}
 
-    echo -n "...${ENV}.env"
-    if [[ -e ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/${ENV}.env ]]; then
-        cat ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/${ENV}.env >> ${TEMP_FILE}
+    echo -n "...common.env into a single file"
+    # only bring in the personal.env if one exists for the environment and if not there
+    # check the base environments directory as a last resort (in case they have only one)
+    if [[ -e ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/common.env ]]; then
+        cat ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/common.env >> ${TEMP_FILE}
     fi
 
     if [[ "${ENV}" == "local" ]]; then
+        echo -n "...${ENV}.env"
+        if [[ -e ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/${ENV}.env ]]; then
+            cat ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/${ENV}.env >> ${TEMP_FILE}
+        fi
+
         echo -n "...personal.env into a single file"
         # only bring in the personal.env if one exists for the environment and if not there
         # check the base environments directory as a last resort (in case they have only one)
@@ -282,11 +289,9 @@ else
             cat ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/personal.env >> ${TEMP_FILE}
         fi
     else
-        echo -n "...common.env into a single file"
-        # only bring in the personal.env if one exists for the environment and if not there
-        # check the base environments directory as a last resort (in case they have only one)
-        if [[ -e ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/common.env ]]; then
-            cat ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/common.env >> ${TEMP_FILE}
+        echo -n "...${ENV}.env"
+        if [[ -e ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/${ENV}.env ]]; then
+            cat ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/${ENV}.env >> ${TEMP_FILE}
         fi
     fi
 
