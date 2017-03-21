@@ -57,11 +57,7 @@ function usage
 {
 #    dcProcessEnv=$(${dcUTILS}/scripts/process_dc_env.py -h)
 #    echo ${dcProcessEnv}
-    echo -e "Usage: deployenv.sh --type TYPE --env ENV --appName CUSTOMER_APP_NAME [--workspaceName WORKSPACENAME]"
-    echo
-    echo -e "--type is one of: instance|docker. Where instance implies that the code will"
-    echo -e "run in an AWS instance and docker implies it will run on a local docker "
-    echo -e "container probably used for local development"
+    echo -e "Usage: deployenv.sh --env ENV --appName CUSTOMER_APP_NAME [--workspaceName WORKSPACENAME]"
     echo
     echo -e "--env is one of the environments that is being targeted to execute,"
     echo -e "and corresponds to which environment variable file will be used. "
@@ -137,10 +133,10 @@ while [[ $# -gt 0 ]]; do
                   TYPE=$1
                   ;;
       --appName|-a )    shift
-                  CUSTOMER_APP_NAME=$1
+                        CUSTOMER_APP_NAME=$1
                   ;;
-      --env )     shift
-                  ENV=$1
+      --env|-e )        shift
+                        ENV=$1
                   ;;
     esac
     shift
@@ -198,13 +194,6 @@ if [[ $TYPE = "instance" ]]; then
         cat ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/${ENV}.env | sudo tee -a /etc/environment
     fi
 
-    echo -n "...personal.env into global environment file"
-    # only bring in the personal.env if one exists for the environment and if not there
-    # check the base environments directory as a last resort (in case they have only one)
-    if [[ -e ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/personal.env ]]; then
-        cat ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/personal.env | sudo tee -a /etc/environment
-    fi
-
     echo "...and configuring supervisor config file"
     # Add the environment variables to the Supervisor, when started by init.d
     if [[ -e "/etc/default/supervisor" ]]; then
@@ -218,10 +207,6 @@ if [[ $TYPE = "instance" ]]; then
 
     if [[ -e ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/${ENV}.env ]]; then
         sed -e 's/^/export /' ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/${ENV}.env | sudo tee -a /etc/default/supervisor
-    fi
-
-    if [[ -e ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/personal.env ]]; then
-        sed -e 's/^/export /' ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/personal.env | sudo tee -a /etc/default/supervisor
     fi
 
     # put the /etc/environment in the current env for this session...normally would have to log out and log in to get it.
