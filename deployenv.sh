@@ -274,11 +274,20 @@ else
         cat ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/${ENV}.env >> ${TEMP_FILE}
     fi
 
-    echo -n "...personal.env into a single file"
-    # only bring in the personal.env if one exists for the environment and if not there
-    # check the base environments directory as a last resort (in case they have only one)
-    if [[ -e ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/personal.env ]]; then
-        cat ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/personal.env >> ${TEMP_FILE}
+    if [[ "${ENV}" == "local" ]]; then
+        echo -n "...personal.env into a single file"
+        # only bring in the personal.env if one exists for the environment and if not there
+        # check the base environments directory as a last resort (in case they have only one)
+        if [[ -e ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/personal.env ]]; then
+            cat ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/personal.env >> ${TEMP_FILE}
+        fi
+    else
+        echo -n "...common.env into a single file"
+        # only bring in the personal.env if one exists for the environment and if not there
+        # check the base environments directory as a last resort (in case they have only one)
+        if [[ -e ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/common.env ]]; then
+            cat ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/common.env >> ${TEMP_FILE}
+        fi
     fi
 
     echo -n "...cleaning file to get rid of duplicates"
