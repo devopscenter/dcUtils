@@ -105,7 +105,7 @@ function fixUpFile
     grep -q "dcDEFAULT_APP_NAME=__DEFAULT__" ${tmpFile}
 
     if [[ $? -ne 1 ]]; then
-        echo "It was still default...changing"
+        echo "... The dcDEFAULT_APP_NAME was still default...changing"
         sed -e "s/dcDEFAULT_APP_NAME=__DEFAULT__/dcDEFAULT_APP_NAME=${CUSTOMER_APP_NAME}/"  ${tmpFile}  > ${tmpFile2}
         mv ${tmpFile2} ${tmpFile}
     fi
