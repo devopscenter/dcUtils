@@ -489,18 +489,38 @@ class ManageAppName:
                     name + "\n"
                     "APP_UTILS_KEYS=${dcHOME}/" + appUtilsDir + "config/" +
                     name + "\n"
-                    "\n# Papertrail settings\n"
-                    "#\n"
-                    "SYSLOG_SERVER='yourserver.papertrailapp.com'\n"
-                    "SYSLOG_PORT='99999'\n"
-                    "SYSLOG_PROTO='udp'\n"
-                    "\n#\n"
                     "#\n")
                 fileHandle.write(strToWrite)
             except IOError:
                 print 'Unable to write to the {} file in the' + \
                     ' given configDir: {} \n'.format(envFile, envDir)
                 sys.exit(1)
+
+        # fill the local file with some default value
+        envLocalFile = envDir + "/common.env"
+        try:
+            fileHandle = open(envLocalFile, 'w')
+            strToWrite = (
+                "# some app env vars specific to the environment\n"
+                "APP_UTILS_CONFIG=${dcHOME}/" + appUtilsDir + "config/local\n"
+                "APP_UTILS_KEYS=${dcHOME}/" + appUtilsDir + "config/keys\n"
+                "\n#\n"
+                "# Papertrail settings\n"
+                "#\n"
+                "SYSLOG_SERVER='yourserver.papertrailapp.com'\n"
+                "SYSLOG_PORT='99999'\n"
+                "SYSLOG_PROTO='udp'\n"
+                "\n"
+                "#\n"
+                "# Default pgpool config - single backend\n"
+                "#\n"
+                "PGPOOL_CONFIG_FILE='/etc/pgpool2/pgpool.conf.one'\n"
+            )
+            fileHandle.write(strToWrite)
+        except IOError:
+            print 'Unable to write to the {} file in the' + \
+                ' given configDir: {} \n'.format(envLocalFile, envDir)
+            sys.exit(1)
 
         # fill the local file with some default value
         envLocalFile = envDir + "/local.env"
@@ -787,12 +807,6 @@ class ManageAppName:
                 newEnvName + "\n"
                 "APP_UTILS_KEYS=${dcHOME}/" + appUtilsDir + "config/" +
                 newEnvName + "\n"
-                "\n# Papertrail settings\n"
-                "#\n"
-                "SYSLOG_SERVER='yourserver.papertrailapp.com'\n"
-                "SYSLOG_PORT='99999'\n"
-                "SYSLOG_PROTO='udp'\n"
-                "\n#\n"
                 "#\n")
             fileHandle.write(strToWrite)
         except IOError:
