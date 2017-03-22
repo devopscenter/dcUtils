@@ -55,8 +55,6 @@ dcUTILS="."
 #-------------------------------------------------------------------------------
 function usage
 {
-#    dcProcessEnv=$(${dcUTILS}/scripts/process_dc_env.py -h)
-#    echo ${dcProcessEnv}
     echo -e "Usage: deployenv.sh --env ENV --appName CUSTOMER_APP_NAME [--workspaceName WORKSPACENAME]"
     echo
     echo -e "--env is one of the environments that is being targeted to execute,"
