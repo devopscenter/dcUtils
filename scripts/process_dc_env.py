@@ -365,17 +365,21 @@ def checkArgs(type=0):
                         '(essentially applications associated by client)' +
                         'with this option.',
                         required=False)
-    parser.add_argument('-i', '--initialCreate', help='The flag to say ' +
-                        'that this is being invoked by a start up script' +
-                        'NOTE: if it came in this way it came from a shell' +
-                        'script and probably should not be run this way',
+    parser.add_argument('-i', '--initialCreate',
+                        # help='The flag to say ' +
+                        # 'that this is being invoked by a start up script' +
+                        # 'NOTE: if it came in this way it came from a shell' +
+                        # 'script and probably should not be run this way',
                         action="store_true",
+                        help=argparse.SUPPRESS,
                         required=False)
-    parser.add_argument('-g', '--generateEnvFiles', help='The flag to say ' +
-                        'that this is being invoked by deployEnv.sh ' +
-                        'and that we need to generate the env files rather ' +
-                        'then read them.',
+    parser.add_argument('-g', '--generateEnvFiles',
+                        # help='The flag to say ' +
+                        # 'that this is being invoked by deployEnv.sh ' +
+                        # 'and that we need to generate the env files rather ' +
+                        # 'then read them.',
                         action="store_true",
+                        help=argparse.SUPPRESS,
                         required=False)
 
     # args, unknown = parser.parse_known_args()
