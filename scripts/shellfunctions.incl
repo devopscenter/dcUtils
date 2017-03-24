@@ -1,0 +1,46 @@
+func1Name=dcLog
+func2Name=dcStartLog
+func3Name=dcEndLog
+
+# -----------------------------------------------------------------------------
+read -r -d '' dcLogContent <<'EOF'
+    msg=${1}
+    state=${2}
+
+    scriptName=$(basename -- "$0")
+    TIMESTAMP=$(date +%F_%T)
+
+    if [[ ! -z "${state}" ]]; then
+        echo "[${TIMESTAMP}]:${scriptName}:${state}:${msg}"
+    else
+        echo "[${TIMESTAMP}]:${scriptName}::${msg}"
+    fi
+EOF
+dcLogDef="$func1Name(){ "${dcLogContent}"; }"
+# -----------------------------------------------------------------------------
+
+
+# -----------------------------------------------------------------------------
+read -r -d '' dcStartLogContent <<'EOF'
+    msg=${1}
+    dcLog "${msg}" "START" 
+EOF
+dcStartLogDef="$func2Name(){ "${dcStartLogContent}"; }"
+# -----------------------------------------------------------------------------
+
+
+# -----------------------------------------------------------------------------
+read -r -d '' dcEndLogContent <<'EOF'
+    msg=${1}
+    dcLog "${msg}" "END" 
+EOF
+dcEndLogDef="$func3Name(){ "${dcEndLogContent}"; }"
+# -----------------------------------------------------------------------------
+
+# function definitons need a semicolon between them but not at the end    
+functionDefs="${dcLogDef} ; ${dcStartLogDef} ; ${dcEndLogDef} "
+
+# function names need a space between them
+functionNames="${func1Name} ${func2Name} ${func3Name}"
+
+eval "${functionDefs} ; export -f ${functionNames} "

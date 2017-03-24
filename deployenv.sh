@@ -103,7 +103,7 @@ function fixUpFile
     grep -q "dcDEFAULT_APP_NAME=__DEFAULT__" ${tmpFile}
 
     if [[ $? -ne 1 ]]; then
-        echo "... The dcDEFAULT_APP_NAME was still default...changing"
+        dcLog "... The dcDEFAULT_APP_NAME was still default...changing"
         sed -e "s/dcDEFAULT_APP_NAME=__DEFAULT__/dcDEFAULT_APP_NAME=${CUSTOMER_APP_NAME}/"  ${tmpFile}  > ${tmpFile2}
         mv ${tmpFile2} ${tmpFile}
     fi
@@ -143,22 +143,23 @@ done
 if [[ $TYPE != "instance" ]]; then
     #-------------------------------------------------------------------------------
 
-    envToSource=$(${dcUTILS}/scripts/process_dc_env.py ${NEW})
+    envToSource="$(${dcUTILS}/scripts/process_dc_env.py ${NEW})"
 
     if [[ $? -ne 0 ]]; then
         echo $envToSource
         exit 1
     else
-        eval $envToSource
+        eval "$envToSource"
     fi
 fi
 
+dcStartLog "Deploying for application: ${CUSTOMER_APP_NAME} env: ${ENV}"
 #-------------------------------------------------------------------------------
 # handle the case where the type is an instance
 #-------------------------------------------------------------------------------
 if [[ $TYPE = "instance" ]]; then
 
-    echo "Deploying for type: instance"
+    dcLog "Deploying for type: instance"
     # TODO look into the destination files below and see what would need to be done about
     # duplicate key/value pairs.  See if this would benefit from the same kind of
     # processing that the docker (ie, the else of the TYPE if check) section has.
@@ -175,31 +176,31 @@ if [[ $TYPE = "instance" ]]; then
     sudo rm /etc/environment
     cat /etc/environment.ORIG | sudo tee -a  /etc/environment
 
-    echo -n "combining common.env"
+    dcLog "combining common.env"
     # Add common env vars to instance environment file
     cat environments/common.env | sudo tee -a  /etc/environment
 
     # TODO determine if this is required and/or would it need to be put in some other file
     # get the Customer specific utils and web dir and put it in the file
     # or is this just needed for running the application in a docker container
-    #echo "BASE_CUSTOMER_DIR=${BASE_CUSTOMER_DIR}"  >> ${TEMP_FILE}
-    #echo "CUSTOMER_APP_UTILS=${CUSTOMER_APP_UTILS}"  >> ${TEMP_FILE}
-    #echo "CUSTOMER_APP_WEB=${CUSTOMER_APP_WEB}" >> ${TEMP_FILE}
+    #dcLog "BASE_CUSTOMER_DIR=${BASE_CUSTOMER_DIR}"  >> ${TEMP_FILE}
+    #dcLog "CUSTOMER_APP_UTILS=${CUSTOMER_APP_UTILS}"  >> ${TEMP_FILE}
+    #dcLog "CUSTOMER_APP_WEB=${CUSTOMER_APP_WEB}" >> ${TEMP_FILE}
 
-    echo -n "...common.env into global environment file"
+    dcLog "... common.env into global environment file"
     # only bring in the common.env if one exists for the environment and if not there
     # check the base environments directory as a last resort (in case they have only one)
     if [[ -e ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/common.env ]]; then
         cat ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/common.env | sudo tee -a /etc/environment
     fi
 
-    echo -n "...${ENV}.env"
+    dcLog "... ${ENV}.env"
     # Add env vars for this environment, if it exists
     if [[ -e ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/${ENV}.env ]]; then
         cat ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/${ENV}.env | sudo tee -a /etc/environment
     fi
 
-    echo "...and configuring supervisor config file"
+    dcLog "... and configuring supervisor config file"
     # Add the environment variables to the Supervisor, when started by init.d
     if [[ -e "/etc/default/supervisor" ]]; then
         # if it exists it needs to be removed so that we don't keep adding to it.
@@ -226,15 +227,15 @@ if [[ $TYPE = "instance" ]]; then
         fi
     done < /etc/environment
 
-    echo "ENV vars for '${ENV}' added to /etc/environment and /etc/default/supervisor"
-    echo "Completed successfully"
+    dcLog "ENV vars for '${ENV}' added to /etc/environment and /etc/default/supervisor"
+    dcLog "Completed successfully"
 
 
 #-------------------------------------------------------------------------------
 #  The else case is that the type is docker for a local docker deploy
 #-------------------------------------------------------------------------------
 else
-    echo "Deploying for type: docker"
+    dcLog "Deploying for type: docker"
     #-------------------------------------------------------------------------------
     # the flow of what will happen is that each of the env files will be pulled together
     # in one file (ie, ./.tmp-local.env).  Then the next step is to read that file, ignore
@@ -257,17 +258,17 @@ else
     fi
 
     # next set up the devops.center common env.
-    echo -n "combining global common.env"
+    dcLog "combining global common.env"
     TEMP_FILE="./.tmp-local.env"
     cp environments/common.env ${TEMP_FILE}
 
     # get the Customer specific utils and web dir and put it in the file
-    echo "BASE_CUSTOMER_DIR=${BASE_CUSTOMER_DIR}"  >> ${TEMP_FILE}
-    echo "CUSTOMER_APP_UTILS=${CUSTOMER_APP_UTILS}"  >> ${TEMP_FILE}
-    echo "CUSTOMER_APP_WEB=${CUSTOMER_APP_WEB}" >> ${TEMP_FILE}
-    echo "CUSTOMER_APP_ENV=${ENV}" >> ${TEMP_FILE}
+    dcLog "BASE_CUSTOMER_DIR=${BASE_CUSTOMER_DIR}"  >> ${TEMP_FILE}
+    dcLog "CUSTOMER_APP_UTILS=${CUSTOMER_APP_UTILS}"  >> ${TEMP_FILE}
+    dcLog "CUSTOMER_APP_WEB=${CUSTOMER_APP_WEB}" >> ${TEMP_FILE}
+    dcLog "CUSTOMER_APP_ENV=${ENV}" >> ${TEMP_FILE}
 
-    echo -n "...application common.env "
+    dcLog "... application common.env "
     # only bring in the personal.env if one exists for the environment and if not there
     # check the base environments directory as a last resort (in case they have only one)
     if [[ -e ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/common.env ]]; then
@@ -275,25 +276,25 @@ else
     fi
 
     if [[ "${ENV}" == "local" ]]; then
-        echo -n "...${ENV}.env"
+        dcLog "... ${ENV}.env"
         if [[ -e ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/${ENV}.env ]]; then
             cat ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/${ENV}.env >> ${TEMP_FILE}
         fi
 
-        echo -n "...personal.env into a single file"
+        dcLog "... personal.env into a single file"
         # only bring in the personal.env if one exists for the environment and if not there
         # check the base environments directory as a last resort (in case they have only one)
         if [[ -e ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/personal.env ]]; then
             cat ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/personal.env >> ${TEMP_FILE}
         fi
     else
-        echo -n "...${ENV}.env into a single file"
+        dcLog "... ${ENV}.env into a single file"
         if [[ -e ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/${ENV}.env ]]; then
             cat ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/${ENV}.env >> ${TEMP_FILE}
         fi
     fi
 
-    echo -n "...cleaning file to get rid of duplicates"
+    dcLog "... cleaning file to get rid of duplicates"
     # only bring in the personal.env if one exists for the environment and if not there
     # now read in the ./.tmp-local.env file and remove comments/spaces and duplicates
     # and create the new files with appname and env.  Then create the links and finally
@@ -301,15 +302,15 @@ else
     fixUpFile ${TEMP_FILE}
 
     # Now create the links
-    echo "...creating final files"
+    dcLog "... creating final files"
     if [[ -f ${TEMP_FILE} ]]; then
         TARGET_ENV_FILE="${BASE_CUSTOMER_APP_UTILS_DIR}/environments/.generatedEnvFiles/dcEnv-${CUSTOMER_APP_NAME}-${ENV}.env"
         mv ${TEMP_FILE} ${TARGET_ENV_FILE}
     else
-        echo -e "ERROR: the creation of the environments file was not successful."
-        echo -e "       Uncomment the "set -x" at the top of the file and re-run."
-        echo -e "       Capture the output and send to devops.center via slack or"
-        echo -e "       email."
+        dcLog -e "ERROR: the creation of the environments file was not successful."
+        dcLog -e "       Uncomment the "set -x" at the top of the file and re-run."
+        dcLog -e "       Capture the output and send to devops.center via slack or"
+        dcLog -e "       email."
         exit 1
     fi
 
@@ -317,10 +318,11 @@ else
     TARGET_SH_FILE="${BASE_CUSTOMER_APP_UTILS_DIR}/environments/.generatedEnvFiles/dcEnv-${CUSTOMER_APP_NAME}-${ENV}.sh"
     sed -e 's/^/export /'  ${TARGET_ENV_FILE} > ${TARGET_SH_FILE}
 
-    echo "Completed successfully"
+    dcLog "Completed successfully"
     # TODO need to figure out how to get the users keys so that "paws" will work
     # probably need another script to manage them (ie, manageKeys.py)
 
-    #echo "ENV vars for '${ENV}' added to docker-current.env for use by docker compose"
-    #echo "ENV vars for '${ENV}' used to create docker-current.sh for use in local shell"
+    #dcLog "ENV vars for '${ENV}' added to docker-current.env for use by docker compose"
+    #dcLog "ENV vars for '${ENV}' used to create docker-current.sh for use in local shell"
 fi
+dcEndLog "Finished..."

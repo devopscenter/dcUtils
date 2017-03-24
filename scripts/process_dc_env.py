@@ -322,6 +322,11 @@ def shellGetEnv():
     for key, value in returnEnvList.iteritems():
         returnStr += " " + key + '="' + value + '"'
 
+    curDir = os.path.dirname(sys.argv[0])
+    with open(curDir + '/shellfunctions.incl', 'r') as includeFile:
+        data = includeFile.read()
+
+    returnStr += " ; {}".format(data)
     print returnStr
 
 
