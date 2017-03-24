@@ -39,13 +39,13 @@ NEW=${@}
 
 dcUTILS=".."
 
-envToSource=$(${dcUTILS}/scripts/process_dc_env.py ${NEW})
+envToSource="$(${dcUTILS}/scripts/process_dc_env.py ${NEW})"
 
 if [[ $? -ne 0 ]]; then
     echo $envToSource
     exit 1
 else
-    eval $envToSource
+    eval "$envToSource"
 fi
 
 # EXAMPLE: add the arument --foo "something here" and see that it comes out below
@@ -59,6 +59,8 @@ while [[ $# -gt 0 ]]; do
 done
 
 
+dcStartLog "Begin tests"
 #env
-echo "CUSTOMER_APP_NAME = ${CUSTOMER_APP_NAME}"
-echo "FOO = ${FOO}"
+dcLog "CUSTOMER_APP_NAME = ${CUSTOMER_APP_NAME}"
+dcLog "FOO = ${FOO}"
+dcEndLog "Finished..."

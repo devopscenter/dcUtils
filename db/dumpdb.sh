@@ -46,13 +46,13 @@ function usage
 NEW=${@}
 dcUTILS=".."
 
-envToSource=$(${dcUTILS}/scripts/process_dc_env.py ${NEW})
+envToSource="$(${dcUTILS}/scripts/process_dc_env.py ${NEW})"
 
 if [[ $? -ne 0 ]]; then
     echo $envToSource
     exit 1
 else
-    eval $envToSource
+    eval "$envToSource"
 fi
 
 BACKUP=backup.sql
