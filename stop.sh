@@ -54,13 +54,13 @@ fi
 NEW=${@}
 dcUTILS="."
 
-envToSource=$(${dcUTILS}/scripts/process_dc_env.py ${NEW})
+envToSource="$(${dcUTILS}/scripts/process_dc_env.py ${NEW})"
 
 if [[ $? -ne 0 ]]; then
     echo $envToSource
     exit 1
 else
-    eval $envToSource
+    eval "$envToSource"
 fi
 
 DEBUG=0
@@ -76,7 +76,7 @@ done
 #-------------------------------------------------------------------------------
 # Draw attention to the appName that is being used by this session!!
 #-------------------------------------------------------------------------------
-echo "NOTICE: Using appName: ${dcDEFAULT_APP_NAME}"
+dcStartLog "Stopping docker containers for application: ${dcDEFAULT_APP_NAME} env: ${ENV}"
 
 #-------------------------------------------------------------------------------
 # We have all the information for this so lets run the docker-compose down with
@@ -91,7 +91,7 @@ if [[ ${DEBUG} -eq 1 ]]; then
 else
     DOCKER_COMPOSE_FILE="${BASE_CUSTOMER_DIR}/${dcDEFAULT_APP_NAME}/${CUSTOMER_APP_UTILS}/config/${CUSTOMER_APP_ENV}/docker-compose.yml"
 fi
-#echo ${DOCKER_COMPOSE_FILE}
+#dcLog ${DOCKER_COMPOSE_FILE}
 
 export GENERATED_ENV_FILE="${dcHOME}/${CUSTOMER_APP_UTILS}/environments/.generatedEnvFiles/dcEnv-${CUSTOMER_APP_NAME}-local.env"
 
@@ -99,8 +99,8 @@ export GENERATED_ENV_FILE="${dcHOME}/${CUSTOMER_APP_UTILS}/environments/.generat
 # check to see if the compose file exists
 #-------------------------------------------------------------------------------
 if [[ ! -f ${DOCKER_COMPOSE_FILE} ]]; then
-    echo -e "ERROR: No compose file for the appName: ${dcDEFAULT_APP_NAME}"
-    echo -e "so nothing can be started.  You may need to create one manually."
+    dcLog "ERROR: No compose file for the appName: ${dcDEFAULT_APP_NAME}"
+    dcLog "so nothing can be started.  You may need to create one manually."
     exit 1
 fi
 
@@ -113,5 +113,7 @@ NUM_NETWORKS=$(docker network ls | grep -c "_dcnet" )
 export NET_NUMBER=$((20+$NUM_NETWORKS-1))
 
 CMDTORUN="docker-compose -f ${DOCKER_COMPOSE_FILE} -p ${dcDEFAULT_APP_NAME} stop"
-#echo  ${CMDTORUN}
+#dcLog  ${CMDTORUN}
 ${CMDTORUN}
+
+dcEndLog "Finished..."
