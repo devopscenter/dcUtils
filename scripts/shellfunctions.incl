@@ -13,7 +13,7 @@ read -r -d '' dcLogContent <<'EOF'
     if [[ ! -z "${state}" ]]; then
         echo "[${TIMESTAMP}]:${scriptName}:${state}:${msg}"
     else
-        echo "[${TIMESTAMP}]:${scriptName}::${msg}"
+        echo "[${TIMESTAMP}]:${scriptName}:${FUNCNAME[1]}:${msg}"
     fi
 EOF
 dcLogDef="$func1Name(){ "${dcLogContent}"; }"
