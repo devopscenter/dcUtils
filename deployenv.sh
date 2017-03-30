@@ -263,10 +263,10 @@ else
     cp environments/common.env ${TEMP_FILE}
 
     # get the Customer specific utils and web dir and put it in the file
-    dcLog "BASE_CUSTOMER_DIR=${BASE_CUSTOMER_DIR}"  >> ${TEMP_FILE}
-    dcLog "CUSTOMER_APP_UTILS=${CUSTOMER_APP_UTILS}"  >> ${TEMP_FILE}
-    dcLog "CUSTOMER_APP_WEB=${CUSTOMER_APP_WEB}" >> ${TEMP_FILE}
-    dcLog "CUSTOMER_APP_ENV=${ENV}" >> ${TEMP_FILE}
+    echo "BASE_CUSTOMER_DIR=${BASE_CUSTOMER_DIR}"  >> ${TEMP_FILE}
+    echo "CUSTOMER_APP_UTILS=${CUSTOMER_APP_UTILS}"  >> ${TEMP_FILE}
+    echo "CUSTOMER_APP_WEB=${CUSTOMER_APP_WEB}" >> ${TEMP_FILE}
+    echo "CUSTOMER_APP_ENV=${ENV}" >> ${TEMP_FILE}
 
     dcLog "... application common.env "
     # only bring in the personal.env if one exists for the environment and if not there
