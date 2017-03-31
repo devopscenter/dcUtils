@@ -502,8 +502,7 @@ class ManageAppName:
             fileHandle = open(envLocalFile, 'w')
             strToWrite = (
                 "# some app env vars specific to the environment\n"
-                "APP_UTILS_CONFIG=${dcHOME}/" + appUtilsDir + "config/local\n"
-                "APP_UTILS_KEYS=${dcHOME}/" + appUtilsDir + "config/keys\n"
+                "dcHOME=~/" + self.appName + "\n"
                 "\n#\n"
                 "# Papertrail settings\n"
                 "#\n"
