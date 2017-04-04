@@ -97,6 +97,11 @@ getUpdate()
             # pull from the remote on this branch
             git pull origin
 
+            # need to clean out the other env "key" directories except the one that is needed for
+            # this instance
+            cd ~/${CUST_APP_NAME}/${CUSTOMER_UTILS}/keys
+            RM_ALL_ENV_DIRS_BUT_ONE=$(find . ! -name "${ENVIRONMENT}" -type d -exec rm -rf {} +)
+
             # and now do the deployenv.sh
             cd ~/dcUtils
             ./deployenv.sh --type instance --env $ENVIRONMENT --appName ${CUST_APP_NAME}
