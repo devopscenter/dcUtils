@@ -487,7 +487,7 @@ class ManageAppName:
                     "#\n"
                     "APP_UTILS_CONFIG=${dcHOME}/" + appUtilsDir + "config/" +
                     name + "\n"
-                    "APP_UTILS_KEYS=${dcHOME}/" + appUtilsDir + "config/" +
+                    "APP_UTILS_KEYS=${dcHOME}/" + appUtilsDir + "/keys/" +
                     name + "\n"
                     "#\n")
                 fileHandle.write(strToWrite)
