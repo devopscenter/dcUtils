@@ -528,7 +528,7 @@ class ManageAppName:
             strToWrite = (
                 "# some app env vars specific to the environment\n"
                 "APP_UTILS_CONFIG=${dcHOME}/" + appUtilsDir + "config/local\n"
-                "APP_UTILS_KEYS=${dcHOME}/" + appUtilsDir + "config/keys\n"
+                "APP_UTILS_KEYS=${dcHOME}/" + appUtilsDir + "keys\n"
                 "\n#\n"
                 "# Papertrail settings\n"
                 "#\n"
@@ -804,7 +804,7 @@ class ManageAppName:
                 "#\n"
                 "APP_UTILS_CONFIG=${dcHOME}/" + appUtilsDir + "config/" +
                 newEnvName + "\n"
-                "APP_UTILS_KEYS=${dcHOME}/" + appUtilsDir + "config/" +
+                "APP_UTILS_KEYS=${dcHOME}/" + appUtilsDir + "keys/" +
                 newEnvName + "\n"
                 "#\n")
             fileHandle.write(strToWrite)
