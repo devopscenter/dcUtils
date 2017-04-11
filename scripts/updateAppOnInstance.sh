@@ -52,8 +52,8 @@ function usage
 #---  FUNCTION  ----------------------------------------------------------------
 #          NAME:  getUpdate
 #   DESCRIPTION:  the function to actually do the update
-#    PARAMETERS:  
-#       RETURNS:  
+#    PARAMETERS:
+#       RETURNS:
 #-------------------------------------------------------------------------------
 getUpdate()
 {
@@ -73,7 +73,7 @@ getUpdate()
 
     # set up ssh  for this session
     eval `ssh-agent`
-    ssh-add ~/.ssh/${DEPLOYKEY}
+    ssh-add ${HOME}/ssh/${DEPLOYKEY}
 
     if [[ ! -d  ${CUST_APP_NAME} ]]; then
         echo "ERROR: directory does not exist: ${CUST_APP_NAME}"
@@ -88,7 +88,7 @@ getUpdate()
             exit 1
         else
             # finally do the work
-            cd "~/${CUST_APP_NAME}/${CUSTOMER_UTILS}"
+            cd "${HOME}/${CUST_APP_NAME}/${CUSTOMER_UTILS}"
 
             if [[ ${GIT_BRANCH} ]]; then
                 git checkout ${GIT_BRANCH}
@@ -99,11 +99,11 @@ getUpdate()
 
             # need to clean out the other env "key" directories except the one that is needed for
             # this instance
-            cd ~/${CUST_APP_NAME}/${CUSTOMER_UTILS}/keys
+            cd "${HOME}/${CUST_APP_NAME}/${CUSTOMER_UTILS}/keys"
             RM_ALL_ENV_DIRS_BUT_ONE=$(find . ! -name "${ENVIRONMENT}" -type d -exec rm -rf {} +)
 
             # and now do the deployenv.sh
-            cd ~/dcUtils
+            cd ${HOME}/dcUtils
             ./deployenv.sh --type instance --env $ENVIRONMENT --appName ${CUST_APP_NAME}
         fi
     fi
@@ -139,8 +139,6 @@ while [[ $# -gt 0 ]]; do
     esac
     shift
 done
-
-if [[ -z ${CUST_APP_NAME
 
 
 getUpdate

@@ -44,31 +44,36 @@ class UpdateInstance:
         # First copy the update script over to the instance
         # ----------------------------------------------------------------------
         cmdToRun = ("scp -i " + self.accessKey +
-                    " :scripts/updateAppOnComponent.sh " +
+                    " scripts/updateAppOnInstance.sh " +
                     self.targetUser + "@" + self.target + ":~")
         self.remoteRun(cmdToRun)
 
         # ----------------------------------------------------------------------
         # Now do run the command on the instance
         # ----------------------------------------------------------------------
-        cmdToRun = ("./updateAppOnComponent.sh " +
-                    self.self.appName + " " +
-                    self.env + " " +
-                    self.deployKey + " ")
+        cmdToRun = ("ssh -i " + self.accessKey + " " +
+                    self.targetUser + "@" + self.target +
+                    " ./updateAppOnInstance.sh " +
+                    "--appName " + self.appName + " " +
+                    "--env " + self.env + " " +
+                    "--deployKey " + self.deployKey + " ")
+        if self.branch:
+            cmdToRun += ("--branch " + self.branch)
+
         self.remoteRun(cmdToRun)
 
         # ----------------------------------------------------------------------
         # Now remove the update script on the remote instance
         # ----------------------------------------------------------------------
-        self.remoteRun("rm updateAppOnComponent.sh")
+        # self.remoteRun("rm updateAppOnInstance.sh")
 
     def remoteRun(self, cmdToRun):
         try:
-            updateOutput = subprocess.check_output(cmdToRun,
-                                                   stderr=subprocess.STDOUT,
-                                                   shell=True)
+            subprocess.check_output(cmdToRun,
+                                    stderr=subprocess.STDOUT,
+                                    shell=True)
         except subprocess.CalledProcessError as details:
-            print "Error {}\n{}".format(details, updateOutput)
+            print "Error {}\n{}".format(details, details.output)
             sys.exit(1)
 
 # ==============================================================================
@@ -83,15 +88,30 @@ def checkArgs():
         'have the code be updated on the instance. ')
     parser.add_argument('-x', '--accessKey', help='The access key to use ' +
                         'when accessing the instance',
-                        required=True)
+                        required=False)
     parser.add_argument('-k', '--deployKey', help='The deploy key that will' +
                         ' be used to access the repository from the instance.',
-                        required=True)
+                        required=False)
     parser.add_argument('-t', '--target', help='The target instance to have ' +
                         ' the update performed on.',
                         required=True)
-    parser.add_argument('-b', '--branch', help='If you need to be on a' +
-                        'certain branch before the update can be run',
+    parser.add_argument('--custUtilsBranch', help='If you need to be on a' +
+                        'certain branch for the customer utiliies repo ' +
+                        'before the update can be run. Otherwise it will ' +
+                        'just update the current branch that is currently ' +
+                        'checked out',
+                        required=False)
+    parser.add_argument('--dcUtilsBranch', help='If you need to be on a' +
+                        'certain branch for the dcUtils repo ' +
+                        'before the update can be run. Otherwise it will ' +
+                        'just update the current branch that is currently ' +
+                        'checked out',
+                        required=False)
+    parser.add_argument('--dcStackBranch', help='If you need to be on a' +
+                        'certain branch for the dcStack repo ' +
+                        'before the update can be run. Otherwise it will ' +
+                        'just update the current branch that is currently ' +
+                        'checked out',
                         required=False)
 
     try:
@@ -100,7 +120,7 @@ def checkArgs():
         pythonGetEnv()
         sys.exit(1)
 
-    retEnvList = pythonGetEnv(initialCreate=True)
+    retEnvList = pythonGetEnv()
 
     if retEnvList["CUSTOMER_APP_NAME"]:
         retAppName = retEnvList["CUSTOMER_APP_NAME"]
@@ -108,10 +128,36 @@ def checkArgs():
     if retEnvList["ENV"]:
         retEnv = retEnvList["ENV"]
 
-    retAccessKey = args.accessKey
-    retDeployKey = args.deployKey
+    # get the key path in case we need it
+    keyPath = retEnvList["BASE_CUSTOMER_DIR"] + '/' + \
+        retEnvList["dcDEFAULT_APP_NAME"] + '/' + \
+        retEnvList["CUSTOMER_APP_UTILS"] + "/keys/"
+
+    if args.accessKey:
+        retAccessKey = args.accessKey
+    else:
+        retAccessKey = keyPath + retEnvList["CUSTOMER_APP_ENV"] + '/' + \
+            retEnvList["dcDEFAULT_APP_NAME"] + '-' + \
+            retEnvList["CUSTOMER_APP_ENV"] + "-access.pem"
+
+    if args.deployKey:
+        retDeployKey = args.deployKey
+    else:
+        for file in os.listdir(keyPath):
+            if file.endswith(".pub"):
+                retDeployKey = file.replace(r".pub", '')
+                break
+
+        if not retDeployKey:
+            print "ERROR: The deploy key can not be determined " \
+                    "automatically you will need to pass the name " \
+                    "with the option --deployKey(-k)."
+
     retTarget = args.target
-    retBranch = args.branch
+    # TODO START HERE!!  need to define separate branch name for each of
+    # dcStack, dcUtils and app-utils.  ALSO, the app shell will need these
+    # branches.  The shell script will also need to pull dcStack and dcUtils
+    retBranch = args.custUtilsBranch
 
     # if we get here then the
     return (retAppName, retEnv, retDeployKey, retTarget, retBranch,
