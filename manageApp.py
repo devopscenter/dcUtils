@@ -222,6 +222,7 @@ class ManageAppName:
         generatedEnvDir = envDir + "/.generatedEnvFiles"
         if not os.path.exists(generatedEnvDir):
             os.makedirs(generatedEnvDir, 0755)
+            open(generatedEnvDir + "/.keep", 'a').close()
 
         print "Completed successfully\n"
 
@@ -288,6 +289,7 @@ class ManageAppName:
         generatedEnvDir = envDir + "/.generatedEnvFiles"
         if not os.path.exists(generatedEnvDir):
             os.makedirs(generatedEnvDir, 0755)
+            open(generatedEnvDir + "/.keep", 'a').close()
 
         # and then the keys directory and all the sub directories
         keyDir = baseUtils + "keys/"
@@ -317,7 +319,8 @@ class ManageAppName:
             fileHandle = open(gitIgnoreFile, 'w')
             strToWrite = (".DS_Store\n"
                           "personal.env\n"
-                          "environments/.generatedEnvFiles/*\n")
+                          "environments/.generatedEnvFiles/*\n"
+                          "!environments/.generatedEnvFiles/.keep\n")
 
             fileHandle.write(strToWrite)
             fileHandle.close()
