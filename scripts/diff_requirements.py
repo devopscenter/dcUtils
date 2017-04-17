@@ -25,9 +25,9 @@ __status__ = "Development"
 
 def diffFiles(customerFiles, dcFiles):
     customerList = readFilesIntoList(customerFiles)
-#   print "=>{}<=".format(customerList)
+#    print "=>{}<=".format(customerList)
     dcList = readFilesIntoList(dcFiles)
-#   print "=>{}<=\n\n".format(dcList)
+#    print "=>{}<=\n\n".format(dcList)
     diffFromCustomerFiles(customerList, dcList)
     diffFromDCFiles(customerList, dcList)
 
@@ -59,7 +59,8 @@ def readFilesIntoList(fileList):
             with open(aFile) as inFile:
                 for line in inFile:
                     tmpLine = line[:-1]
-                    if not tmpLine.startswith('#'):
+                    # print("=>{}<=").format(tmpLine)
+                    if not tmpLine.startswith('#') and tmpLine:
                         (key, value) = tmpLine.split('==', 1)
                         data[key] = value
         else:
