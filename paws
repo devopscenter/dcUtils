@@ -1,0 +1,302 @@
+#!/bin/bash - 
+#===============================================================================
+#
+#                    FILE: paws.sh
+# 
+#                 USAGE: ./paws.sh 
+# 
+#     DESCRIPTION: Provides access to AWS instances using known keys in the application
+#                                utilise keys directory of the app-utils respository
+# 
+#             OPTIONS: ---
+#    REQUIREMENTS: ---
+#                    BUGS: ---
+#                 NOTES: ---
+#                AUTHOR: Gregg Jensen (), gjensen@devops.center
+#    ORGANIZATION: devops.center
+#             CREATED: 04/03/2017 11:40:09
+#            REVISION:    ---
+#===============================================================================
+
+#set -o nounset                                                            # Treat unset variables as an error
+#set -x
+
+# NOTE: requires pdsh and aws-cli
+
+PROFILE="default"
+
+function usage
+{
+    echo -e "Description:"
+    echo -e "    paws is a tool that makes it easier to connect to and work with AWS EC2 instances.    First, it uses the aws cli tool to query an account for running ec2-instances.    Next, it either returns a list of instances, connects to an individual instance, or runs commands on one or more of them.\n\n    Caution is advised!    (A good sanity check before running any command is using the -l option to see which hosts you're targeting).\n"
+    echo -e "Usage:"
+    echo -e "    Optional arguments that can be used with any other combination of arguments:"
+    echo -e "    [-p PROFILE] [-r REGION]\n"
+    echo -e "    List all instances, or instances and their tags:"
+    echo -e "    paws {-l | -L}"
+    echo -e "        -l\tno argument, returns a list of all instances"
+    echo -e "        -L\tno argument, returns a list of all instances and their tags\n"
+    echo -e "    Connect to a host interactively:"
+    echo -e "    paws -c"
+    echo -e "        -c\tno argument, displays a list of hosts and prompts for selection\n"
+    echo -e "    Connect to a specified host:"
+    echo -e "    paws -c HOST"
+    echo -e "        -c\taws Name to log into with SSH\n"
+    echo -e "    Run a command on one or more instances in parallel, using a list of names:"
+    echo -e "    paws -w HOST1,HOST2 '<COMMAND>'"
+    echo -e "        -w\tlist of hosts, separated by commas\n"
+    echo -e "    Run a command on one or more instances in parallel, using tags:"
+    echo -e "    paws -t KEY=VALUE '<COMMAND>'"
+    echo -e "        -t\ttag KEY and VALUE pairs, in the form of KEY=VALUE\n"
+    echo -e "    Run a command on all instances in parallel:"
+    echo -e "    paws '<COMMAND>'\n"
+    echo -e "Examples:"
+    echo -e "    List tags for all instances for the default account:    paws -L"
+    echo -e "    Interactively connect to an instance for the client1 account in the us-west-2 region:    paws -p client1 -r us-west-2 -c"
+    echo -e "    Connect to the web1 instance for the client1 account:    paws -p client1 -c web1"
+    echo -e "    Run the 'hostname' command on all instances for the client1 account:    paws -p client1 'hostname'"
+    echo -e "    Run the 'ls' command on the web1 and web2 instances for the client1 account:    paws -p client1 -w web1,web2 'ls'"
+    echo -e "    Run the 'w' command on instances tagged as Env=dev for the client1 account:    paws -p client1 -t Env=dev 'w'"
+    echo -e "    Run the 'date' command on instances tagged as Name=db1 for the default account:    paws -t Name=db1 'date'"
+}
+
+if [[ -z $1 ]]; then
+    usage
+    exit 1
+fi
+
+#-------------------------------------------------------------------------------
+# handle arguments: need conditionals for appropriate number of arguments/options
+#-------------------------------------------------------------------------------
+if [[ -z ${dcUTILS} ]]; then
+    echo "Please set and export dcUTILS environment variable before starting this script"
+    exit 1
+else
+set +e
+    NEW=${@}
+
+    envToSource="$(${dcUTILS}/scripts/process_dc_env.py ${NEW})"
+
+	if [[ $? -ne 0 ]]; then
+		echo $envToSource
+		exit 1
+	else
+		eval "$envToSource"
+	fi
+set -e
+fi
+
+PROFILE=${dcDEFAULT_APP_NAME}
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -p ) shift
+                PROFILE=$1
+                ;;
+        -r ) shift
+                REGION=$1
+	            ;;
+        -t ) shift
+                TAG=$1
+                ;;
+        -w ) shift
+                HOSTS=$1
+	            ;;
+        -l ) LIST_NAMES='true'
+	            ;;
+        -c ) if [[ $# -eq 2 ]]; then
+                shift
+	            HOST=$1
+	        else
+	            CONNECT='true'
+	        fi
+                 ;;
+        -L ) LIST_NAMES='true'
+             LIST_ALL='true'
+                 ;;
+        -h ) usage
+             exit 1
+	             ;;
+ [!-]* ) if [[ $# -eq 1 ]]; then
+             PDSH_CMD=$1
+	     elif ! [[ -z "$HOST" ]]; then
+             echo -e "Too many/few of the 1 required parameters.\n"
+             usage
+             exit 1
+         fi
+                 ;;
+#         * ) echo -e "Unrecognized input.\n"
+#             usage
+#             exit 1
+    esac
+    shift
+done
+
+
+#-------------------------------------------------------------------------------
+# check for the existance of pdsh/ssh command
+#-------------------------------------------------------------------------------
+if ! [[ "$LIST_NAMES" ]] && ! [[ "$CONNECT" ]] && ! [[ "$HOST" ]] && [[ -z "$PDSH_CMD" ]]; then
+    echo -e "pdsh/ssh command required.\n"
+    usage
+    exit 1
+fi
+
+#-------------------------------------------------------------------------------
+# get the directory of paws
+# http://stackoverflow.com/questions/59895/can-a-bash-script-tell-what-directory-its-stored-in
+#-------------------------------------------------------------------------------
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
+    SOURCE_DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+    SOURCE="$(readlink "$SOURCE")"
+    [[ $SOURCE != /* ]] && SOURCE="$SOURCE_DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+done
+SOURCE_DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+
+#-------------------------------------------------------------------------------
+# get full description of running instances from api and filter data using jq instead of with aws-cli
+#-------------------------------------------------------------------------------
+if ! [[ -z "$REGION" ]]; then
+    DESCRIBE_ALL=$(aws --profile "$PROFILE" --region "$REGION" ec2 describe-instances --filters Name=instance-state-name,Values=running)
+else
+    DESCRIBE_ALL=$(aws --profile "$PROFILE" ec2 describe-instances --filters Name=instance-state-name,Values=running)
+fi
+
+
+#-------------------------------------------------------------------------------
+# LIST ONLY
+#-------------------------------------------------------------------------------
+if [[ "$LIST_NAMES" == 'true' ]] || [[ "$CONNECT" == 'true' ]]; then
+    LIST_FULL=$(echo $DESCRIBE_ALL| jq -cS '.Reservations[]|.Instances[]|[[[.Tags[]|select(.Key | contains("Name"))]|from_entries],[[.Tags[]|select(.Key | contains("Name")|not)]|from_entries]]'|sed 's/,{/: /g'|tr -d '[]{}"'|tr ':' '='|sed 's/= /: /g'|tr ',' ' ')
+
+    i=1
+    while read -r line; do
+        #-------------------------------------------------------------------------------
+        # FOR NAMES ONLY number each line to use for selection
+        #-------------------------------------------------------------------------------
+        if [[ "$LIST_ALL" != 'true' ]]; then
+            line=$(echo -e "$line"|awk -F= '{print $2}'|awk '{print $1}')
+        fi    
+        #-------------------------------------------------------------------------------
+        # FOR BOTH NAMES AND ALL
+        #-------------------------------------------------------------------------------
+        NUMBERED_LINE="${i}. ${line}\n"
+        NUMBERED_LIST="${NUMBERED_LIST}${NUMBERED_LINE}"
+        i=$((i+1))
+    done < <(echo -e "$LIST_FULL"|grep -v '^$'|sort)
+
+fi
+
+#-------------------------------------------------------------------------------
+# for -l option, output list and exit
+#-------------------------------------------------------------------------------
+if [[ "$LIST_NAMES" ]]; then
+    echo -en "$NUMBERED_LIST"
+    exit
+fi
+
+#-------------------------------------------------------------------------------
+# for -c but no host specified, so prompt for input
+#-------------------------------------------------------------------------------
+if [[ -z "${HOST+x}" ]] && [[ "$CONNECT" ]]; then
+    echo -e "$NUMBERED_LIST"
+    echo "enter selection number"
+    read -r number
+
+    while read -r line; do
+        LINE_NUMBER=$(echo "$line"|awk -F. '{print $1}')
+        if [[ "$LINE_NUMBER" == "$number" ]]; then
+            HOST=$(echo -e "$line"|awk '{print $2}')
+        fi
+    done < <(echo -e "$NUMBERED_LIST")
+fi
+
+#-------------------------------------------------------------------------------
+# if no -t option
+#-------------------------------------------------------------------------------
+if [[ -z "$TAG" ]]; then
+    #-------------------------------------------------------------------------------
+    # if -c option specified, create for single instance
+    #-------------------------------------------------------------------------------
+    if [[ "$HOST" ]]; then
+        SSH_CONFIG_VARS=$(echo -e "$DESCRIBE_ALL"| jq "[.Reservations[]|select(.Instances[]|.Tags[]|.Key == \"Name\" and .Value == \""$HOST"\")]|{Reservations: .}"|jq -c '.Reservations[]|.Instances[]|[[.Tags[]|select(.Key | contains("Name"))|.Value],.PublicIpAddress,.KeyName]')
+    else
+        #-------------------------------------------------------------------------------
+        # if no -c and no -t, create ssh config for all instances
+        #-------------------------------------------------------------------------------
+        SSH_CONFIG_VARS=$(echo "$DESCRIBE_ALL"| jq -c '.Reservations[]|.Instances[]|[[.Tags[]|select(.Key | contains("Name"))|.Value],.PublicIpAddress,.KeyName]')
+    fi
+
+#-------------------------------------------------------------------------------
+# if -t option specified, create ssh config only for tagged instances
+#-------------------------------------------------------------------------------
+else
+    #-------------------------------------------------------------------------------
+    # ensure tags are properly formatted
+    #-------------------------------------------------------------------------------
+    if [[ "$TAG" =~ ^[a-zA-Z].*=[a-zA-Z].* ]]; then
+        TAG_KEY=$(echo "$TAG"|awk -F\= '{ print $1 }')
+        TAG_VALUE=$(echo "$TAG"|awk -F\= '{ print $2 }')
+    else
+        echo -e "Tags should be in the form key=value, no quotes\n"
+        usage
+        exit 1
+    fi
+    
+    #-------------------------------------------------------------------------------
+    # create ssh config for tagged instances
+    #-------------------------------------------------------------------------------
+    SSH_CONFIG_VARS=$(echo -e "$DESCRIBE_ALL"| jq "[.Reservations[]|select(.Instances[]|.Tags[]|.Key == \""$TAG_KEY"\" and .Value == \""$TAG_VALUE"\")]|{Reservations: .}"|jq -c '.Reservations[]|.Instances[]|[[.Tags[]|select(.Key | contains("Name"))|.Value],.PublicIpAddress,.KeyName]')
+fi
+
+#-------------------------------------------------------------------------------
+# create .ssh directory if it doesn't exist
+#-------------------------------------------------------------------------------
+if [[ ! -d "${SOURCE_DIR}/.ssh" ]]; then
+    mkdir "${SOURCE_DIR}/.ssh"
+fi
+
+#-------------------------------------------------------------------------------
+# create and populate temporary .ssh/config file
+#-------------------------------------------------------------------------------
+TMP_CONFIG=$(mktemp "${SOURCE_DIR}"/.ssh/.config.XXXXX)
+keyName=$(echo "$SSH_CONFIG_VARS"|tr -d ']["'|awk -F, '{print $3}')
+pathsToKey=($(find ${BASE_CUSTOMER_DIR}/${dcDEFAULT_APP_NAME}/${CUSTOMER_APP_UTILS} -name "$keyName.pem"))
+if [[ ${#pathsToKey[@]} -ne 0 ]]; then
+    pathToKey=${pathsToKey[0]}
+else
+    echo "ERROR: No access key file ($keyName.pem) for this instance: $HOST could be found"
+    rm -f ${TMP_CONFIG}
+    exit 1
+fi
+
+echo "$SSH_CONFIG_VARS"|tr -d ']["'|awk -v prof="$PROFILE" -v thekey="${pathToKey}" -F, '{print "Host " $1"\n","hostname " $2"\n","identityfile " thekey "\n user ubuntu\n"}'|tee "$TMP_CONFIG" > /dev/null
+
+#-------------------------------------------------------------------------------
+# if the -c option is specified, connect to the host with ssh
+#-------------------------------------------------------------------------------
+if [[ "$HOST" ]]; then
+    ssh -F "$TMP_CONFIG" "$HOST"
+#-------------------------------------------------------------------------------
+# otherwise, run commands with pdsh
+#-------------------------------------------------------------------------------
+else
+    if ! [[ "$HOSTS" ]]; then
+        #-------------------------------------------------------------------------------
+        # generate host list to pass pdsh
+        #-------------------------------------------------------------------------------
+        HOSTS=$(grep Host "$TMP_CONFIG"|awk '{print $2}'|tr '\n' ',')
+    fi
+    #-------------------------------------------------------------------------------
+    # final pdsh command
+    #-------------------------------------------------------------------------------
+    PDSH_SSH_ARGS_APPEND=$(echo -F "$TMP_CONFIG") pdsh -w "$HOSTS" "$PDSH_CMD"
+fi
+
+#-------------------------------------------------------------------------------
+# remove temporary .ssh/config file
+#-------------------------------------------------------------------------------
+if [[ -f "$TMP_CONFIG" ]]; then
+    rm "$TMP_CONFIG"
+fi
