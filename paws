@@ -43,8 +43,8 @@ function usage
     echo -e "    paws -c HOST"
     echo -e "        -c\taws Name to log into with SSH\n"
     echo -e "    Run a command on one or more instances in parallel, using a list of names:"
-    echo -e "    paws -w HOST1,HOST2 '<COMMAND>'"
-    echo -e "        -w\tlist of hosts, separated by commas\n"
+    echo -e "    paws -h HOST1,HOST2 '<COMMAND>'"
+    echo -e "        -h\tlist of hosts, separated by commas\n"
     echo -e "    Run a command on one or more instances in parallel, using tags:"
     echo -e "    paws -t KEY=VALUE '<COMMAND>'"
     echo -e "        -t\ttag KEY and VALUE pairs, in the form of KEY=VALUE\n"
@@ -55,7 +55,7 @@ function usage
     echo -e "    Interactively connect to an instance for the client1 account in the us-west-2 region:    paws -p client1 -r us-west-2 -c"
     echo -e "    Connect to the web1 instance for the client1 account:    paws -p client1 -c web1"
     echo -e "    Run the 'hostname' command on all instances for the client1 account:    paws -p client1 'hostname'"
-    echo -e "    Run the 'ls' command on the web1 and web2 instances for the client1 account:    paws -p client1 -w web1,web2 'ls'"
+    echo -e "    Run the 'ls' command on the web1 and web2 instances for the client1 account:    paws -p client1 -h web1,web2 'ls'"
     echo -e "    Run the 'w' command on instances tagged as Env=dev for the client1 account:    paws -p client1 -t Env=dev 'w'"
     echo -e "    Run the 'date' command on instances tagged as Name=db1 for the default account:    paws -t Name=db1 'date'"
 }
@@ -68,26 +68,27 @@ fi
 #-------------------------------------------------------------------------------
 # handle arguments: need conditionals for appropriate number of arguments/options
 #-------------------------------------------------------------------------------
-if [[ -z ${dcUTILS} ]]; then
-    echo "Please set and export dcUTILS environment variable before starting this script"
-    exit 1
-else
-set +e
-    NEW=${@}
+doProcessDCEnv() 
+{
+    if [[ -z ${dcUTILS} ]]; then
+        echo "Please set and export dcUTILS environment variable before starting this script"
+        exit 1
+    else
+    set +e
+        envToSource="$(${dcUTILS}/scripts/process_dc_env.py ${NEW})"
 
-    envToSource="$(${dcUTILS}/scripts/process_dc_env.py ${NEW})"
+        if [[ $? -ne 0 ]]; then
+            echo $envToSource
+            exit 1
+        else
+            eval "$envToSource"
+        fi
+    set -e
+    fi
+}
 
-	if [[ $? -ne 0 ]]; then
-		echo $envToSource
-		exit 1
-	else
-		eval "$envToSource"
-	fi
-set -e
-fi
-
-PROFILE=${dcDEFAULT_APP_NAME}
-
+NEW=${@}
+APPNAME=''
 while [[ $# -gt 0 ]]; do
     case $1 in
         -p ) shift
@@ -99,7 +100,7 @@ while [[ $# -gt 0 ]]; do
         -t ) shift
                 TAG=$1
                 ;;
-        -w ) shift
+        -h ) shift
                 HOSTS=$1
 	            ;;
         -l ) LIST_NAMES='true'
@@ -113,6 +114,9 @@ while [[ $# -gt 0 ]]; do
                  ;;
         -L ) LIST_NAMES='true'
              LIST_ALL='true'
+                 ;;
+        -a | --appName) shift
+             APPNAME=$1
                  ;;
         -h ) usage
              exit 1
@@ -132,6 +136,9 @@ while [[ $# -gt 0 ]]; do
     shift
 done
 
+if [[ ${APPNAME} ]]; then
+    doProcessDCEnv
+fi
 
 #-------------------------------------------------------------------------------
 # check for the existance of pdsh/ssh command
@@ -146,14 +153,15 @@ fi
 # get the directory of paws
 # http://stackoverflow.com/questions/59895/can-a-bash-script-tell-what-directory-its-stored-in
 #-------------------------------------------------------------------------------
-SOURCE="${BASH_SOURCE[0]}"
-while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
-    SOURCE_DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
-    SOURCE="$(readlink "$SOURCE")"
-    [[ $SOURCE != /* ]] && SOURCE="$SOURCE_DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
-done
-SOURCE_DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
-
+#SOURCE="${BASH_SOURCE[0]}"
+#while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
+#    SOURCE_DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+#    SOURCE="$(readlink "$SOURCE")"
+#    [[ $SOURCE != /* ]] && SOURCE="$SOURCE_DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+#done
+#SOURCE_DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+SOURCE_DIR=$HOME
+#
 #-------------------------------------------------------------------------------
 # get full description of running instances from api and filter data using jq instead of with aws-cli
 #-------------------------------------------------------------------------------
@@ -162,7 +170,6 @@ if ! [[ -z "$REGION" ]]; then
 else
     DESCRIBE_ALL=$(aws --profile "$PROFILE" ec2 describe-instances --filters Name=instance-state-name,Values=running)
 fi
-
 
 #-------------------------------------------------------------------------------
 # LIST ONLY
@@ -260,18 +267,56 @@ fi
 #-------------------------------------------------------------------------------
 # create and populate temporary .ssh/config file
 #-------------------------------------------------------------------------------
-TMP_CONFIG=$(mktemp "${SOURCE_DIR}"/.ssh/.config.XXXXX)
+cleanUpPathList()
+{
+    local pathsToKey="${1}"
+    retVal=$2
+
+    numPaths=${#pathsToKey[@]}
+    if [[ numPaths -ne 0 ]]; then
+        retPath=""
+       c=0 
+       while [[ ${c} -lt ${numPaths} ]]; do
+            if [[ "${pathsToKey[${c}]}" != *"Permission denied"* ]] && [[ "${pathsToKey[${c}]}" != *"find:"* ]]; then
+                eval "$retVal=\"${pathsToKey[${c}]}\""
+                return
+            fi
+            c=$(($c+1))
+       done
+
+    else
+        echo "ERROR: No access key file ($keyName.pem) for this instance: $HOST could be found"
+        rm -f ${TMP_CONFIG}
+        exit 1
+    fi
+}
+
+TMP_CONFIG=$(mktemp "${HOME}"/.ssh/.config.XXXXX)
 keyName=$(echo "$SSH_CONFIG_VARS"|tr -d ']["'|awk -F, '{print $3}')
-pathsToKey=($(find ${BASE_CUSTOMER_DIR}/${dcDEFAULT_APP_NAME}/${CUSTOMER_APP_UTILS} -name "$keyName.pem"))
-if [[ ${#pathsToKey[@]} -ne 0 ]]; then
-    pathToKey=${pathsToKey[0]}
+declare -a pathsToKey
+if [[ ${dcDEFAULT_APP_NAME} ]]; then
+    # check the appUtils keys first
+    pathsToKey=($(find ${BASE_CUSTOMER_DIR}/${dcDEFAULT_APP_NAME}/${CUSTOMER_APP_UTILS} -name "$keyName.pem"))
+    numPaths=${#pathsToKey[@]}
+    if [[ numPaths -ne 0 ]]; then
+        RETVAL=''
+        cleanUpPathList "${pathsToKey[@]}" RETVAL
+        pathToKey=${RETVAL}
+    else
+        # not there so lets check the pool
+        pathsToKey="$(find $HOME/Google* -path "*/${PROFILE}/keys/${keyName}.pem" 2>&1)"
+        RETVAL=''
+        cleanUpPathList "${pathsToKey[@]}" RETVAL
+        pathToKey=${RETVAL}
+    fi
 else
-    echo "ERROR: No access key file ($keyName.pem) for this instance: $HOST could be found"
-    rm -f ${TMP_CONFIG}
-    exit 1
+    pathsToKey="$(find $HOME/Google* -path "*/${PROFILE}/keys/${keyName}.pem" 2>&1)"
+    RETVAL=''
+    cleanUpPathList "${pathsToKey[@]}" RETVAL
+    pathToKey=${RETVAL}
 fi
 
-echo "$SSH_CONFIG_VARS"|tr -d ']["'|awk -v prof="$PROFILE" -v thekey="${pathToKey}" -F, '{print "Host " $1"\n","hostname " $2"\n","identityfile " thekey "\n user ubuntu\n"}'|tee "$TMP_CONFIG" > /dev/null
+echo "$SSH_CONFIG_VARS"|tr -d ']["'|awk -v prof="$PROFILE" -v thekey="${pathToKey}" -F, '{print "Host " $1"\n","hostname " $2"\n","identityfile \"" thekey "\"\n user ubuntu\n"}'|tee "$TMP_CONFIG" > /dev/null
 
 #-------------------------------------------------------------------------------
 # if the -c option is specified, connect to the host with ssh
