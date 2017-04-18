@@ -16,8 +16,10 @@ and
 brew install --with-genders pdsh
 ```
 
-You'll also need to configure the aws cli tool.  You can run `aws configure` for interactive setup, where you'll need to provide your AWS credentials and a default region.  For more info, see http://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html
+You'll also need to configure the aws cli tool.  You can run `aws configure` for interactive setup, where you'll need to provide your AWS credentials a default region and a profile name.  For more info, see http://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html
 
+Key management:
+With this version of paws, the name of the key for the host that you select 
 Finally, you'll need to tell paws where to find your SSH keys.  You can create a symlink that points to whatever directory the .pem files are stored in, (or you can create a new directory and copy them to it).  Note: the name of the directory or symlink you create must match the aws cli profile name.  For example, if you had a profile with the name 'main-account' and had SSH keys names prod.pem and dev.pem stored at '/aws/keys', to symlink to the location of your keys, from the main paws directory, first create and cd to the paws/.ssh directory (`mkdir .ssh && cd .ssh`) and then run `ln -s /aws/keys main-account`.
 
 Also add the PAWS directory to your $PATH so that it can be run as a command.
@@ -42,9 +44,9 @@ If you run `ls -al .ssh`, you should see 'main-account -> /aws/keys', and runnin
    -c	aws Name to log into with SSH  
 
 * **Run a command on one or more instances in parallel, using a list of names:**  
-   `paws [-p PROFILE] -w HOST1,HOST2 '<COMMAND>'`  
+   `paws [-p PROFILE] -x HOST1,HOST2 '<COMMAND>'`  
    -p	aws cli PROFILE 
-   -w	list of hosts, separated by commas  
+   -x	list of hosts, separated by commas  
 
 * **Run a command on one or more instances in parallel, using tags:**  
    `paws [-p PROFILE] -t KEY=VALUE '<COMMAND>'`  
@@ -60,7 +62,7 @@ If you run `ls -al .ssh`, you should see 'main-account -> /aws/keys', and runnin
   * Interactively connect to an instance for the client1 account:  `paws -p client1 -c`  
   * Connect to the web1 instance for the client1 account:  `paws -p client1 -c web1`  
   * Run the 'hostname' command on all instances for the client1 account:  `paws -p client1 'hostname'`  
-  * Run the 'ls' command on the web1 and web2 instances for the client1 account:  `paws -p client1 -w web1,web2 'ls'`  
+  * Run the 'ls' command on the web1 and web2 instances for the client1 account:  `paws -p client1 -x web1,web2 'ls'`  
   * Run the 'w' command on instances tagged as Env=dev for the client1 account:  `paws -p client1 -t Env=dev 'w'`  
   * Run the 'date' command on instances tagged as Name=db1 for the default account:  `paws -t Name=db1 'date'` 
 
