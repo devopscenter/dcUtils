@@ -218,7 +218,8 @@ class Process_dc_Env:
 
         # if one doesn't exist instruct the user to run deployenv.sh with that
         # app name and try this again and then exit
-        if len(envFiles) == 0 or "dcEnv" not in envFiles[0]:
+        #if len(envFiles) == 0 or "dcEnv" not in envFiles[0]:
+        if len(envFiles) == 0:
             print ("There does not appear to be any env files available " +
                    "for the given appName: " + self.baseAppName + ". " +
                    "You will need to create one by executing the " +
