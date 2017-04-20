@@ -123,6 +123,9 @@ while [[ $# -gt 0 ]]; do
         -w | --workspaceName) shift
              NEW_CMD_LINE="${NEW_CMD_LINE} --workspaceName $1"
                  ;;
+        -e | --env) shift
+             NEW_CMD_LINE="${NEW_CMD_LINE} --env $1"
+                 ;;
         -h ) usage
              exit 1
 	             ;;
