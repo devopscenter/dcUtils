@@ -1,9 +1,9 @@
 #!/usr/bin/env bash - 
 #===============================================================================
 #
-#          FILE: restore-pgdump-backup.sh
+#          FILE: restore.sh
 # 
-#         USAGE: ./restore-pgdump-backup.sh 
+#         USAGE: ./restore.sh 
 # 
 #   DESCRIPTION: This script will put the postgresql database in a state that will
 #                allow it to receive the restore of data from a backup of the prod
@@ -30,7 +30,7 @@ BACKUP_DIR='.'
 
 function usage
 {
-  echo "usage: ./restore-pgdump-backup.sh [--schema-only] [--backup local-backup-filename] database-name"
+  echo "usage: ./restore.sh [--schema-only] [--backup local-backup-filename] database-name"
 }
 
 if [[ -z $1 ]]; then
@@ -134,8 +134,8 @@ sudo supervisorctl restart postgres
 # if no backup file is provided, look for the most recent pgdump file in the backup dir
 if [[ -z "$LOCAL_BACKUP_FILE" ]]; then
 
-    echo "Looking for backupfile: ${BACKUP_DIR}/${DB_NAME}*.download"
-    LOCAL_BACKUP_FILE="$(find ${BACKUP_DIR} -maxdepth 1 -iname "${DB_NAME}*.download"| sort |tail -1)"
+    echo "Looking for backupfile: ${DB_NAME}*"
+    LOCAL_BACKUP_FILE="$(ls -t "${DB_NAME}*"| head -n 1)"
     if [[ -z "$LOCAL_BACKUP_FILE" ]]; then
         echo "No local backup found, exiting."
         exit 1
