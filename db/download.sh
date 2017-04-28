@@ -26,11 +26,17 @@
 #===============================================================================
 
 #set -o nounset       # Treat unset variables as an error
-set -x               # essentially debug mode
+#set -x               # essentially debug mode
 
 
 BACKUP_DIR='.'
 
+#---  FUNCTION  ----------------------------------------------------------------
+#          NAME:  usage
+#   DESCRIPTION:  prints out the options for the script
+#    PARAMETERS:  
+#       RETURNS:  
+#-------------------------------------------------------------------------------
 function usage
 {
   echo "usage: ./download-pgdump-backup.sh [--s3backupfile s3-backup-file] [--list] [-n] s3bucket database"
@@ -71,20 +77,43 @@ done
 # store list of backups from s3 bucket
 #-------------------------------------------------------------------------------
 S3_AS_STRING=$(aws s3 ls --recursive s3://"${S3_BUCKET}"/|grep "${DB_NAME}".sql.gz)
-S3_SORTED_AS_STRING=$(echo "${S3_AS_STRING}" | sort -V)
-# turn the string into an array
+S3_SORTED_AS_STRING=$(echo "${S3_AS_STRING}" | sort)
 IFS=$'\n'; S3_LIST=($S3_SORTED_AS_STRING); unset IFS;
 
 
+#---  FUNCTION  ----------------------------------------------------------------
+#          NAME:  showNumberedList
+#   DESCRIPTION:  shows the list as a numbered list and asks the user if they 
+#                 want to choose one from the list to download
+#    PARAMETERS:  
+#       RETURNS:  
+#-------------------------------------------------------------------------------
+showNumberedList() {
+    echo "S3 backups, with most recent listed last"
+    i=1
+    for line in "${S3_LIST[@]}"
+    do
+        dbLine=${line##* }
+        echo "{$i}. ${dbLine}"
+        i=$((i+1))
+    done
+}
 #-------------------------------------------------------------------------------
 # if --list is specified, print list and exit
 #-------------------------------------------------------------------------------
 if ! [[ -z "$LIST" ]]; then
-    echo "S3 backups, with most recent listed last"
-    for item in "${S3_LIST[@]}"; do
-        echo "${item}"
-    done
-    exit
+
+    showNumberedList
+    echo -n "Enter the number of the backup you want to download or press return to quit "
+    read -r number
+
+    if [[ -z ${number} ]]; then
+        exit
+    else
+        indexNum=$((number-1))
+        selectedLine=${S3_LIST[$indexNum]}
+        S3_BACKUP_FILE=${selectedLine##* }
+    fi
 fi
 
 #-------------------------------------------------------------------------------
@@ -93,25 +122,26 @@ fi
 #-------------------------------------------------------------------------------
 if [[ -z "$S3_BACKUP_FILE" ]]; then
     # download the most recent
-    numItems=$((${#S3_LIST[@]}-1))
-    S3_BACKUP_FILE=$(echo ${S3_LIST[${numItems}]} | cut -d ' ' -f 4)
+    selectedLine=${S3_LIST[-1]}
+    S3_BACKUP_FILE=${selectedLine##* }
 fi
 
 #-------------------------------------------------------------------------------
 # save off, from the end, everything up the last slash to get just the database backup name
 #-------------------------------------------------------------------------------
 JUST_THE_BACKUP_NAME=${S3_BACKUP_FILE##*/}
-LOCAL_BACKUP_FILE="${BACKUP_DIR}/${JUST_THE_BACKUP_NAME}.download"
+LOCAL_BACKUP_FILE="${BACKUP_DIR}/${JUST_THE_BACKUP_NAME}"
 
 if [[ -f "$LOCAL_BACKUP_FILE" ]] && ! [[ -z "$NO_OVERWRITE" ]]; then
     echo -e "\nFile $LOCAL_BACKUP_FILE already exists and -n option was given. Skipping."
 else
     #-------------------------------------------------------------------------------
-    # A little housecleaning- deleting any previous downloaded backups before getting the new one.
+    # A little housecleaning- deleting any previous downloaded backups before getting the
+    # new one.
     # At some point this could be made optional (e.g. a -noclean option)
     #-------------------------------------------------------------------------------
     echo "Getting the backup file: ${S3_BACKUP_FILE} from the s3bucket: ${S3_BUCKET}"
-    #sudo -u postgres aws s3 cp "s3://${S3_BUCKET}/${S3_BACKUP_FILE}" "$LOCAL_BACKUP_FILE"
+    sudo -u postgres aws s3 cp "s3://${S3_BUCKET}/${S3_BACKUP_FILE}" "$LOCAL_BACKUP_FILE"
 fi
 export LOCAL_BACKUP_FILE
 
