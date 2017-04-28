@@ -39,7 +39,7 @@ BACKUP_DIR='.'
 #-------------------------------------------------------------------------------
 function usage
 {
-  echo "usage: ./download-pgdump-backup.sh [--s3backupfile s3-backup-file] [--list] [-n] s3bucket database"
+  echo "usage: ./download.sh [--s3backupfile s3-backup-file] [--list] [-n] s3bucket database"
 }
 
 if [[ -z $1 ]]; then
