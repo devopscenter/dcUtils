@@ -27,7 +27,7 @@ class EnvironmentDescription:
     topLevelInstanceName = ''
     destinationDir = ''
 
-    def __init__(self, appNameIn,  envTypeIn, destDirIn, profileIn):
+    def __init__(self, appNameIn,  envTypeIn, destDirIn, profileIn, dbNameIn):
         """creates an instance of EnvironmentDescription that takes the
         customer or application name, environmentType (dev,test,staging,prod)
         and the destination directory for where the selected backup file will be
@@ -36,6 +36,7 @@ class EnvironmentDescription:
         self.appName = appNameIn
         self.profile = profileIn
         self.destinationDir = destDirIn
+        self.dbName = dbNameIn
         self.topLevel = self.appName + "-" + self.envType + "-postgres-backup"
 
     def getInstanceNames(self):
@@ -70,7 +71,7 @@ class EnvironmentDescription:
         # now go through the list and get the specific backup file
 
         i = 0
-        fileToLookFor = self.appName + '.sql.gz'
+        fileToLookFor = self.dbName + '.sql.gz'
         returnBackupFileList = []
         while i < len(tmpNamesList):
             if(tmpNamesList[i].startswith(self.topLevelInstanceName)):
@@ -116,10 +117,12 @@ def checkArgs(inputArgs):
                         'put the downloaded backup file into', required=True)
     parser.add_argument('-e', '--env', help='Provide the environment name' +
                         'to use to look for in the s3 bucket', required=False)
+    parser.add_argument('-D', '--dbName', help='Provide the database name',
+                        required=True)
     parser.add_argument('-p', '--profile', help='Provide the AWS profile ' +
                         'name to use when looking for in the s3 bucket',
                         required=False)
-    parser.add_argument('-n', '--appName', help='application or database name' +
+    parser.add_argument('-a', '--appName', help='application or database name' +
                         'for the customer.  This name will be used to filter' +
                         'the files on the S3 server.  THis is also the ' +
                         'value that is defined in your .aws config',
@@ -150,32 +153,21 @@ def checkArgs(inputArgs):
             destinationDir
         sys.exit(1)
 
-    return destinationDir, args.appName, args.env, args.profile
+    return destinationDir, args.appName, args.env, args.profile, args.dbName
 
 
 def main(argv):
     # get the destination directory for the backup file download and
     # make sure it is available and writeable by this user
-    (destDir, appName, env, profile) = checkArgs(argv)
+    (destDir, appName, env, profile, dbName) = checkArgs(argv)
 
-    if not env:
-        possibleEnvironments = ["dev", "staging", "prod"]
+    envToUse = env
 
-        # iterate over the possible environment names and have user select one
-        for num, envType in enumerate(possibleEnvironments, start=1):
-            print('{}. {}'.format(num, envType))
+    print "You selected: ", envToUse
 
-        envResponse = int(raw_input(
-            "Enter the number to the environment for the backup (0 to exit): "))
-        if(envResponse == 0):
-            sys.exit(1)
-        envToUse = possibleEnvironments[envResponse-1]
-    else:
-        envToUse = env
-    # print "You selected: ", envToUse
-
-    anEnv = EnvironmentDescription(appName, envToUse, destDir, profile)
-    # print anEnv.getTopLevelName()
+    anEnv = EnvironmentDescription(appName, envToUse, destDir, profile,
+                                   dbName)
+    print anEnv.getTopLevelName()
     instanceNames = anEnv.getInstanceNames()
 
     for num, instantType in enumerate(instanceNames, start=1):
