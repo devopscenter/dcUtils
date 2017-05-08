@@ -129,7 +129,9 @@ done
 
 # turn off archive_mode for the restore and restart postgres
 sudo sed -i "s/^\barchive_mode\b[[:blank:]]\+=[[:blank:]]\+\bon\b/archive_mode = off/g" /media/data/postgres/db/pgdata/postgresql.conf
+sleep 2
 sudo supervisorctl restart postgres
+sleep 5
 
 # if no backup file is provided, look for the most recent pgdump file in the backup dir
 if [[ -z "$LOCAL_BACKUP_FILE" ]]; then
@@ -154,5 +156,6 @@ fi
 
 # turn on archive_mode after restore is complete and restart postgres
 sudo sed -i "s/^\barchive_mode\b[[:blank:]]\+=[[:blank:]]\+\boff\b/archive_mode = on/g" /media/data/postgres/db/pgdata/postgresql.conf
+sleep 2
 sudo supervisorctl restart postgres
 echo "Postgresql restore completed at " && date
