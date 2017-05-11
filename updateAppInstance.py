@@ -90,7 +90,7 @@ class UpdateInstance:
                 print ("\nThere will be " + str(numberToCreate) +
                        " instances of type: " + componentItem["type"] + " ")
         # set up the cmd to run
-        cmdToRun = self.buildCmdToRun
+        cmdToRun = self.buildCmdToRun(componentInfo, "updateAppInstance")
 
         # and now execute it
         subprocess.call(cmdToRun, shell=True)
@@ -167,6 +167,18 @@ class UpdateInstance:
 #
 
         return cmdToRun
+
+    def addToCommand(self, string, componentInfo, aKey, cmdOption):
+        returnStr = string
+        if componentInfo[aKey]:
+            keyValue = ""
+            if isinstance(componentInfo[aKey], (int, long)):
+                keyValue = str(componentInfo[aKey])
+            else:
+                keyValue = componentInfo[aKey]
+
+            returnStr += " --" + cmdOption + " " + keyValue
+        return returnStr
 
     def readConfigFile(self, aConfigFile):
         """read the json config file and return a List of the elements found
