@@ -33,7 +33,7 @@ __status__ = "Development"
 class UpdateInstance:
 
     def __init__(self, theAppName, theEnv, Destination, theConfigFile,
-                 accessKey, pathToKeys):
+                 accessKey, pathToKeys, test):
 
         """UpdateComponent constructor"""
 
@@ -43,9 +43,52 @@ class UpdateInstance:
         self.targetUser = "ubuntu"
         self.accessKey = accessKey
         self.pathToKeys = pathToKeys
+        self.test = test
         self.configList = self.readConfigFile(theConfigFile)
 
     def run(self):
+        # first remove the log file from a previous run if it exists
+        logFile = "create-instance.log"
+        if not self.test:
+            logFileAndPath = "ec2/" + logFile
+            if os.path.isfile(logFileAndPath):
+                os.remove(logFileAndPath)
+
+        # go through each element found in the configList
+        for component in self.configList:
+            componentInfo = component[0]
+            componentItem = component[1]
+
+            numberToCreate = 1
+
+            # go through the environemnt variables and print them out
+            print "Environment Variables for the component:\n"
+            for item in componentInfo.keys():
+                print "{}={}\n".format(item, componentInfo[item]),
+
+            # now print out the elements for the component
+            if componentItem["type"] == 'db':
+                print ("Name=" + componentItem["name"] + " "
+                       "Number=" + str(numberToCreate) + " "
+                       "Version=" + self.appName + " "
+                       "Environment=" + componentInfo["ENVIRONMENT"] + " "
+                       "Type=" + componentItem["type"] + " "
+                       "Role=" + componentItem["ROLE"] + " ")
+            else:
+                print ("Name=" + componentItem["name"] + " "
+                       "Number=" + str(numberToCreate) + " "
+                       "Version=" + self.appName + " "
+                       "Environment=" + componentInfo["ENVIRONMENT"] + " "
+                       "Type=" + componentItem["type"] + " ")
+
+            # and now print out the separate components and their count
+            if componentItem["type"] == 'db':
+                print ("\nThere will be " + str(numberToCreate) +
+                       " instances of type: " + componentItem["type"] + " "
+                       "and role: " + componentItem["ROLE"])
+            else:
+                print ("\nThere will be " + str(numberToCreate) +
+                       " instances of type: " + componentItem["type"] + " ")
         # set up the cmd to run
         cmdToRun = self.buildCmdToRun
 
@@ -192,6 +235,12 @@ def checkArgs():
     parser.add_argument('-x', '--accessKey', help='the access key to get to ' +
                         'the instance.',
                         required=True)
+    parser.add_argument('-t', '--test', help='Will run the script but ' +
+                        'will not actually execute the shell commands.' +
+                        'Think of this as a dry run or a run to be used' +
+                        ' with a testing suite',
+                        action="store_true",
+                        required=False)
 
     try:
         args, unknown = parser.parse_known_args()
@@ -200,6 +249,11 @@ def checkArgs():
         sys.exit(1)
 
     retEnvList = pythonGetEnv()
+
+    retTest = ""
+    if args.test:
+        retTest = args.test
+        print "testing: True"
 
     retConfigFile = args.configFile
 
@@ -235,16 +289,17 @@ def checkArgs():
     retDest = args.destination
 
     # if we get here then the
-    return (retAppName, retEnv, retDest, retConfigFile, retAccessKey, keyPath)
+    return (retAppName, retEnv, retDest, retConfigFile, retAccessKey, keyPath,
+            retTest)
 
 
 def main(argv):
-    (appName, env, dest, configFile, accessKey, keyPath) = checkArgs()
+    (appName, env, dest, configFile, accessKey, keyPath, test) = checkArgs()
 
     print"destination is: {}".format(dest)
     print"configFile is: {}".format(configFile)
     customerApp = UpdateInstance(appName, env, dest, configFile, accessKey,
-                                 keyPath)
+                                 keyPath, test)
     customerApp.run()
 
 
