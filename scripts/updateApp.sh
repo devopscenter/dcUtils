@@ -84,9 +84,9 @@ createApplicationUtilsInstallTarball()
 }
 
 getPublicIP () {
-    instanceName = $1
-    publicIP = $2
-    INSTANCE_ID=$(aws --profile ${PROFILE}.center --region us-west-2 ec2 describe-instances --filters Name=tag:Name,Values=${instanceName} | jq -r '.Reservations[].Instances[]|.InstanceId')
+    instanceName=$1
+    PUBLIC_IP=$2
+    INSTANCE_ID=$(aws --profile ${PROFILE} --region ${REGION} ec2 describe-instances --filters Name=tag:Name,Values=${instanceName} | jq -r '.Reservations[].Instances[]|.InstanceId')
 
     PUBLIC_IP=$(aws --profile "${PROFILE}" --region "${REGION}" ec2 describe-instances --instance-id "${INSTANCE_ID}" --query 'Reservations[].Instances[].PublicIpAddress'|jq -r '.[]')
 
@@ -116,35 +116,36 @@ getUpdate() {
 	#-------------------------------------------------------------------------------
 	# copy it to the destination so that bootstrap can open it up
 	#-------------------------------------------------------------------------------
-set -x
 	scp -oStrictHostKeyChecking=no -i "${LOCAL_KEYPAIR}" ${APP_UTILS_TARBALL} ubuntu@"${PUBLIC_IP}:~/"
 	scp -oStrictHostKeyChecking=no -i "${LOCAL_KEYPAIR}" ${FILE_TO_TRANSFER} ubuntu@"${PUBLIC_IP}:~/"
 
+	#-------------------------------------------------------------------------------
+	# next we need to execute  updateInstanceOnInstance.sh  on the instance now
+	#-------------------------------------------------------------------------------
+    ssh -oStrictHostKeyChecking=no -i "${LOCAL_KEYPAIR}" ubuntu@"${PUBLIC_IP}" "./updateAppOnInstance.sh -i ${INSTANCE_ID} -g ${APP_UTILS_TARBALL_NAME} -a ${CUST_APP_NAME} -e ${ENVIRONMENT}"
+
 exit
-	#-------------------------------------------------------------------------------
-	# next we need to execute the updateInstanceOnInstance.sh 
-	#-------------------------------------------------------------------------------
-	rm "${APP_UTILS_TARBALL}"
-
-    # make the base directory
-    mkdir ${CUST_APP_NAME}
-
-    # untar the ball
-    cd ${CUST_APP_NAME}
-    tar -xf ${HOME}/${APP_UTILS_TARBALL_NAME}
-
-    # and clean up
-    cd $HOME
-    rm ${APP_UTILS_TARBALL_NAME}
-
-	# need to clean out the other env "key" directories except the one that is needed for
-	# this instance
-	cd "${HOME}/${CUST_APP_NAME}/${CUSTOMER_UTILS}/keys"
-	RM_ALL_ENV_DIRS_BUT_ONE=$(find . ! -name "${ENVIRONMENT}" -type d -exec rm -rf {} +)
-
-	# and now do the deployenv.sh
-	cd ${HOME}/dcUtils
-	./deployenv.sh --type instance --env $ENVIRONMENT --appName ${CUST_APP_NAME}
+#	rm "${APP_UTILS_TARBALL}"
+#
+#    # make the base directory
+#    mkdir ${CUST_APP_NAME}
+#
+#    # untar the ball
+#    cd ${CUST_APP_NAME}
+#    tar -xf ${HOME}/${APP_UTILS_TARBALL_NAME}
+#
+#    # and clean up
+#    cd $HOME
+#    rm ${APP_UTILS_TARBALL_NAME}
+#
+#	# need to clean out the other env "key" directories except the one that is needed for
+#	# this instance
+#	cd "${HOME}/${CUST_APP_NAME}/${CUSTOMER_UTILS}/keys"
+#	RM_ALL_ENV_DIRS_BUT_ONE=$(find . ! -name "${ENVIRONMENT}" -type d -exec rm -rf {} +)
+#
+#	# and now do the deployenv.sh
+#	cd ${HOME}/dcUtils
+#	./deployenv.sh --type instance --env $ENVIRONMENT --appName ${CUST_APP_NAME}
 }
 
 #-------------------------------------------------------------------------------
@@ -160,6 +161,12 @@ while [[ $# -gt 0 ]]; do
     case $1 in
       --appName|-a )    shift
                         CUST_APP_NAME=$1
+                  ;;
+      --profile|-p )  shift
+                        PROFILE=$1
+                  ;;
+      --region|-r )  shift
+                        REGION=$1
                   ;;
       --env|-e )        shift
                         ENVIRONMENT=$1
@@ -180,7 +187,5 @@ while [[ $# -gt 0 ]]; do
     shift
 done
 
-exit
-
-#getUpdate
+getUpdate
 
