@@ -1,4 +1,4 @@
-#!/bin/bash -
+#!/usr/bin/env bash
 #===============================================================================
 #
 #          FILE: updateAppOnComponent.sh
@@ -49,40 +49,6 @@ function usage
     echo
 }
 
-#---  FUNCTION  ----------------------------------------------------------------
-#          NAME:  createApplicationUtilsInstallTarball
-#   DESCRIPTION:  this will pull the customer application utils to the local box
-#                 trim it down and create a tarball that can be copied to the
-#                 destination
-#    PARAMETERS:
-#       RETURNS:
-#-------------------------------------------------------------------------------
-createApplicationUtilsInstallTarball()
-{
-	APP_UTILS_TARBALL_NAME="appUtils.tar.gz"
-	APP_UTILS_TARBALL=$(pwd)"/"${APP_UTILS_TARBALL_NAME}
-	PULLDIR=$(mktemp -d pulldir.XXXXXX)
-	cd ${PULLDIR}
-
-	# git pull the application utils repo into the PULLDIR
-    eval `ssh-agent`
-    ssh-add ${DEPLOYMENT_KEYPAIR}
-	git clone ${CUSTOMER_UTILS}
-
-	# and now tar it up without the keys diretory
-	tar -czf ${APP_UTILS_TARBALL} "${APPNAME}-utils/config" "${APPNAME}-utils/environments"
-
-	if [[ ! -f ${APP_UTILS_TARBALL} ]]; then
-		echo "ERROR: the application utils tarball was not created and can not be distributed."
-		cd ..
-		rm -rf ${PULLDIR}
-		exit 1
-	else
-		#  clean up
-		cd ..
-		rm -rf ${PULLDIR}
-	fi
-}
 
 
 #---  FUNCTION  ----------------------------------------------------------------
@@ -93,47 +59,40 @@ createApplicationUtilsInstallTarball()
 #    PARAMETERS:  
 #       RETURNS:  
 #-------------------------------------------------------------------------------
-getUpdate() {
+doTheUpdate() {
 
-	#-------------------------------------------------------------------------------
-	# Before we execute the boot strap process we need to git the application utils
-	# trim it down and the tar it up so that the bootstrap process can copy it to 
-	# the destination instance.
-	#-------------------------------------------------------------------------------
-	createApplicationUtilsInstallTarball
+    #-------------------------------------------------------------------------------
+    # the local tarbal isn't needed any more so go ahead and remove it
+    #-------------------------------------------------------------------------------
 
-	#-------------------------------------------------------------------------------
-	# copy it to the destination so that bootstrap can open it up
-	#-------------------------------------------------------------------------------
-	scp -oStrictHostKeyChecking=no -i "${LOCAL_KEYPAIR}" ${APP_UTILS_TARBALL} ubuntu@"${PUBLIC_IP}:~/"
+    cd $HOME
+    echo ${CUST_APP_NAME}
+    echo "${HOME}"'/'"${APP_UTILS_TARBALL}"
 
-	#-------------------------------------------------------------------------------
-	# the local tarbal isn't needed any more so go ahead and remove it
-	#-------------------------------------------------------------------------------
-	rm "${APP_UTILS_TARBALL}"
-
+    echo ${INSTANCE_ID}
+    echo ${ENVIRONMENT}
     # make the base directory
-    mkdir ${CUST_APP_NAME}
+    if [[ ! -d ${CUST_APP_NAME} ]]; then
+        mkdir ${CUST_APP_NAME}
+    fi
 
     # untar the ball
     cd ${CUST_APP_NAME}
-    tar -xf ${HOME}/${APP_UTILS_TARBALL_NAME}
+    #tar -xf "${HOME}/${APP_UTILS_TARBALL}"
+#
+#    # and clean up
+#    cd $HOME
+#    rm ${APP_UTILS_TARBALL}
+#
+#    # need to clean out the other env "key" directories except the one that is needed for
+#    # this instance
+#    cd "${HOME}/${CUST_APP_NAME}/${CUSTOMER_UTILS}/keys"
+#    RM_ALL_ENV_DIRS_BUT_ONE=$(find . ! -name "${ENVIRONMENT}" -type d -exec rm -rf {} +)
+#
+#    # and now do the deployenv.sh
+#    cd ${HOME}/dcUtils
+#    ./deployenv.sh --type instance --env $ENVIRONMENT --appName ${CUST_APP_NAME}
 
-    # and clean up
-    cd $HOME
-    rm ${APP_UTILS_TARBALL_NAME}
-else
-    echo "ERROR: the appliation utilities repo has NOT been installed as the tarball could not be found"
-fi
-
-	# need to clean out the other env "key" directories except the one that is needed for
-	# this instance
-	cd "${HOME}/${CUST_APP_NAME}/${CUSTOMER_UTILS}/keys"
-	RM_ALL_ENV_DIRS_BUT_ONE=$(find . ! -name "${ENVIRONMENT}" -type d -exec rm -rf {} +)
-
-	# and now do the deployenv.sh
-	cd ${HOME}/dcUtils
-	./deployenv.sh --type instance --env $ENVIRONMENT --appName ${CUST_APP_NAME}
 }
 
 #-------------------------------------------------------------------------------
@@ -163,10 +122,16 @@ while [[ $# -gt 0 ]]; do
       --env|-e )        shift
                         ENVIRONMENT=$1
                   ;;
+      --instanceID|-i )        shift
+                        INSTANCE_ID=$1
+                  ;;
+      --updateTarBall|-g )        shift
+                        APP_UTILS_TARBALL=$1
+                  ;;
     esac
     shift
 done
 
 
-getUpdate
+doTheUpdate
 
