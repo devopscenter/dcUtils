@@ -78,20 +78,20 @@ doTheUpdate() {
 
     # untar the ball
     cd ${CUST_APP_NAME}
-    #tar -xf "${HOME}/${APP_UTILS_TARBALL}"
-#
-#    # and clean up
-#    cd $HOME
-#    rm ${APP_UTILS_TARBALL}
-#
+    tar -xf "${HOME}/${APP_UTILS_TARBALL}"
+
+    # and clean up
+    cd $HOME
+    rm ${APP_UTILS_TARBALL}
+
 #    # need to clean out the other env "key" directories except the one that is needed for
 #    # this instance
 #    cd "${HOME}/${CUST_APP_NAME}/${CUSTOMER_UTILS}/keys"
 #    RM_ALL_ENV_DIRS_BUT_ONE=$(find . ! -name "${ENVIRONMENT}" -type d -exec rm -rf {} +)
-#
-#    # and now do the deployenv.sh
-#    cd ${HOME}/dcUtils
-#    ./deployenv.sh --type instance --env $ENVIRONMENT --appName ${CUST_APP_NAME}
+
+    # and now do the deployenv.sh
+    cd ${HOME}/dcUtils
+    ./deployenv.sh --type instance --env $ENVIRONMENT --appName ${CUST_APP_NAME}
 
 }
 
@@ -132,6 +132,7 @@ while [[ $# -gt 0 ]]; do
     shift
 done
 
+source /usr/local/bin/dcEnv.sh
 
 doTheUpdate
 
