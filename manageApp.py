@@ -291,6 +291,14 @@ class ManageAppName:
             os.makedirs(generatedEnvDir, 0755)
             open(generatedEnvDir + "/.keep", 'a').close()
 
+        # create the certs directory
+        keyDir = baseUtils + "certs/"
+        for item in commonDirs:
+            if not os.path.exists(keyDir + item):
+                os.makedirs(keyDir + item, 0755)
+                # and touch a file so that this isn't an empty directory
+                open(keyDir + item + "/.keep", 'a').close()
+
         # and then the keys directory and all the sub directories
         keyDir = baseUtils + "keys/"
         for item in commonDirs:
@@ -819,6 +827,12 @@ class ManageAppName:
         # and then the keys directory and all the sub directories
         keyDir = baseUtils + "keys/"
         if not os.path.exists(keyDir + newEnvName):
+            os.makedirs(keyDir + newEnvName, 0755)
+            # and touch a file so that this isn't an empty directory
+            open(keyDir + newEnvName + "/.keep", 'a').close()
+
+        certsDir = baseUtils + "/certs"
+        if not os.path.exists(certsDir + newEnvName):
             os.makedirs(keyDir + newEnvName, 0755)
             # and touch a file so that this isn't an empty directory
             open(keyDir + newEnvName + "/.keep", 'a').close()
