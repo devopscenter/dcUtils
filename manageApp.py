@@ -66,6 +66,14 @@ class ManageAppName:
                         adjustedBaseDir + "\n"
                 fileHandle.write(strToWrite)
 
+                # add the export directory vars here
+                strToWrite = "##### EXPORT DIRECTORY VARIABLES ######\n"
+                fileHandle.write(strToWrite)
+
+                strToWrite = "export " + self.altName + "=" + \
+                             adjustedBaseDir + "\n"
+                fileHandle.write(strToWrite)
+
                 strToWrite = "##### BASE DIR CONSTRUCTION NO TOUCH ######\n"
                 fileHandle.write(strToWrite)
 
@@ -122,6 +130,13 @@ class ManageAppName:
                         fileHandle.write(strToWrite)
                     continue
 
+                if "EXPORT DIRECTORY" in aLine:
+                    fileHandle.write(aLine + "\n")
+                    if flagToAdd:
+                        strToWrite = "export " + self.altName + "=" + \
+                                    adjustedBaseDir + "\n"
+                        fileHandle.write(strToWrite)
+                    continue
                 # other wise write the line as it came from the file
                 fileHandle.write(aLine + "\n")
 
