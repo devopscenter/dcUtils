@@ -118,6 +118,7 @@ while [[ $# -gt 0 ]]; do
                  ;;
         -a | --appName) shift
              APPNAME=$1
+             dcDEFAULT_APP_NAME=$1
              NEW_CMD_LINE="${NEW_CMD_LINE} --appName $APPNAME"
                  ;;
         -w | --workspaceName) shift
@@ -231,7 +232,6 @@ if [[ -z "${HOST+x}" ]] && [[ "$CONNECT" ]]; then
         fi
     done < <(echo -e "$NUMBERED_LIST")
 fi
-
 #-------------------------------------------------------------------------------
 # if no -t option
 #-------------------------------------------------------------------------------
@@ -388,6 +388,6 @@ fi
 #-------------------------------------------------------------------------------
 # remove temporary .ssh/config file
 #-------------------------------------------------------------------------------
-if [[ -f "$TMP_CONFIG" ]]; then
-    rm "$TMP_CONFIG"
-fi
+ if [[ -f "$TMP_CONFIG" ]]; then
+     rm "$TMP_CONFIG"
+ fi
