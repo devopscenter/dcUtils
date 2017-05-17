@@ -83,12 +83,12 @@ class Process_dc_Env:
             # check the # one from the env and make sure it is not the
             # __DEFAULT__ one.
             # -----------------------------------------------------------------
-            if self.envList["dcDEFAULT_APP_NAME"] == "__DEFAULT__":
-                print ("The dcDEFAULT_APP_NAME environment variable has not " +
-                       "been set and has not been made available. This " +
-                       "should be identified when running deployenv.sh by " +
-                       "utilizing the option: --appName appname")
-                sys.exit(1)
+            #if self.envList["dcDEFAULT_APP_NAME"] == "__DEFAULT__":
+            #    print ("The dcDEFAULT_APP_NAME environment variable has not " +
+            #           "been set and has not been made available. This " +
+            #           "should be identified when running deployenv.sh by " +
+            #           "utilizing the option: --appName appname")
+            #    sys.exit(1)
 
         return self.envList
 
@@ -197,12 +197,12 @@ class Process_dc_Env:
             with open(subDirMapFile) as f:
                 lines = [line.rstrip('\n') for line in f]
 
-                for line in lines:
-                    key, value = line.split('=', 1)
-                    self.envList[key] = value
-                    if key == "CUSTOMER_APP_UTILS":
-                        retBaseAppUtils = self.baseDir + "/" + \
-                                          self.baseAppName + "/" + value
+            for line in lines:
+                key, value = line.split('=', 1)
+                self.envList[key] = value
+                if key == "CUSTOMER_APP_UTILS":
+                    retBaseAppUtils = self.baseDir + "/" + \
+                                      self.baseAppName + "/" + value
         else:
             print ("Can not read the " + subDirMapFile + " file in the base" +
                    " application directory, have you run manageApp.py yet? ")
@@ -218,7 +218,7 @@ class Process_dc_Env:
 
         # if one doesn't exist instruct the user to run deployenv.sh with that
         # app name and try this again and then exit
-        #if len(envFiles) == 0 or "dcEnv" not in envFiles[0]:
+        # if len(envFiles) == 0 or "dcEnv" not in envFiles[0]:
         if len(envFiles) == 0:
             print ("There does not appear to be any env files available " +
                    "for the given appName: " + self.baseAppName + ". " +
@@ -286,16 +286,15 @@ class Process_dc_Env:
                 with open(theEnvFileToRead) as f:
                     lines = [line.rstrip('\n') for line in f]
 
-                    for line in lines:
-                        needKey, needValue = line.split('=', 1)
-                        for envVar in theWholeEnv:
-                            if needKey in envVar:
-                                lookKey, lookValue = envVar.split('=', 1)
-                                self.envList[needKey] = lookValue
+                for line in lines:
+                    needKey, needValue = line.split('=', 1)
+                    for envVar in theWholeEnv:
+                        if needKey in envVar:
+                            lookKey, lookValue = envVar.split('=', 1)
+                            self.envList[needKey] = lookValue
             except subprocess.CalledProcessError:
                 logging.exception("There was an issue with sourcing " +
                                   fileToSource)
-        return 1
 
 
 def pythonGetEnv(initialCreate=False):
