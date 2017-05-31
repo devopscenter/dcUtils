@@ -93,7 +93,11 @@ class UpdateInstance:
         cmdToRun = self.buildCmdToRun(componentInfo, "updateAppInstance")
 
         # and now execute it
-        subprocess.call(cmdToRun, shell=True)
+        if self.test:
+            print "Command to Run: \n" + cmdToRun
+        else:
+            print "Running this command: \n" + cmdToRun
+            subprocess.call(cmdToRun, shell=True)
 
     def buildCmdToRun(self, componentInfo, optionToAdd):
         cmdToRun = "cd scripts; ./updateApp.sh"
@@ -308,8 +312,14 @@ def checkArgs():
 def main(argv):
     (appName, env, dest, configFile, accessKey, keyPath, test) = checkArgs()
 
-    print"destination is: {}".format(dest)
-    print"configFile is: {}".format(configFile)
+    if test:
+        print 'appName is: {}'.format(appName)
+        print 'configFile is: {}'.format(configFile)
+        print 'the env is: {}'.format(env)
+        print 'running in testing mode'
+        print "destination is: {}".format(dest)
+        print "path for keys: {}".format(keyPath)
+
     customerApp = UpdateInstance(appName, env, dest, configFile, accessKey,
                                  keyPath, test)
     customerApp.run()

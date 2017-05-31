@@ -153,6 +153,8 @@ if [[ $TYPE != "instance" ]]; then
     fi
 fi
 
+source /usr/local/bin/dcEnv.sh
+
 dcStartLog "Deploying for application: ${CUSTOMER_APP_NAME} env: ${ENV}"
 #-------------------------------------------------------------------------------
 # handle the case where the type is an instance
