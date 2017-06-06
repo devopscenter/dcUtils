@@ -7,13 +7,13 @@
 # 
 #   DESCRIPTION: This script will put the postgresql database in a state that will
 #                allow it to receive the restore of data from a backup of the prod
-#                database.
+#                database. It is expected that the backup file is already downloaded
+#                and ready to be restored.  See the download.sh to pull an existing
+#                backup from S3.  By default it will look for the backup file to be
+#                in the current directory or it can be identified by using the
+#                --backup option.  There is one argument that is required and that 
+#                is the database name.
 #
-#                NOTE: the shebang bash at the top of the file does not have 
-#                a -e that would make the script exit on a failed command within 
-#                this script.  As there may be a command that will fail and we 
-#                need to do something more intelligent with that knowledge that 
-#                exit (like try the command again or pause...).
 # 
 #       OPTIONS: ---
 #  REQUIREMENTS: ---
