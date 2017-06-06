@@ -144,8 +144,14 @@ while [[ $# -gt 0 ]]; do
     shift
 done
 
+COMMON_KEY_DIR=''
 if [[ ${APPNAME} ]]; then
     doProcessDCEnv
+else
+    # we will be using the common key directory so we need to get the base name which is under
+    # the Google Drive.  Since it could be named something else or just because it has a space in
+    # the name, we need to expand it once so that we can use it below when finding the key.
+    COMMON_KEY_DIR=$(cd $HOME/Googl*;pwd)
 fi
 
 #-------------------------------------------------------------------------------
@@ -325,9 +331,7 @@ getPathToKey()
             eval "$pathToKey=\"${RETVAL}\""
         fi
     else
-        pathsToKey="$(find $HOME/Google* -path "*/${PROFILE}/keys/${keyName}.pem" 2>&1)"
-        RETVAL=''
-        cleanUpPathList "${pathsToKey[@]}" RETVAL
+        RETVAL="${COMMON_KEY_DIR}/${PROFILE}/keys/${keyName}.pem"
         eval "$pathToKey=\"${RETVAL}\""
     fi
 }
@@ -382,7 +386,7 @@ else
     #-------------------------------------------------------------------------------
     # final pdsh command
     #-------------------------------------------------------------------------------
-    PDSH_SSH_ARGS_APPEND=$(echo -F "$TMP_CONFIG") pdsh -w "$HOSTS" "$PDSH_CMD"
+    PDSH_SSH_ARGS_APPEND=$(echo -F "$TMP_CONFIG") pdsh -u 30 -w "$HOSTS" "$PDSH_CMD"
 fi
 
 #-------------------------------------------------------------------------------
