@@ -39,7 +39,13 @@ BACKUP_DIR='.'
 #-------------------------------------------------------------------------------
 function usage
 {
-  echo "usage: ./download.sh [--s3backupfile s3-backup-file] [--list] [-n] s3bucket database [--profile theProfile]"
+  echo "usage: ./download.sh [--s3backupfile s3-backup-file] [--list] [-n] [--profile theProfile] s3bucket database"
+  echo
+  echo "you might need to use the --profile option if you do not have the AWS credentials set up in either your"
+  echo "environment or the standard aws config and credentials files."
+  echo
+  echo "By running with the --list option it is easier to see the existing backup files along with their size and date"
+  echo "and then selecting from the list."
 }
 
 if [[ -z $1 ]]; then
