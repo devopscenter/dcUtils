@@ -7,8 +7,12 @@
 # 
 #   DESCRIPTION: This script will take a directory as an argument and setup that
 #                directory to be used for a database backup download and restore
-#                point.  This means it will create a link between the download.sh
-#                and restore.sh in the dcUtils/db directory to that new directory
+#                point.  The database backup file is retrieved from AWS S3 storage
+#                and placed in this directory, using the download.sh script.  And
+#                then, right from the same directory database backup can be restored 
+#                to a database that you have loaded.  The effect that occur with this
+#                script will be to create a link between the download.sh
+#                and restore.sh in the dcUtils/db directory to this new directory.
 # 
 #       OPTIONS: ---
 #  REQUIREMENTS: ---
