@@ -1,4 +1,4 @@
-#!/bin/bash - 
+#!/usr/bin/env bash
 #===============================================================================
 #
 #          FILE: setupDataload.sh
@@ -21,9 +21,10 @@
 #===============================================================================
 
 #set -o nounset                              # Treat unset variables as an error
-set -x
+#set -x
 
 dcUTILS=$(pwd)
+SETTINGS_FILE="$HOME/.dcConfig/settings"
 
 #---  FUNCTION  ----------------------------------------------------------------
 #          NAME:  usage
@@ -40,6 +41,16 @@ usage ()
     echo "directory to be used for a database backup download and restore"
     echo "point.  This means it will create a link between the download.sh"
     echo "and restore.sh in the dcUtils/db directory to that new directory"
+    echo
+
+    if [[ -f $HOME/.dcConfig/settings ]]; then
+        CUR_DATA_LOAD_DIR=$( grep "DATALOAD_DIR=" ${SETTINGS_FILE})
+        echo "Current dataload direcotry is set to:"
+        echo "${CUR_DATA_LOAD_DIR}"
+    else
+        echo "You have not identified a dataload directory yet. Run this script"
+        echo "again and provide the option -n with a directory name"
+    fi
     echo
 }
 
@@ -72,5 +83,22 @@ fi
 #-------------------------------------------------------------------------------
 # make the necessary symbolic links between the scripts and the new directory
 #-------------------------------------------------------------------------------
-ln -s ${dcUTILS}/db/download.sh ${DATALOAD_DIR}/
-ln -s ${dcUTILS}/db/restore.sh ${DATALOAD_DIR}/
+if [[ ! -f ${DATALOAD_DIR}/download.sh ]] ; then
+    ln -s ${dcUTILS}/db/download.sh ${DATALOAD_DIR}/
+fi
+
+if [[ ! -f ${DATALOAD_DIR}/restore.sh ]]; then
+    ln -s ${dcUTILS}/db/restore.sh ${DATALOAD_DIR}/
+fi
+
+#-------------------------------------------------------------------------------
+# Make note of the dataload directory in the ~/.dcConfig/settings
+#-------------------------------------------------------------------------------
+if [[ ! -f ${SETTINGS_FILE} ]]; then
+    echo "DATALOAD_DIR=${DATALOAD_DIR}" > ${SETTINGS_FILE}
+else
+    # need to escape out all the backslashes in the path
+    DATALOAD_DIR="${DATALOAD_DIR//\//\\/}"
+    sed -i -e "s/DATALOAD_DIR=.*/DATALOAD_DIR=${DATALOAD_DIR}/" "${SETTINGS_FILE}"
+fi
+
