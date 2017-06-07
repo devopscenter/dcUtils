@@ -7,13 +7,13 @@
 # 
 #   DESCRIPTION: This script will put the postgresql database in a state that will
 #                allow it to receive the restore of data from a backup of the prod
-#                database.
+#                database. It is expected that the backup file is already downloaded
+#                and ready to be restored.  See the download.sh to pull an existing
+#                backup from S3.  By default it will look for the backup file to be
+#                in the current directory or it can be identified by using the
+#                --backup option.  There is one argument that is required and that 
+#                is the database name.
 #
-#                NOTE: the shebang bash at the top of the file does not have 
-#                a -e that would make the script exit on a failed command within 
-#                this script.  As there may be a command that will fail and we 
-#                need to do something more intelligent with that knowledge that 
-#                exit (like try the command again or pause...).
 # 
 #       OPTIONS: ---
 #  REQUIREMENTS: ---
@@ -147,11 +147,11 @@ fi
 # schema-only restore if --schema-only is passed, otherwise do full restore
 echo "Postgresql restore of backup: ${LOCAL_BACKUP_FILE} started at " && date
 if ! [[ -z "$SCHEMA_ONLY" ]]; then
-  sudo -u postgres pg_restore -U postgres -s --exit-on-error -j 1 -e -Fc --dbname="$DB_NAME" "$LOCAL_BACKUP_FILE" || exit 1
-  sudo -u postgres pg_restore -U postgres --data-only -t django_migrations -j 1 -e -Fc --dbname="$DB_NAME" "$LOCAL_BACKUP_FILE"
-  sudo psql -U postgres -d "$DB_NAME" -c "SELECT setval('django_migrations_id_seq', COALESCE((SELECT MAX(id)+1 FROM django_migrations), 1), false);"
+    sudo -u postgres pg_restore -U postgres -s -j 1 -Fc --dbname="$DB_NAME" "$LOCAL_BACKUP_FILE" || exit 1
+    sudo -u postgres pg_restore -U postgres --data-only -t django_migrations -j 1 -Fc --dbname="$DB_NAME" "$LOCAL_BACKUP_FILE"
+    sudo psql -U postgres -d "$DB_NAME" -c "SELECT setval('django_migrations_id_seq', COALESCE((SELECT MAX(id)+1 FROM django_migrations), 1), false);"
 else
-  sudo -u postgres pg_restore -U postgres --exit-on-error -j 1 -e -Fc --dbname="$DB_NAME" "$LOCAL_BACKUP_FILE" || exit 1
+    sudo -u postgres pg_restore -U postgres -j 1 -Fc --dbname="$DB_NAME" "$LOCAL_BACKUP_FILE" || exit 1
 fi
 
 # turn on archive_mode after restore is complete and restart postgres

@@ -43,8 +43,8 @@ function usage
     echo -e "    paws -c HOST"
     echo -e "        -c\taws Name to log into with SSH\n"
     echo -e "    Run a command on one or more instances in parallel, using a list of names:"
-    echo -e "    paws -x HOST1,HOST2 '<COMMAND>'"
-    echo -e "        -x\tlist of hosts, separated by commas\n"
+    echo -e "    paws -w HOST1,HOST2 '<COMMAND>'"
+    echo -e "        -w\tlist of hosts, separated by commas\n"
     echo -e "    Run a command on one or more instances in parallel, using tags:"
     echo -e "    paws -t KEY=VALUE '<COMMAND>'"
     echo -e "        -t\ttag KEY and VALUE pairs, in the form of KEY=VALUE\n"
@@ -55,7 +55,7 @@ function usage
     echo -e "    Interactively connect to an instance for the client1 account in the us-west-2 region:    paws -p client1 -r us-west-2 -c"
     echo -e "    Connect to the web1 instance for the client1 account:    paws -p client1 -c web1"
     echo -e "    Run the 'hostname' command on all instances for the client1 account:    paws -p client1 'hostname'"
-    echo -e "    Run the 'ls' command on the web1 and web2 instances for the client1 account:    paws -p client1 -x web1,web2 'ls'"
+    echo -e "    Run the 'ls' command on the web1 and web2 instances for the client1 account:    paws -p client1 -w web1,web2 'ls'"
     echo -e "    Run the 'w' command on instances tagged as Env=dev for the client1 account:    paws -p client1 -t Env=dev 'w'"
     echo -e "    Run the 'date' command on instances tagged as Name=db1 for the default account:    paws -t Name=db1 'date'"
 }
@@ -101,7 +101,7 @@ while [[ $# -gt 0 ]]; do
         -t ) shift
                 TAG=$1
                 ;;
-        -x ) shift
+        -w ) shift
                 HOSTS=$1
 	            ;;
         -l ) LIST_NAMES='true'
@@ -121,7 +121,7 @@ while [[ $# -gt 0 ]]; do
              dcDEFAULT_APP_NAME=$1
              NEW_CMD_LINE="${NEW_CMD_LINE} --appName $APPNAME"
                  ;;
-        -w | --workspaceName) shift
+        --workspaceName) shift
              NEW_CMD_LINE="${NEW_CMD_LINE} --workspaceName $1"
                  ;;
         -e | --env) shift
@@ -145,8 +145,14 @@ while [[ $# -gt 0 ]]; do
     shift
 done
 
+COMMON_KEY_DIR=''
 if [[ ${APPNAME} ]]; then
     doProcessDCEnv
+else
+    # we will be using the common key directory so we need to get the base name which is under
+    # the Google Drive.  Since it could be named something else or just because it has a space in
+    # the name, we need to expand it once so that we can use it below when finding the key.
+    COMMON_KEY_DIR=$(cd $HOME/Googl*;pwd)
 fi
 
 #-------------------------------------------------------------------------------
@@ -325,9 +331,7 @@ getPathToKey()
             eval "$pathToKey=\"${RETVAL}\""
         fi
     else
-        pathsToKey="$(find $HOME/Google* -path "*/${PROFILE}/keys/${keyName}.pem" 2>&1)"
-        RETVAL=''
-        cleanUpPathList "${pathsToKey[@]}" RETVAL
+        RETVAL="${COMMON_KEY_DIR}/${PROFILE}/keys/${keyName}.pem"
         eval "$pathToKey=\"${RETVAL}\""
     fi
 }
@@ -382,7 +386,7 @@ else
     #-------------------------------------------------------------------------------
     # final pdsh command
     #-------------------------------------------------------------------------------
-    PDSH_SSH_ARGS_APPEND=$(echo -F "$TMP_CONFIG") pdsh -w "$HOSTS" "$PDSH_CMD"
+    PDSH_SSH_ARGS_APPEND=$(echo -F "$TMP_CONFIG") pdsh -u 30 -w "$HOSTS" "$PDSH_CMD"
 fi
 
 #-------------------------------------------------------------------------------
