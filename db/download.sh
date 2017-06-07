@@ -39,7 +39,7 @@ BACKUP_DIR='.'
 #-------------------------------------------------------------------------------
 function usage
 {
-  echo "usage: ./download.sh [--s3backupfile s3-backup-file] [--list] [-n] s3bucket database"
+  echo "usage: ./download.sh [--s3backupfile s3-backup-file] [--list] [-n] s3bucket database [--profile theProfile]"
 }
 
 if [[ -z $1 ]]; then
@@ -54,6 +54,9 @@ while [[ $# -gt 0 ]]; do
                      S3_BACKUP_FILE=$1
                      ;;
     --list )         LIST=1
+                     ;;
+    --profile|-p )   shift
+                     PROFILE=$1
                      ;;
     -n )             NO_OVERWRITE=1
                      ;;
@@ -76,10 +79,36 @@ done
 #-------------------------------------------------------------------------------
 # store list of backups from s3 bucket
 #-------------------------------------------------------------------------------
-S3_AS_STRING=$(aws s3 ls --recursive s3://"${S3_BUCKET}"/|grep "${DB_NAME}".sql.gz)
+if [[ -z ${PROFILE} ]]; then
+    S3_AS_STRING=$(aws s3 ls --recursive s3://"${S3_BUCKET}"/|grep "${DB_NAME}".sql.gz)
+else
+    S3_AS_STRING=$(aws --profile ${PROFILE} s3 ls --recursive s3://"${S3_BUCKET}"/|grep "${DB_NAME}".sql.gz)
+fi
 S3_SORTED_AS_STRING=$(echo "${S3_AS_STRING}" | sort)
 IFS=$'\n'; S3_LIST=($S3_SORTED_AS_STRING); unset IFS;
 
+# make sure there is something found, otherwise exit
+if [[ ${#S3_LIST[@]} -eq 0 ]]; then
+    echo "NOTE: There were no backups found...exiting"
+    exit
+fi
+
+
+#---  FUNCTION  ----------------------------------------------------------------
+#          NAME:  convertSize
+#   DESCRIPTION:  takes a raw file size and gives a more human readable output
+#    PARAMETERS:  
+#       RETURNS:  
+#-------------------------------------------------------------------------------
+convertSize() {
+    b=${1:-0}; d=''; s=0; S=(Bytes {K,M,G,T,E,P,Y,Z}iB)
+    while ((b > 1024)); do
+        d="$(printf ".%02d" $((b % 1024 * 100 / 1024)))"
+        b=$((b / 1024))
+        let s++
+    done
+    echo "$b$d ${S[$s]}"
+}
 
 #---  FUNCTION  ----------------------------------------------------------------
 #          NAME:  showNumberedList
@@ -94,7 +123,9 @@ showNumberedList() {
     for line in "${S3_LIST[@]}"
     do
         dbLine=${line##* }
-        echo "{$i}. ${dbLine}"
+        aSize=$(echo $line | cut -d " " -f 3)
+        theSize=$(convertSize aSize)
+        echo "{$i}.[$theSize] ${dbLine}"
         i=$((i+1))
     done
 }
