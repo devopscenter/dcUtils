@@ -151,7 +151,7 @@ if ! [[ -z "$SCHEMA_ONLY" ]]; then
     sudo -u postgres pg_restore -U postgres --data-only -t django_migrations -j 1 -Fc --dbname="$DB_NAME" "$LOCAL_BACKUP_FILE"
     sudo psql -U postgres -d "$DB_NAME" -c "SELECT setval('django_migrations_id_seq', COALESCE((SELECT MAX(id)+1 FROM django_migrations), 1), false);"
 else
-    sudo -u postgres pg_restore -U postgres -j 1 -Fc --dbname="$DB_NAME" "$LOCAL_BACKUP_FILE" || exit 1
+    sudo -u postgres pg_restore -U postgres -j 1 -Fc --dbname="$DB_NAME" "$LOCAL_BACKUP_FILE"
 fi
 
 # turn on archive_mode after restore is complete and restart postgres
