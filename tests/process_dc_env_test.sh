@@ -63,4 +63,11 @@ dcStartLog "Begin tests"
 #env
 dcLog "CUSTOMER_APP_NAME = ${CUSTOMER_APP_NAME}"
 dcLog "FOO = ${FOO}"
+
+CUSTOMER_NAME="rmsa"
+CUSTOMER_APP_NAME="f2-prod-web1"
+EVENT="volume added"
+MSG="TEST TEST TEST 100GB disk volume added"
+dcTrackEvent "${CUSTOMER_NAME}" "${CUSTOMER_APP_NAME}" "${EVENT}" "${MSG}"
+
 dcEndLog "Finished..."
