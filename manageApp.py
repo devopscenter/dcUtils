@@ -121,6 +121,13 @@ class ManageAppName:
                     fileHandle.write(strToWrite)
                     continue
 
+                if self.altName in aLine:
+                    if flagToAdd == 0:
+                        strToWrite = "_" + self.altName + \
+                            "_BASE_CUSTOMER_DIR=" + adjustedBaseDir + "\n"
+                        fileHandle.write(strToWrite)
+                        continue
+
                 # then look for the line that has  WORKSPACES in it
                 if "WORKSPACES" in aLine:
                     fileHandle.write(aLine + "\n")
@@ -130,13 +137,6 @@ class ManageAppName:
                         fileHandle.write(strToWrite)
                     continue
 
-                if "EXPORT DIRECTORY" in aLine:
-                    fileHandle.write(aLine + "\n")
-                    if flagToAdd:
-                        strToWrite = "export " + self.altName + "=" + \
-                                    adjustedBaseDir + "\n"
-                        fileHandle.write(strToWrite)
-                    continue
                 # other wise write the line as it came from the file
                 fileHandle.write(aLine + "\n")
 
