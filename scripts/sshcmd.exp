@@ -1,0 +1,16 @@
+#!/usr/bin/expect
+
+#set timeout 20
+set HOST   [lindex $argv 0];
+set CONFIG [lindex $argv 1]
+
+set prompt "#|>|\\\$"
+spawn ssh -oStrictHostKeyChecking=no  -F "$CONFIG" "$HOST"
+# if we don't use StrictHOstKeyChecking then we would need the following section
+#expect {
+#        #If 'expect' sees '(yes/no )', then it will send 'yes'
+#        #and continue the 'expect' loop
+#        "(yes/no)" { send "yes\r";exp_continue}
+#}
+expect -re $prompt
+send "exit\r"

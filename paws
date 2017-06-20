@@ -50,6 +50,8 @@ function usage
     echo -e "        -t\ttag KEY and VALUE pairs, in the form of KEY=VALUE\n"
     echo -e "    Run a command on all instances in parallel:"
     echo -e "    paws '<COMMAND>'\n"
+    echo -e "    Check host access, report any failures and add any new authoritization requests"
+    echo -e "    paws -p PROFILE [-r REGION} -x\n"
     echo -e "Examples:"
     echo -e "    List tags for all instances for the default account:    paws -L"
     echo -e "    Interactively connect to an instance for the client1 account in the us-west-2 region:    paws -p client1 -r us-west-2 -c"
@@ -86,6 +88,66 @@ doProcessDCEnv()
     set -e
     fi
 }
+
+
+#---  FUNCTION  ----------------------------------------------------------------
+#          NAME:  checkHostAccess
+#   DESCRIPTION:  function that will iterate through all instances found for a 
+#                 given profile and try to log in.  It will print out any that 
+#                 could not be reached.  If there is a new IP of the instance that
+#                 needs to be added to the local authorization file it will be accepted
+#                 and added.
+#    PARAMETERS:  
+#       RETURNS:  
+#-------------------------------------------------------------------------------
+checkHostAccess()
+{
+    # first check for expect so that we can script the ssh login
+    EXPECT=$(which expect)
+
+    if [[ ! ${EXPECT} ]] ; then 
+        echo "Can not run without the \'expect\' module available"
+        exit 1
+    fi
+
+    NAME_LIST=$(echo $DESCRIBE_ALL| jq -r '.Reservations[].Instances[].Tags[]| select(.Key == "Name").Value')
+
+    #-------------------------------------------------------------------------------
+    # the commented out section was an attempt to check all in parallel.  It does, but
+    # the ALL_OUPUT would need to be gone through and looked for specific things.  
+    # This would take a lot to make it have user friendly output, when doing them in 
+    # order takes just a smidgin more time but the output is WAY more friendly to work 
+    # with.  Not to mention it will be easier to maintain.
+    # take the list and make it a comma separated string host names
+    #-------------------------------------------------------------------------------
+    ##TMP_STR=""
+    #for HOST_NAME in ${NAME_LIST[@]}
+    #do
+    #    TMP_STR="${TMP_STR}${HOST_NAME},"
+    #done
+    ## and the loop added one extra and it's easier to remove after the fact so here it is
+    #NAME_LIST_STR=${TMP_STR/%,/}
+
+    #THIS_DIR=$(pwd)
+    #EXPECT_CMD="${EXPECT} -f $PWD/scripts/sshcmd.exp %h ${TMP_CONFIG}"
+    #ALL_OUTPUT=$(PDSH_SSH_ARGS_APPEND=$(echo -F "$TMP_CONFIG") pdsh -u 30 -R exec -w "$NAME_LIST_STR" ${EXPECT} -f ${THIS_DIR}/scripts/sshcmd.exp %h ${TMP_CONFIG})
+
+    echo "Checking all the hosts for ssh access.  A response for each connection will be presented:"
+
+    for HOST_NAME in  ${NAME_LIST[@]}
+    do
+        # connect to the single host
+        #ssh -oStrictHostKeyChecking=no -oCheckHostIP=no -F "$TMP_CONFIG" "$HOST"
+        ${EXPECT} -f scripts/sshcmd.exp ${HOST_NAME} ${TMP_CONFIG} 2>&1 > /dev/null
+        if [[ $? -eq 0 ]]; then
+            echo "${HOST_NAME} is good"
+        else
+            echo "${HOST_NAME} has a problem logging in"
+        fi
+    done
+}
+
+
 
 NEW_CMD_LINE=''
 APPNAME=''
@@ -127,6 +189,9 @@ while [[ $# -gt 0 ]]; do
         -e | --env) shift
              NEW_CMD_LINE="${NEW_CMD_LINE} --env $1"
                  ;;
+        -x | --checkHostAccess)
+             CHECK_HOST_ACCESS='true'
+                 ;;
         -h ) usage
              exit 1
 	             ;;
@@ -158,7 +223,7 @@ fi
 #-------------------------------------------------------------------------------
 # check for the existance of pdsh/ssh command
 #-------------------------------------------------------------------------------
-if ! [[ "$LIST_NAMES" ]] && ! [[ "$CONNECT" ]] && ! [[ "$HOST" ]] && [[ -z "$PDSH_CMD" ]]; then
+if ! [[ "$LIST_NAMES" ]] && ! [[ "$CONNECT" ]] && ! [[ "$HOST" ]] && ! [[ ${CHECK_HOST_ACCESS} ]] && [[ -z "$PDSH_CMD" ]]; then
     echo -e "pdsh/ssh command required.\n"
     usage
     exit 1
@@ -371,8 +436,14 @@ done
 #-------------------------------------------------------------------------------
 # if the -c option is specified, connect to the host with ssh
 #-------------------------------------------------------------------------------
-if [[ "$HOST" ]]; then
-    ssh -F "$TMP_CONFIG" "$HOST"
+if [[ "$HOST" ]] || [[ ${CHECK_HOST_ACCESS} == 'true' ]]; then
+    if [[ ${CHECK_HOST_ACCESS} == 'true' ]]; then
+        # run the function that will itereate over all the hosts
+        checkHostAccess
+    else
+        # connect to the single host
+        ssh -F "$TMP_CONFIG" "$HOST"
+    fi
 #-------------------------------------------------------------------------------
 # otherwise, run commands with pdsh
 #-------------------------------------------------------------------------------
