@@ -1,0 +1,22 @@
+manageApp.py
+# basic create that sets up a workspacename
+./manageApp.py -d ~/devops/testscripts/dev2/Client2/ -w WOW -a WOW-App -c create
+
+deployenv.sh
+
+switchWorkspace.sh
+
+start.sh 
+
+stop.sh
+
+paws
+
+enter-container.py
+
+
+
+updateAppInstance.py
+
+./updateAppInstance.py -c ~/dcDemo/apps/dcDemoBlog/dcDemoBlog-utils/config/dcDevTestArchitecture.json -a dcDemoBlog -e dev -d dcDemoBlog-dev-web6 -x dcDemoBlog-dev-access.pem
+
