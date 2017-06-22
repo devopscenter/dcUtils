@@ -23,6 +23,8 @@
 #set -o errexit          # exit immediately if a command exits unsuccessfully
 set -x                   # essentially debug mode
 
+source /usr/local/bin/dcEnv.sh
+
 FILE_TO_TRANSFER="updateAppOnInstance.sh"
 
 #---  FUNCTION  ----------------------------------------------------------------
@@ -123,7 +125,7 @@ getUpdate() {
 	# next we need to execute  updateInstanceOnInstance.sh  on the instance now
 	#-------------------------------------------------------------------------------
     ssh -oStrictHostKeyChecking=no -i "${LOCAL_KEYPAIR}" ubuntu@"${PUBLIC_IP}" "./updateAppOnInstance.sh -i ${INSTANCE_ID} -g ${APP_UTILS_TARBALL_NAME} -a ${CUST_APP_NAME} -e ${ENVIRONMENT}"
-
+    dcTrackEvent "${PROFILE}" "${DESTINATION_INSTANCE}" "instance update" "application utils has been updated on ${DESTINATION_INSTANCE}"
 exit
 #	rm "${APP_UTILS_TARBALL}"
 #
