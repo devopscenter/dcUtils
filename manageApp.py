@@ -425,6 +425,12 @@ class ManageAppName:
                 "could not be written. \n" + \
                 "Please report this issue to the devops.center admins."
 
+        # and now run the git init on the Utils directory
+        originalDir = os.getcwd()
+        os.chdir(baseWeb)
+        subprocess.check_call("git init .", shell=True)
+        os.chdir(originalDir)
+
     def tmpGetStackDirectory(self):
         """This method is put in place to be called instead of the
         createStackDirectory method.  This will just ask for the unique stack
