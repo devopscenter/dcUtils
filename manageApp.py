@@ -772,7 +772,7 @@ class ManageAppName:
         except subprocess.CalledProcessError:
             print "There was an issue with cloning the application you " + \
                 "specified: " + theURL + \
-                "\nCheck that you specified\nthe correct owner " + \
+                "\nCheck that you have provided the correct credentials " + \
                 "and respository name."
             sys.exit(1)
 
