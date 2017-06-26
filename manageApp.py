@@ -371,12 +371,42 @@ class ManageAppName:
             "default name: (" + webName + ")\n")
         if userResponse:
             if '/' not in userResponse:
+                #  is just a name
                 webName = userResponse
                 # web path to be created
                 baseWeb = self.baseDir + self.appName + "/" + userResponse
                 if not os.path.exists(baseWeb):
                     os.makedirs(baseWeb, 0755)
+
+                # and now run the git init on the Utils directory
+                originalDir = os.getcwd()
+                os.chdir(baseWeb)
+                subprocess.check_call("git init .", shell=True)
+                os.chdir(originalDir)
+
+#            elif (re.match("http", userResponse) or
+#                  re.match("git", userResponse)):
+#                # its a URL so we need to get a git clone
+#                originalDir = os.getcwd()
+#                os.chdir(self.baseDir + self.appName)
+#                print "Cloning: " + userResponse
+#                cmdToRun = "git clone " + userResponse
+#
+#                try:
+#                    subprocess.check_output(cmdToRun,
+#                                            stderr=subprocess.STDOUT,
+#                                            shell=True)
+#                except subprocess.CalledProcessError:
+#                    print ("There was an issue with cloning the "
+#                           "application you specified: " + userResponse +
+#                           "\nCheck that you specified the correct owner "
+#                           "and respository name.")
+#                # TODO PROBABLY NEED TO GET THE NAME OF THE NEW WEB DIRECTORY
+#                #      HERE AND SET IT ACCORDINGLY
+#                os.chdir(originalDir)
+
             else:
+                # is is a local directory so we need to sym-link it
                 if '~' in userResponse:
                     userRepo = userResponse.replace("~", expanduser("~"))
                 elif '$HOME' in userResponse:
@@ -424,12 +454,6 @@ class ManageAppName:
                 self.basedir + self.appName + "/.dcDirMap.cnf and " + \
                 "could not be written. \n" + \
                 "Please report this issue to the devops.center admins."
-
-        # and now run the git init on the Utils directory
-        originalDir = os.getcwd()
-        os.chdir(baseWeb)
-        subprocess.check_call("git init .", shell=True)
-        os.chdir(originalDir)
 
     def tmpGetStackDirectory(self):
         """This method is put in place to be called instead of the
@@ -750,6 +774,7 @@ class ManageAppName:
                 "specified: " + theURL + \
                 "\nCheck that you specified\nthe correct owner " + \
                 "and respository name."
+            sys.exit(1)
 
         print "Done\n"
 
