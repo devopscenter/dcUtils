@@ -332,56 +332,54 @@ def shellGetEnv():
 
 def checkArgs(type=0):
     parser = argparse.ArgumentParser(
-        description='The core argument processing is handled by a separate ' +
-                    'process (process_dc_env.py) and is called by this ' +
-                    'script.  This core process will ensure that there ' +
-                    'is an environment ' +
-                    'file that is set and can be utilized for the running ' +
-                    'of this session.  The intent of this script is that it ' +
-                    'would be put at the top of all devops.center scripts ' +
-                    'to ensure that the environment variables that are ' +
-                    'needed will be available to the script.  This is done' +
-                    'to help avoid polluting the users environment. Another ' +
-                    'main purpose of this is to be able to isolate sessions ' +
-                    'such that a user could run one app in terminal session ' +
-                    'and a second one in parallel in a separate terminal ' +
-                    'session while using the same code.')
+        description='The core argument processing is handled by a separate '
+        'process (process_dc_env.py) and is called by this script.  This core '
+        'process will ensure that there is an environment file that is set and '
+        'can be utilized for the running of this session.  The intent of this '
+        'script is that it would be put at the top of any devops.center '
+        'scripts that will need the full application environment to ensure '
+        'that the environment variables that are needed will be available to '
+        'the script.  This is done to help avoid polluting the users '
+        'environment. Another main purpose of this is to be able to isolate '
+        'sessions such that a user could run one app in terminal session '
+        'and a second one in parallel in a separate terminal '
+        'session while using the same code.')
 
-    parser.add_argument('-a', '--appName', help='The application name' +
-                        'of the application that you want to run as the ' +
-                        'default app for the current session.  This is ' +
-                        'optional as by default the appName will be set ' +
+    parser.add_argument('-a', '--appName', help='The application name'
+                        'of the application that you want to run as the '
+                        'default app for the current session.  This is '
+                        'optional as by default the appName will be set '
                         'when deployenv.sh is run',
                         required=False)
-    parser.add_argument('-e', '--env', help='the env is one of local, dev, ' +
+    parser.add_argument('-e', '--env', help='the env is one of local, dev, '
                         'staging, prod. DEFAULT: local',
                         default='local',
                         required=False)
     parser.add_argument('-w', '--workspaceName',
-                        help='A unique name that identifies an alternate ' +
-                        'workspace. By default only one base directory is ' +
-                        'created and all applications created are put into ' +
-                        'that directory. By specifying this option an ' +
-                        'alternate base directory can be identified and it ' +
-                        'will be kept separate from any other base  ' +
-                        'directories. One usage is if you have multiple ' +
-                        'clients that you are building apps for then the ' +
-                        'apps can be in separate base directories ' +
-                        '(essentially applications associated by client)' +
+                        help='A unique name that identifies an alternate '
+                        'workspace. By default only one base directory is '
+                        'created and all applications created are put into '
+                        'that directory. By specifying this option an '
+                        'alternate base directory can be identified and it '
+                        'will be kept separate from any other base  '
+                        'directories. One usage is if you have multiple '
+                        'clients that you are building apps for then the '
+                        'apps can be in separate base directories '
+                        '(essentially applications associated by client)'
                         'with this option.',
                         required=False)
     parser.add_argument('-i', '--initialCreate',
                         # help='The flag to say ' +
-                        # 'that this is being invoked by a start up script' +
-                        # 'NOTE: if it came in this way it came from a shell' +
+                        # 'that this is being invoked by a start up script'
+                        # 'NOTE: if it came in this way it came from a shell'
                         # 'script and probably should not be run this way',
                         action="store_true",
                         help=argparse.SUPPRESS,
                         required=False)
     parser.add_argument('-g', '--generateEnvFiles',
                         # help='The flag to say ' +
-                        # 'that this is being invoked by deployEnv.sh ' +
-                        # 'and that we need to generate the env files rather ' +
+                        # 'that this is being invoked by deployEnv.sh '
+                        # 'and that we need to generate the env files rather '
                         # 'then read them.',
                         action="store_true",
                         help=argparse.SUPPRESS,
