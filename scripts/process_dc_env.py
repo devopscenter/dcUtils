@@ -298,7 +298,7 @@ class Process_dc_Env:
 
 
 def pythonGetEnv(initialCreate=False):
-    envList = checkArgs()
+    envList = dcEnvCheckArgs()
 
     if initialCreate:
         returnEnvList = envList
@@ -310,7 +310,7 @@ def pythonGetEnv(initialCreate=False):
 
 
 def shellGetEnv():
-    (envList, initialCreate, generateEnvFiles) = checkArgs(type=1)
+    (envList, initialCreate, generateEnvFiles) = dcEnvCheckArgs(type=1)
 
     if initialCreate:
         returnEnvList = envList
@@ -330,7 +330,7 @@ def shellGetEnv():
     print returnStr
 
 
-def checkArgs(type=0):
+def dcEnvCheckArgs(type=0):
     parser = argparse.ArgumentParser(
         description='The core argument processing is handled by a separate '
         'process (process_dc_env.py) and is called by this script.  This core '
