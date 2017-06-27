@@ -2,6 +2,7 @@
 import sys
 import os
 import argparse
+from argparse import RawDescriptionHelpFormatter
 import subprocess
 import json
 # from time import time
@@ -241,7 +242,15 @@ def checkArgs():
         'customers application to perform an update on a target instance. ' +
         'Once the configuration has been ' +
         'changed and committed to the respository, call this script to ' +
-        'have the code be updated on the instance. ')
+        'have the code be updated on the instance. \n\n'
+
+        'Example cmd line to update an application with a new environment:\n'
+        './updateAppInstance.py --baseDirectory ~/someDir/YourAppDir\n'
+        '            --appName YourApp\n'
+        '            --command update\n'
+        '            --option "newEnv = UAT"\n',
+
+        formatter_class=RawDescriptionHelpFormatter)
     parser.add_argument('-c', '--configFile', help='The json config file ' +
                         'that defines the architecture for the appName',
                         required=True)
