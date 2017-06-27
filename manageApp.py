@@ -5,6 +5,7 @@ from os.path import expanduser
 import shutil
 import sys
 import argparse
+from argparse import RawDescriptionHelpFormatter
 import subprocess
 from time import time
 import fileinput
@@ -877,9 +878,9 @@ class ManageAppName:
             # and touch a file so that this isn't an empty directory
             open(keyDir + newEnvName + "/.keep", 'a').close()
 
-        certsDir = baseUtils + "/certs"
+        certsDir = baseUtils + "/certs/"
         if not os.path.exists(certsDir + newEnvName):
-            os.makedirs(keyDir + newEnvName, 0755)
+            os.makedirs(certsDir + newEnvName, 0755)
             # and touch a file so that this isn't an empty directory
             open(keyDir + newEnvName + "/.keep", 'a').close()
 
@@ -888,6 +889,8 @@ class ManageAppName:
     def delete(self, optionsMap):
         """delete all the necessary items that are associated with the
         appName"""
+        print "Currently under construcution\n"
+        sys.exit(1)
         # TODO items to delete:
         #   - self.baseDir/self.appName
         #   - unregister the appName (ie, remove it from .mapAppStack)
@@ -973,15 +976,56 @@ def checkBaseDirectory(baseDirectory):
 
 def checkArgs():
     parser = argparse.ArgumentParser(
-        description='This script provides an administrative interface to a ' +
-        'customers application set that is referred to as appName.  The ' +
-        'administrative functions implement some of the CRUD services ' +
-        '(ie, Create, Update, Delete).')
-    parser.add_argument('-d', '--baseDirectory', help='The base directory ' +
-                        'to be used to access the appName. This needs to be ' +
-                        'an absolute path unless the first part of the path ' +
-                        'is a tilde or $HOME.   This option is not required ' +
-                        'but is needed when doing a create or when using the' +
+        description='This script provides an administrative interface to a '
+        'customers application\nset that is referred to as appName. The '
+        'functions deal with manipulation of\nthe directory structure and '
+        'content of the appUtils and website, mainly the\nappUtils.  This '
+        'script does not deal with the instances or containers that\nare the '
+        'end running product.\n\n'
+        'The '
+        'create command will take the\nbaseDirectory as the path to put the '
+        'files that will be associated with the\napplication. This directory '
+        'structure serves as a logical grouping of the\nfiles for the web '
+        'site and all the configuration and utilities that support\nbuilding '
+        'the appliction on the destination (either cloud instances or\n'
+        'containers or both.\n\n'
+        'The join option is a way to have someone else join in on the '
+        'development\nafter someone has created the initial application files '
+        'and checked them\ninto a git repository. It will create the '
+        'directory structure just like\nthe create command but it will get the '
+        'appUtils and web from a git\nrepository instead of starting from '
+        'scratch. The git URL to clone,\nfor each of the two options can '
+        'either be https or git and using one\nover the other depends on your '
+        'credentials\n\n'
+        'The update command supports the ability to create a new '
+        'environment\nname in the appUtils directory.  So, if you have an '
+        'environment that is\ndifferent from dev,staging, or prod, you can use '
+        'this option and it will\navailable to be able to be used by all '
+        'subsequent commands and utilities.\nSee below for how to use.\n\n'
+
+        'Example command line to create an application:\n'
+        './manageApp.py --baseDirectory ~/someDir/YourAppDir\n'
+        '               --appName YourApp\n'
+        '               --command create\n\n'
+        'Example command line to join with an application:\n'
+        './manageApp.py --baseDirectory ~/someDir/YourAppDir\n'
+        '            --appName YourApp\n'
+        '            --command join\n'
+        '            --appPath git@git.assembla.com:website.git \n'
+        '            --utilsPath https://zsoqe@bitbucket.org/team/appUtils.git'
+        '\n\n'
+        'Example cmd line to update an application with a new environment:\n'
+        './manageApp.py --baseDirectory ~/someDir/YourAppDir\n'
+        '            --appName YourApp\n'
+        '            --command update\n'
+        '            --option "newEnv = UAT"\n',
+
+        formatter_class=RawDescriptionHelpFormatter)
+    parser.add_argument('-d', '--baseDirectory', help='The base directory '
+                        'to be used to access the appName. This needs to be '
+                        'an absolute path unless the first part of the path '
+                        'is a tilde or $HOME.   This option is not required '
+                        'but is needed when doing a create or when using the'
                         ' workspaceName option.',
                         required=False)
     parser.add_argument('-c', '--command', help='Command to execute' +
@@ -992,25 +1036,25 @@ def checkArgs():
                                  "delete"],
                         default='join',
                         required=False)
-    parser.add_argument('-p', '--appPath', help='The customer application ' +
-                        'repo URL or a path to an existing directory that ' +
-                        'houses the application front end. If you provide a ' +
-                        'path it should be an the full absolute path as it ' +
-                        'will be symobolically linked to the base directory ' +
-                        'given in this command. NOTE: tilde(~) or $HOME will ' +
+    parser.add_argument('-p', '--appPath', help='The customer application '
+                        'repo URL or a path to an existing directory that '
+                        'houses the application front end. If you provide a '
+                        'path it should be an the full absolute path as it '
+                        'will be symobolically linked to the base directory '
+                        'given in this command. NOTE: tilde(~) or $HOME will '
                         'be expanded appropriately',
                         default='',
                         required=False)
-    parser.add_argument('-u', '--utilsPath', help='The customer utils ' +
-                        'repo URL or a path to an existing directory that ' +
-                        'houses the application utilities. If you provide a ' +
-                        'path it should be an the full absolute path as it ' +
-                        'will be symobolically linked to the base directory ' +
-                        'given in this command. NOTE: tilde(~) or $HOME will ' +
+    parser.add_argument('-u', '--utilsPath', help='The customer utils '
+                        'repo URL or a path to an existing directory that '
+                        'houses the application utilities. If you provide a '
+                        'path it should be an the full absolute path as it '
+                        'will be symobolically linked to the base directory '
+                        'given in this command. NOTE: tilde(~) or $HOME will '
                         'be expanded appropriately',
                         default='',
                         required=False)
-    parser.add_argument('-o', '--cmdOptions', help='Options for the ' +
+    parser.add_argument('-o', '--cmdOptions', help='Options for the '
                         'command arg',
                         default='',
                         required=False)
