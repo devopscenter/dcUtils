@@ -32,6 +32,10 @@ function usage
 {
     echo -e "Usage: stop.sh [--appName appName] [--env theEnv]"
     echo
+    echo -e "This script will stop the docker containers found running that are"
+    echo -e "specific to the application and no others.  The containers will be "
+    echo -e "stopped so the state will not be lost when they are started again"
+    echo 
     echo -e "--appName is the name of the application that you want to"
     echo -e "      run as the default app for the current session. This is "
     echo -e "      optional if you only have one application defined."

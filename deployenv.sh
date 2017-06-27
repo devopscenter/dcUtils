@@ -55,8 +55,23 @@ dcUTILS="."
 #-------------------------------------------------------------------------------
 function usage
 {
-    echo -e "Usage: deployenv.sh --env ENV --appName CUSTOMER_APP_NAME [--workspaceName WORKSPACENAME]"
+    echo -e "Usage: deployenv.sh --type TYPE --env ENV --appName CUSTOMER_APP_NAME "
+    echo -e "                    [--workspaceName WORKSPACENAME]"
     echo
+    echo -e "This script will set up the environment with the appropriate paths and names"
+    echo -e "that will be used by other utilities and scripts within the devops.center"
+    echo -e "framework. "
+    echo -e "If the option to --type is left off then the default is that the target of"
+    echo -e "deploying the environment will be to the file local to the appUtils directory"
+    echo -e "and can be used by subsequent utilites and scripts within the devops.center"
+    echo -e "framework. If the option to --type is instance (usually only done by another"
+    echo -e "script) than the environment will update the appropriate system environment"
+    echo -e "files such that when the user re-enters at the login prompt, the environment"
+    echo -e "variables for the application will be available."
+    echo
+    echo -e "--type is either left blank for normal operation or will be given 'instance'"
+    echo -e " when called from within another script already in the devops.center framework."
+    echo 
     echo -e "--env is one of the environments that is being targeted to execute,"
     echo -e "and corresponds to which environment variable file will be used. "
     echo -e "It is one of: local|dev|staging|prod"

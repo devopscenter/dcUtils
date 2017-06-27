@@ -34,6 +34,9 @@ function usage
 {
     echo -e "Usage: start.sh [--appName appName] [--env theEnv] [-d]"
     echo
+    echo -e "This script will start the docker containers for the application"
+    echo -e "to be able to set up a local devlopment environment."
+    echo 
     echo -e "--appName is the name of the application that you want to"
     echo -e "      run as the default app for the current session. This is "
     echo -e "      optional if you only have one application defined."
