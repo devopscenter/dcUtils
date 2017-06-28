@@ -1,4 +1,4 @@
-###Description:
+# Description:
 paws is a tool that makes it easier to connect to and work with AWS EC2 instances.  First, it uses the aws cli tool to query an account for running ec2-instances.  Next, it either returns a list of instances, connects to an individual instance, or runs commands on one or more of them.
 
 Caution is advised!  (A good sanity check before running any command is using the -l option to see which hosts you're targeting).
