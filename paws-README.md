@@ -19,12 +19,9 @@ brew install --with-genders pdsh
 You'll also need to configure the aws cli tool.  You can run `aws configure` for interactive setup, where you'll need to provide your AWS credentials a default region and a profile name.  For more info, see http://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html
 
 Key management:
-With this version of paws, the name of the key for the host that you select 
-Finally, you'll need to tell paws where to find your SSH keys.  You can create a symlink that points to whatever directory the .pem files are stored in, (or you can create a new directory and copy them to it).  Note: the name of the directory or symlink you create must match the aws cli profile name.  For example, if you had a profile with the name 'main-account' and had SSH keys names prod.pem and dev.pem stored at '/aws/keys', to symlink to the location of your keys, from the main paws directory, first create and cd to the paws/.ssh directory (`mkdir .ssh && cd .ssh`) and then run `ln -s /aws/keys main-account`.
+Finally, paws needs to know where to find your SSH keys.  There are two methods for paws to find the keys, one is to collect all the instance access keys into one common shared directory. This common directory is defined in the environment (dcCOMMON_SHARED_DIR) when dcUtils was installed.  Change the value of this variable to point to the directory that houses your keys as required by your local environment.
 
-Also add the PAWS directory to your $PATH so that it can be run as a command.
-
-If you run `ls -al .ssh`, you should see 'main-account -> /aws/keys', and running `ls -al .ssh/main-account/` should show both dev.pem and prod.pem.
+The second method is to provide the --appName and --env on the paws command line.  This will specify the application and environment to use to look up the key in the appropriate keys directory in the appName-utils directory structure.  The keys are created at the time of instance creation and using this method will require no further external copying. 
 
 ## Usage:
 * **List all instances, or instances and their tags:**  
@@ -65,13 +62,11 @@ If you run `ls -al .ssh`, you should see 'main-account -> /aws/keys', and runnin
   * Run the 'ls' command on the web1 and web2 instances for the client1 account:  `paws -p client1 -x web1,web2 'ls'`  
   * Run the 'w' command on instances tagged as Env=dev for the client1 account:  `paws -p client1 -t Env=dev 'w'`  
   * Run the 'date' command on instances tagged as Name=db1 for the default account:  `paws -t Name=db1 'date'` 
+  * Check your ssh access to each of the hosts: `paws -p client1 [-r REGION] -x`
 
 ## Note:
 For bulk commands to run you will either need to configure ssh to not prompt for unknown hosts, or add all possible hosts to known_hosts.
 
-An easy way to check for this is to issue an informational command such as
-  * `paws -p client1 'cat /var/run/reboot-required'`
-
-If there are any errors then you'll need to either connect to each host that has an error (to add to the known_hosts file) or configure ssh to not prompt for a new host. To do the latter add this line to the end of the ~/.ssh/config:
+If there are any errors with an ssh login that can not be cleared by checking the host access, then you'll need to either connect to each host that has an error (to add to the known_hosts file) or configure ssh to not prompt for a new host. To do the latter add this line to the end of the ~/.ssh/config:
   * `Host *
       StrictHostKeyChecking no`
