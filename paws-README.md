@@ -3,7 +3,7 @@ paws is a tool that makes it easier to connect to and work with AWS EC2 instance
 
 Caution is advised!  (A good sanity check before running any command is using the -l option to see which hosts you're targeting).
 
-###Setup:
+## Setup:
 
 You'll need to install awscli and pdsh if you haven't already.  For OS X, you can install both with homebrew, which can be installed with:
 `/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"`
@@ -26,7 +26,7 @@ Also add the PAWS directory to your $PATH so that it can be run as a command.
 
 If you run `ls -al .ssh`, you should see 'main-account -> /aws/keys', and running `ls -al .ssh/main-account/` should show both dev.pem and prod.pem.
 
-###Usage:
+## Usage:
 * **List all instances, or instances and their tags:**  
    `paws [-p PROFILE] {-l | -L}`  
     -p	aws cli PROFILE  
@@ -57,7 +57,7 @@ If you run `ls -al .ssh`, you should see 'main-account -> /aws/keys', and runnin
    `paws [-p PROFILE] '<COMMAND>'`  
    -p	aws cli PROFILE  
 
-###Examples:
+## Examples:
   * List tags for all instances for the default account:  `paws -L`  
   * Interactively connect to an instance for the client1 account:  `paws -p client1 -c`  
   * Connect to the web1 instance for the client1 account:  `paws -p client1 -c web1`  
@@ -66,7 +66,7 @@ If you run `ls -al .ssh`, you should see 'main-account -> /aws/keys', and runnin
   * Run the 'w' command on instances tagged as Env=dev for the client1 account:  `paws -p client1 -t Env=dev 'w'`  
   * Run the 'date' command on instances tagged as Name=db1 for the default account:  `paws -t Name=db1 'date'` 
 
-###Note:
+## Note:
 For bulk commands to run you will either need to configure ssh to not prompt for unknown hosts, or add all possible hosts to known_hosts.
 
 An easy way to check for this is to issue an informational command such as
