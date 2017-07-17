@@ -240,6 +240,9 @@ class ManageAppName:
             os.makedirs(generatedEnvDir, 0755)
             open(generatedEnvDir + "/.keep", 'a').close()
 
+        # TODO need to ensure any keys that are pulled down have the correct
+        # permissions
+
         print "Completed successfully\n"
 
     def create(self, optionsMap):
