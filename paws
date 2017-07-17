@@ -217,7 +217,12 @@ else
     # we will be using the common key directory so we need to get the base name which is under
     # the Google Drive.  Since it could be named something else or just because it has a space in
     # the name, we need to expand it once so that we can use it below when finding the key.
-    COMMON_KEY_DIR=$(cd $HOME/Googl*;pwd)
+    # dcCOMMON_SHARED_DIR is set when dcUtils is installed and put into the environmnet.
+    if [[ -z ${dcCOMMON_SHARED_DIR} ]]; then
+        COMMON_KEY_DIR=$(cd $HOME/Googl*;pwd)
+    else
+        COMMON_KEY_DIR=${dcCOMMON_SHARED_DIR}
+    fi
 fi
 
 #-------------------------------------------------------------------------------
