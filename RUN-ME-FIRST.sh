@@ -21,6 +21,12 @@ set -o nounset             # Treat unset variables as an error
 #set -x                     # essentially debug mode
 unset CDPATH
 
+#---  FUNCTION  ----------------------------------------------------------------
+#          NAME:  getBasePath
+#   DESCRIPTION:  gets the path where this file is executed from...somewhere alone the $PATH
+#    PARAMETERS:  
+#       RETURNS:  
+#-------------------------------------------------------------------------------
 getBasePath()
 {
     SOURCE="${BASH_SOURCE[0]}"
@@ -33,10 +39,76 @@ getBasePath()
 }
 
 
+#---  FUNCTION  ----------------------------------------------------------------
+#          NAME:  setupIAMUser
+#   DESCRIPTION:  creates the IAM user under a specific group which defines the rolse
+#                 for this user.  
+#    PARAMETERS:  
+#       RETURNS:  
+#-------------------------------------------------------------------------------
+setupIAMUser()
+{
+    echo "in setupIAMUser"
+}
+
+
+#---  FUNCTION  ----------------------------------------------------------------
+#          NAME:  runAWSConfigure
+#   DESCRIPTION:  runs the aws configure --profile command with the appropriate informaitno
+#                 this constitutes running several aws configure set commands with the required data
+#    PARAMETERS:  
+#       RETURNS:  
+#-------------------------------------------------------------------------------
+runAWSConfigure()
+{
+    echo "in runAWSConfigure"
+}
+
+
+#---  FUNCTION  ----------------------------------------------------------------
+#          NAME:  createUserSpecificKeys
+#   DESCRIPTION:  creates the private/public keys that will have the public key
+#                 sent to devops.center to deploy to the appropriate customer instances
+#    PARAMETERS:  
+#       RETURNS:  
+#-------------------------------------------------------------------------------
+createUserSpecificKeys()
+{
+    echo "in createUserSpecificKeys"
+}
+
+
+#---  FUNCTION  ----------------------------------------------------------------
+#          NAME:  sendKeysTodc
+#   DESCRIPTION:  sends the public key to devops.center,whom will distribute to the 
+#                 customer instances
+#    PARAMETERS:  
+#       RETURNS:  
+#-------------------------------------------------------------------------------
+sendKeysTodc()
+{
+    echo "in sendKeysTodc"
+}
+
+
+#---  FUNCTION  ----------------------------------------------------------------
+#          NAME:  getMyIP
+#   DESCRIPTION:  sends a request to the devops server requesting to get the IP
+#                 of this machine as it will be seen by the instances which are 
+#                 outside of the local network.
+#    PARAMETERS:  
+#       RETURNS:  
+#-------------------------------------------------------------------------------
+getMyIP()
+{
+    echo "in getMyIP"
+}
+
+
+#-----  End of Function definittion  -------------------------------------------
+
 # get BASE_DIR from getMyPath
 getBasePath
-echo $BASE_DIR
-
 
 #-------------------------------------------------------------------------------
 # set up $HOME/.dcConfig 
@@ -123,23 +195,40 @@ echo "DEV_BASE_DIR=${DEV_BASE_DIR}"
 # the AccessKey and SecretKey that is created specifically for this user to be 
 # used in the aws configure setup. 
 #-------------------------------------------------------------------------------
+setupIAMUser
 
 #-------------------------------------------------------------------------------
 # run aws configure with the appropriate information gathered so far
 #-------------------------------------------------------------------------------
+runAWSConfigure
 
 
 #-------------------------------------------------------------------------------
 # create the personal private access key to authenticate ssh to an instance 
 # ... put it in the .ssh/devops.center directory or the ~/.dcConfig/ directory
 #-------------------------------------------------------------------------------
+createUserSpecificKeys
 
 #-------------------------------------------------------------------------------
 # and make the shared key available to devops.center 
 #-------------------------------------------------------------------------------
+sendKeysTodc
 
+
+#-------------------------------------------------------------------------------
+# need to get the IP of this machine running.  Send a request to the devops.center
+# server to the function that will return the IP this machine has.  This is done
+# because it could be that this machine is NATted and the real IP is only gotten
+# by leaving the local network.
+#-------------------------------------------------------------------------------
+getMyIP
 
 #-------------------------------------------------------------------------------
 # tell the user to add path to dcUtils to the $PATH
 #-------------------------------------------------------------------------------
+echo
+echo "You will need to add the directory for dcUtils (${BASE_DIR}) to your $PATH variable"
+echo "and export it.  This would go into your shell rc file where the specific rc file is"
+echo "what you run when interacting with the the terminal"
+echo 
 
