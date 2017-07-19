@@ -90,7 +90,6 @@ echo "Next enter the region that the AWS instances will be in when they are crea
 echo "This value can be obtained from the main authenticatin user if it is not known."
 echo "the value is typically us-west-2 or us-east-1."
 echo 
-echo -n 
 read -i us-west-2  -p "Enter the region  and press [ENTER]: " -e region
 if [[ -z ${region} ]]; then
     REGION=us-west-2
@@ -103,15 +102,14 @@ echo "Next enter the directory name that will serve as the basis for you applica
 echo "that the AWS instances will be in when they are created. The devops.center scripts will use"
 echo "this directory to put the application development files and the application website."
 echo "This can be anywhere within your local machine and named anything you would like.  A suggestion"
-echo "might be to put it in your home directory and call it devops: ~/devops"
+echo "might be to put it in your home directory and call it devops: ~/devops/apps"
 echo 
-echo -n 
-read -p "Enter the directory and press [ENTER]: "  localDevBaseDir
+read -i "~/devops/apps" -p "Enter the directory and press [ENTER]: "  -e localDevBaseDir
 if [[ -z ${localDevBaseDir} ]]; then
     echo "Entering the local development directory is required, exiting..."
     exit 1
 fi
-DEV_BASE_DIR=${userName,,}
+DEV_BASE_DIR=${localDevBaseDir}
 
 
 echo "exporting dcUTILS=${BASE_DIR}"
