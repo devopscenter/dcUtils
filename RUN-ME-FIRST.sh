@@ -150,7 +150,7 @@ echo
 echo "Next enter your username, one word and no spaces all lowercase.  This value"
 echo "will be used to create an IAM user specifically for you."
 echo 
-read -p "Enter your user name  and press [ENTER]: " userName
+read -p "Enter your user name and press [ENTER]: " userName
 if [[ -z ${userName} ]]; then
     echo "Entering the user name is required, exiting..."
     exit 1
@@ -162,7 +162,7 @@ echo "Next enter the region that the AWS instances will be in when they are crea
 echo "This value can be obtained from the main authenticatin user if it is not known."
 echo "the value is typically us-west-2 or us-east-1."
 echo 
-read -i us-west-2  -p "Enter the region  and press [ENTER]: " -e region
+read -i us-west-2  -p "Enter the region and press [ENTER]: " -e region
 if [[ -z ${region} ]]; then
     REGION=us-west-2
 else
@@ -227,7 +227,7 @@ getMyIP
 # tell the user to add path to dcUtils to the $PATH
 #-------------------------------------------------------------------------------
 echo
-echo "You will need to add the directory for dcUtils (${BASE_DIR}) to your $PATH variable"
+echo "You will need to add the directory for dcUtils (${BASE_DIR}) to your PATH variable"
 echo "and export it.  This would go into your shell rc file where the specific rc file is"
 echo "what you run when interacting with the the terminal"
 echo 
