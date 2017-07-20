@@ -117,6 +117,7 @@ runAWSConfigure()
 #-------------------------------------------------------------------------------
 createUserSpecificKeys()
 {
+    # TODO: call the ssh-keygen to create a private/public set of keys
     echo "in createUserSpecificKeys"
 }
 
@@ -130,6 +131,7 @@ createUserSpecificKeys()
 #-------------------------------------------------------------------------------
 sendKeysTodc()
 {
+    # TODO: determine how to get the keys to devops.center
     echo "in sendKeysTodc"
 }
 
@@ -144,6 +146,8 @@ sendKeysTodc()
 #-------------------------------------------------------------------------------
 getMyIP()
 {
+    # TODO: create the server call for returning my IP"
+    #       and then add the code to execute that
     echo "in getMyIP"
 }
 
@@ -166,6 +170,116 @@ writeToSettings()
 }
 
 
+#---  FUNCTION  ----------------------------------------------------------------
+#          NAME:  cleanUpAWSConfigs
+#   DESCRIPTION:  remove the bootstrap section from the .aws/{config|credentials}
+#    PARAMETERS:  
+#       RETURNS:  
+#-------------------------------------------------------------------------------
+cleanUpAWSConfigs()
+{
+    cd ~/.aws
+    diff config.OLD config | grep '^>' | sed 's/^>\ //' > config.NEW
+    diff credentials.OLD credentials | grep '^>' | sed 's/^>\ //' > credentials.NEW
+
+    #-------------------------------------------------------------------------------
+    # make the NEW ones the ones to keep
+    #-------------------------------------------------------------------------------
+    mv config.NEW config
+    mv credentials.NEW credentials
+
+    #-------------------------------------------------------------------------------
+    # and remove the OLD ones
+    #-------------------------------------------------------------------------------
+    rm config.OLD credentials.OLD
+}
+
+
+#---  FUNCTION  ----------------------------------------------------------------
+#          NAME:  bootstrapAWSConfigs
+#   DESCRIPTION:  
+#    PARAMETERS:  
+#       RETURNS:  
+#-------------------------------------------------------------------------------
+bootstrapAWSConfigs()
+{
+    if [[ ! -f $HOME/.aws/credentials ]]; then
+        if [[ -f "${BASE_DIR}/bootstrap-aws.tar" ]]; then
+            cd $HOME
+            tar -xf ${BASE_DIR}/bootstrap-aws.tar
+            cp ~/.aws/config ~/.aws/config.OLD
+            cp ~/.aws/credentials ~/.aws/credentials.OLD
+        else
+            echo 
+            echo "Could not find the bootstrap-aws tar ball which is required to begin"
+            echo "this script.  Contact the devops.center representative to ensure that"
+            echo "the file is created and put into the directory: ${BASE_DIR}"
+            echo
+            exit 1
+        fi
+
+        #-------------------------------------------------------------------------------
+        # NOTE: Don't forget to remove the bootstrap sections out of the config and credentials
+        # when this script is done
+        #-------------------------------------------------------------------------------
+    fi
+}
+
+
+#---  FUNCTION  ----------------------------------------------------------------
+#          NAME:  clonedcUtils
+#   DESCRIPTION:  clone dcUtils where the user wants it
+#    PARAMETERS:  
+#       RETURNS:  
+#-------------------------------------------------------------------------------
+clonedcUtils()
+{
+    echo 
+    echo "First we need to grab a clone of the devops.center utilitities: dcUtils"
+    echo "And for that, we need a directory location on your machine.  It can go"
+    echo "anywhere.  Once this is cloned the path to the dcUtils directory will"
+    echo "need to go into your PATH variable and then exported."
+    echo 
+    read -i "~/devops/devopscenter" -p "Enter your directory location and press [ENTER]: "  -e aBaseDir
+    if [[ ${aBaseDir} == "~"* || ${aBaseDir} == "\$HOME"* ]]; then
+        homePath=$(echo $HOME)
+        partialBaseDir=${aBaseDir#*/}
+        dcUtilsBaseDir="${homePath}/${partialBaseDir}"
+    else
+        dcUtilsBaseDir=${aBaseDir}
+    fi
+
+    if [[ ! -d "${dcUtilsBaseDir}/dcUtils" ]]; then
+        if [[ ! -d ${dcUtilsBaseDir} ]]; then
+            echo "That directory ${dcUtilsBaseDir} doesn't exists"
+            read -i "y" -p "Do you want it created [y or n]: " -e createdReply
+            if [[ ${createdReply} == "y" ]]; then
+                mkdir -p ${dcUtilsBaseDir}
+            else
+                echo "not created."
+                exit 1
+            fi
+        fi
+
+        cd ${dcUtilsBaseDir}
+        echo "cloning dcUtils in directory: ${dcUtilsBaseDir}"
+        git clone https://github.com/devopscenter/dcUtils.git
+
+        dcUTILS="${dcUtilsBaseDir}/dcUtils"
+    else
+        dcUTILS="${dcUtilsBaseDir}/dcUtils"
+
+        echo 
+        echo "Great, it looks like you already have that directory."
+        echo "we'll just update it"
+        echo
+
+        cd ${dcUTILS}
+        git pull origin master
+    fi
+}
+
+
 #-----  End of Function definittion  -------------------------------------------
 
 
@@ -180,6 +294,7 @@ if [[ ! -d $HOME/.dcConfig ]]; then
     mkdir $HOME/.dcConfig
 fi
 
+CUR_DIR=$(pwd)
 
 #-------------------------------------------------------------------------------
 # need to check what version of bash they have on their machine
@@ -239,60 +354,6 @@ if [[ ! ${CHECK_JQ} ]]; then
     echo 
     exit 1
 fi
-
-
-
-#-------------------------------------------------------------------------------
-# clone dcUtils where the user wants it
-#-------------------------------------------------------------------------------
-echo 
-echo "First we need to grab a clone of the devops.center utilitities: dcUtils"
-echo "And for that, we need a directory location on your machine.  It can go"
-echo "anywhere.  Once this is cloned the path to the dcUtils directory will"
-echo "need to go into your PATH variable and then exported."
-echo 
-read -p "Enter your directory location and press [ENTER]: "  aBaseDir
-if [[ ${aBaseDir} == "~"* || ${aBaseDir} == "\$HOME"* ]]; then
-    homePath=$(echo $HOME)
-    partialBaseDir=${aBaseDir#*/}
-    dcUtilsBaseDir="${homePath}/${partialBaseDir}"
-else
-    dcUtilsBaseDir=${aBaseDir}
-fi
-
-if [[ ! -d "${dcUtilsBaseDir}/dcUtils" ]]; then
-    if [[ ! -d ${dcUtilsBaseDir} ]]; then
-        echo "That directory ${dcUtilsBaseDir} doesn't exists"
-        read -i "y" -p "Do you want it created [y or n]: " -e createdReply
-        if [[ ${createdReply} == "y" ]]; then
-            mkdir -p ${dcUtilsBaseDir}
-        else
-            echo "not created."
-            exit 1
-        fi
-    fi
-
-    cd ${dcUtilsBaseDir}
-    echo "cloning dcUtils in directory: ${dcUtilsBaseDir}"
-    git clone https://github.com/devopscenter/dcUtils.git
-
-    dcUTILS="${dcUtilsBaseDir}/dcUtils"
-else
-    dcUTILS="${dcUtilsBaseDir}/dcUtils"
-
-    echo 
-    echo "Great, it looks like you already have that directory."
-    echo "we'll just update it"
-    echo
-
-    cd ${dcUTILS}
-    git pull origin master
-fi
-
-
-#-------------------------------------------------------------------------------
-# now we need to get the bootstrap aws config and credentials
-#-------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------
 # get some details to go into settings:
@@ -373,6 +434,17 @@ fi
 DEV_BASE_DIR=${localDevBaseDir}
 
 #-------------------------------------------------------------------------------
+# clone dcUtils where the user wants it
+#-------------------------------------------------------------------------------
+clonedcUtils
+
+#-------------------------------------------------------------------------------
+# now we need to get the bootstrap aws config and credentials to be able to set
+# up the IAM user
+#-------------------------------------------------------------------------------
+bootstrapAWSConfigs
+
+#-------------------------------------------------------------------------------
 # need to help them run through setting up the IAM user for this user and use 
 # the AccessKey and SecretKey that is created specifically for this user to be 
 # used in the aws configure setup. 
@@ -408,6 +480,14 @@ getMyIP
 #-------------------------------------------------------------------------------
 writeToSettings
 
+
+#-------------------------------------------------------------------------------
+# Now is the time to remove the bootstrap section from the .aws/{config|credentials}
+# this will leave the config and credentials with the PROFILE specifc information and
+# their specific credentials in the ~/.aws/ config files.
+#-------------------------------------------------------------------------------
+cleanUpAWSConfigs
+
 #-------------------------------------------------------------------------------
 # tell the user to add path to dcUtils to the $PATH
 #-------------------------------------------------------------------------------
@@ -417,3 +497,9 @@ echo "You will need to add the directory for dcUtils (${dcUTILS}) to your PATH v
 echo "and export it.  This would go into your shell rc file where the specific rc file is"
 echo "dependent on what shell (ie bash, zsh, csh,...) you run when interacting with the the terminal"
 echo
+
+
+#-------------------------------------------------------------------------------
+# and now move back to the original directory this script was started in
+#-------------------------------------------------------------------------------
+cd ${CUR_DIR}
