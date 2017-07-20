@@ -61,10 +61,11 @@ setupIAMUser()
 {
     echo "Setting up this user as an IAM user"
 
+    foundUSER_NAMEflag="no"
 	IAMUserToCreate=${USER_NAME}
     if [[ $(aws --profile "default" --region ${REGION} iam get-user --user-name ${IAMUserToCreate} 2>&1 > /dev/null) == *"cannot be found"* ]]; then
         sleep 2
-        aws --profile "default" --region ${REGION} iam create-user --user-name  ${IAMUserToCreate}
+        createUser=$(aws --profile "default" --region ${REGION} iam create-user --user-name  ${IAMUserToCreate} 2>&1 > /dev/null)
         sleep 2
 
         # create the keys for the user
@@ -80,8 +81,15 @@ setupIAMUser()
         
         # add the login to a group so that the policy can be attached to the group rather
         # than the user
-        aws --profile "default" --region ${REGION} iam add-user-to-group --user-name ${IAMUserToCreate} --group-name ${IAMUserGroup}
+        addToGroup=$(aws --profile "default" --region ${REGION} iam add-user-to-group --user-name ${IAMUserToCreate} --group-name ${IAMUserGroup} 2>&1 > /dev/null)
         sleep 2
+    else
+        echo
+        echo "WARN: user: ${USER_NAME} was found"
+        echo "      Which means that we could not retrieve the keys and won't be able"
+        echo " to set up the configuration. It will have to be done by manually."
+        echo
+        foundUSER_NAMEflag="yes"
     fi
 }
 
@@ -95,16 +103,23 @@ setupIAMUser()
 #-------------------------------------------------------------------------------
 runAWSConfigure()
 {
-    echo "Setting up this users AWS configuration"
+    if [[ ${foundUSER_NAMEflag} == no ]]; then
+        echo "Setting up this users AWS configuration"
 
-    aws configure set aws_access_key_id ${ACCESS_KEY} --profile ${PROFILE}
-    sleep 2
-    aws configure set aws_secret_access_key ${SECRET_ACCESS_KEY} --profile ${PROFILE}
-    sleep 2
-    aws configure set region ${REGION} --profile ${PROFILE}
-    sleep 2
-    aws configure set output json --profile ${PROFILE}
-    sleep 2
+        aws configure set aws_access_key_id ${ACCESS_KEY} --profile ${PROFILE}
+        sleep 2
+        aws configure set aws_secret_access_key ${SECRET_ACCESS_KEY} --profile ${PROFILE}
+        sleep 2
+        aws configure set region ${REGION} --profile ${PROFILE}
+        sleep 2
+        aws configure set output json --profile ${PROFILE}
+        sleep 2
+    else
+        echo
+        echo "WARN: Because the user was found we can't retrieve the keys and could not set up"
+        echo "the AWS configuration."
+        echo 
+    fi
 }
 
 
@@ -451,42 +466,44 @@ bootstrapAWSConfigs
 #-------------------------------------------------------------------------------
 setupIAMUser
 
-#-------------------------------------------------------------------------------
-# run aws configure with the appropriate information gathered so far
-#-------------------------------------------------------------------------------
-runAWSConfigure
+if [[ ${foundUSER_NAMEflag} == no ]]; then
+    #-------------------------------------------------------------------------------
+    # run aws configure with the appropriate information gathered so far
+    #-------------------------------------------------------------------------------
+    runAWSConfigure
 
-#-------------------------------------------------------------------------------
-# create the personal private access key to authenticate ssh to an instance 
-# ... put it in the .ssh/devops.center directory or the ~/.dcConfig/ directory
-#-------------------------------------------------------------------------------
-createUserSpecificKeys
+    #-------------------------------------------------------------------------------
+    # create the personal private access key to authenticate ssh to an instance 
+    # ... put it in the .ssh/devops.center directory or the ~/.dcConfig/ directory
+    #-------------------------------------------------------------------------------
+    createUserSpecificKeys
 
-#-------------------------------------------------------------------------------
-# and make the shared key available to devops.center 
-#-------------------------------------------------------------------------------
-sendKeysTodc
+    #-------------------------------------------------------------------------------
+    # and make the shared key available to devops.center 
+    #-------------------------------------------------------------------------------
+    sendKeysTodc
 
-#-------------------------------------------------------------------------------
-# need to get the IP of this machine running.  Send a request to the devops.center
-# server to the function that will return the IP this machine has.  This is done
-# because it could be that this machine is NATted and the real IP is only gotten
-# by leaving the local network.
-#-------------------------------------------------------------------------------
-getMyIP
+    #-------------------------------------------------------------------------------
+    # need to get the IP of this machine running.  Send a request to the devops.center
+    # server to the function that will return the IP this machine has.  This is done
+    # because it could be that this machine is NATted and the real IP is only gotten
+    # by leaving the local network.
+    #-------------------------------------------------------------------------------
+    getMyIP
 
-#-------------------------------------------------------------------------------
-# we have collected all the information we need now write it out to .dcConfig/settings
-#-------------------------------------------------------------------------------
-writeToSettings
+    #-------------------------------------------------------------------------------
+    # we have collected all the information we need now write it out to .dcConfig/settings
+    #-------------------------------------------------------------------------------
+    writeToSettings
 
 
-#-------------------------------------------------------------------------------
-# Now is the time to remove the bootstrap section from the .aws/{config|credentials}
-# this will leave the config and credentials with the PROFILE specifc information and
-# their specific credentials in the ~/.aws/ config files.
-#-------------------------------------------------------------------------------
-cleanUpAWSConfigs
+    #-------------------------------------------------------------------------------
+    # Now is the time to remove the bootstrap section from the .aws/{config|credentials}
+    # this will leave the config and credentials with the PROFILE specifc information and
+    # their specific credentials in the ~/.aws/ config files.
+    #-------------------------------------------------------------------------------
+    cleanUpAWSConfigs
+fi
 
 #-------------------------------------------------------------------------------
 # tell the user to add path to dcUtils to the $PATH
