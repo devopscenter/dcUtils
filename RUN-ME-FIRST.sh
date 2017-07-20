@@ -17,10 +17,11 @@
 #      REVISION:  ---
 #===============================================================================
 
-set -o nounset             # Treat unset variables as an error
+#set -o nounset             # Treat unset variables as an error
 #set -x                     # essentially debug mode
 unset CDPATH
 
+source /usr/local/bin/dcEnv.sh
 #---  FUNCTION  ----------------------------------------------------------------
 #          NAME:  getBasePath
 #   DESCRIPTION:  gets the path where this file is executed from...somewhere alone the $PATH
@@ -48,7 +49,26 @@ getBasePath()
 #-------------------------------------------------------------------------------
 setupIAMUser()
 {
-    echo "in setupIAMUser"
+    dcLog "Setting up this user as an IAM user"
+
+	IAMUserToCreate=${USER_NAME}
+    if [[ ! $(aws --profile ${PROFILE} --region ${REGION} iam get-user --user-name ${IAMUserToCreate}) ]]; then
+        aws --profile ${PROFILE} --region ${REGION} iam create-user --user-name  ${IAMUserToCreate}
+
+        # create the keys for the user
+        accessKeys=$(aws --profile ${PROFILE} --region ${REGION} iam create-access-key --user-name  ${IAMUserToCreate})
+        SECRET_ACCESS_KEY=$(jq -r '.AccessKey.SecretAccessKey' <<< "$accessKeys")
+        ACCESS_KEY=$(jq -r '.AccessKey.AccessKeyId' <<< "$accessKeys")
+
+		# The group name that was set up at customer registration time.  There should be a group that would
+        # be named CUSTOMER_NAME-dev and the policy for the group is to have EC2 and S3 full read/write access
+        # but not admin priviledge.  That is left to the authenticated user(s)
+		IAMUserGroup="${CUSTOMER_NAME}-dev"
+        
+        # add the login to a group so that the policy can be attached to the group rather
+        # than the user
+        aws --profile ${PROFILE} --region ${REGION} iam add-user-to-group --user-name ${IAMUserToCreate} --group-name ${IAMUserGroup}
+    fi
 }
 
 
@@ -61,7 +81,12 @@ setupIAMUser()
 #-------------------------------------------------------------------------------
 runAWSConfigure()
 {
-    echo "in runAWSConfigure"
+    dcLog "Setting up this users AWS configuration"
+
+    aws configure set ${PROFILE}.aws_access_key_id ${ACCESS_KEY}
+    aws configure set ${PROFILE}.aws_secret_access_key ${SECRET_ACCESS_KEY}
+    aws configure set ${PROFILE}.region ${REGION}
+    aws configure set ${PROFILE}.output json
 }
 
 
@@ -114,9 +139,9 @@ getMyIP()
 #-------------------------------------------------------------------------------
 writeToSettings()
 {
-    echo "in writeToSettings"
     echo "dcUTILS=${BASE_DIR}" > ~/.dcConfig/settings
     echo "CUSTOMER_NAME=${CUSTOMER_NAME}" >> ~/.dcConfig/settings
+    echo "PROFILE=${PROFILE}" >> ~/.dcConfig/settings
     echo "USER_NAME=${USER_NAME}" >> ~/.dcConfig/settings
     echo "REGION=${REGION}" >> ~/.dcConfig/settings
     echo "DEV_BASE_DIR=${DEV_BASE_DIR}" >> ~/.dcConfig/settings
@@ -124,6 +149,8 @@ writeToSettings()
 
 
 #-----  End of Function definittion  -------------------------------------------
+
+dcStartLog "Starting initial configurations"
 
 # get BASE_DIR from getMyPath
 getBasePath
@@ -157,12 +184,13 @@ echo "First you will be asked to enter your company name.  This will be used"
 echo "as the value for the AWS profile and should be the same for everyone "
 echo "within the company.  All lowercase."
 echo 
-read -p "Enter your customer name and press [ENTER]:"  customerName
+read -p "Enter your customer name and press [ENTER]: "  customerName
 if [[ -z ${customerName} ]]; then
     echo "Entering the customer name is required, exiting..."
     exit 1
 fi
 CUSTOMER_NAME=${customerName,,}
+PROFILE=${CUSTOMER_NAME}
 
 echo 
 echo "Next enter your username, one word and no spaces all lowercase.  This value"
@@ -187,13 +215,13 @@ else
     REGION=${region,,}
 fi
 
-echo 
-echo "Next enter the directory name that will serve as the basis for you application development"
-echo "that the AWS instances will be in when they are created. The devops.center scripts will use"
-echo "this directory to put the application development files and the application website."
-echo "This can be anywhere within your local machine and named anything you would like.  A suggestion"
-echo "might be to put it in your home directory and call it devops: ~/devops/apps"
-echo 
+echo  
+echo  "Next enter the directory name that will serve as the basis for you application development"
+echo  "that the AWS instances will be in when they are created. The devops.center scripts will use"
+echo  "this directory to put the application development files and the application website."
+echo  "This can be anywhere within your local machine and named anything you would like.  A suggestion"
+echo  "might be to put it in your home directory and call it devops: ~/devops/apps"
+echo  
 read -i "~/devops/apps" -p "Enter the directory and press [ENTER]: "  -e localDevBaseDir
 if [[ -z ${localDevBaseDir} ]]; then
     echo "Entering the local development directory is required, exiting..."
@@ -245,5 +273,6 @@ echo
 echo "You will need to add the directory for dcUtils (${BASE_DIR}) to your PATH variable"
 echo "and export it.  This would go into your shell rc file where the specific rc file is"
 echo "dependent on what shell (ie bash, zsh, csh,...) you run when interacting with the the terminal"
-echo 
+echo
 
+dcEndLog "Finished..."
