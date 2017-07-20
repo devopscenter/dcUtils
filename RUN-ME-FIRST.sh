@@ -105,6 +105,24 @@ getMyIP()
 }
 
 
+#---  FUNCTION  ----------------------------------------------------------------
+#          NAME:  writeToSettings
+#   DESCRIPTION:  this function will write the necessary key/value pairs out to
+#                 ~/dcConfig/settings
+#    PARAMETERS:  
+#       RETURNS:  
+#-------------------------------------------------------------------------------
+writeToSettings()
+{
+    echo "in writeToSettings"
+    echo "dcUTILS=${BASE_DIR}" > ~/.dcConfig/settings
+    echo "CUSTOMER_NAME=${CUSTOMER_NAME}" >> ~/.dcConfig/settings
+    echo "USER_NAME=${USER_NAME}" >> ~/.dcConfig/settings
+    echo "REGION=${REGION}" >> ~/.dcConfig/settings
+    echo "DEV_BASE_DIR=${DEV_BASE_DIR}" >> ~/.dcConfig/settings
+}
+
+
 #-----  End of Function definittion  -------------------------------------------
 
 # get BASE_DIR from getMyPath
@@ -184,12 +202,6 @@ fi
 DEV_BASE_DIR=${localDevBaseDir}
 
 
-echo "exporting dcUTILS=${BASE_DIR}"
-echo "CUSTOMER_NAME=${CUSTOMER_NAME}"
-echo "USER_NAME=${USER_NAME}"
-echo "REGION=${REGION}"
-echo "DEV_BASE_DIR=${DEV_BASE_DIR}"
-
 #-------------------------------------------------------------------------------
 # need to help them run through setting up the IAM user for this user and use 
 # the AccessKey and SecretKey that is created specifically for this user to be 
@@ -202,7 +214,6 @@ setupIAMUser
 #-------------------------------------------------------------------------------
 runAWSConfigure
 
-
 #-------------------------------------------------------------------------------
 # create the personal private access key to authenticate ssh to an instance 
 # ... put it in the .ssh/devops.center directory or the ~/.dcConfig/ directory
@@ -214,7 +225,6 @@ createUserSpecificKeys
 #-------------------------------------------------------------------------------
 sendKeysTodc
 
-
 #-------------------------------------------------------------------------------
 # need to get the IP of this machine running.  Send a request to the devops.center
 # server to the function that will return the IP this machine has.  This is done
@@ -224,11 +234,16 @@ sendKeysTodc
 getMyIP
 
 #-------------------------------------------------------------------------------
+# we have collected all the information we need now write it out to .dcConfig/settings
+#-------------------------------------------------------------------------------
+writeToSettings
+
+#-------------------------------------------------------------------------------
 # tell the user to add path to dcUtils to the $PATH
 #-------------------------------------------------------------------------------
 echo
 echo "You will need to add the directory for dcUtils (${BASE_DIR}) to your PATH variable"
 echo "and export it.  This would go into your shell rc file where the specific rc file is"
-echo "what you run when interacting with the the terminal"
+echo "dependent on what shell (ie bash, zsh, csh,...) you run when interacting with the the terminal"
 echo 
 
