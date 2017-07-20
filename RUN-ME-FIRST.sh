@@ -353,8 +353,24 @@ if [[ -z ${localDevBaseDir} ]]; then
     echo "Entering the local development directory is required, exiting..."
     exit 1
 fi
+if [[ ${localDevBaseDir} == "~"* || ${localDevBaseDir} == "\$HOME"* ]]; then
+    homePath=$(echo $HOME)
+    partialBaseDir=${localDevBaseDir#*/}
+    localDevBaseDir="${homePath}/${partialBaseDir}"
+else
+    localDevBaseDir=${aBaseDir}
+fi
+if [[ ! -d ${localDevBaseDir} ]]; then
+    echo "That directory ${localDevBaseDir} doesn't exists"
+    read -i "y" -p "Do you want it created [y or n]: " -e createdReply
+    if [[ ${createdReply} == "y" ]]; then
+        mkdir -p ${localDevBaseDir}
+    else
+        echo "not created."
+        exit 1
+    fi
+fi
 DEV_BASE_DIR=${localDevBaseDir}
-
 
 #-------------------------------------------------------------------------------
 # need to help them run through setting up the IAM user for this user and use 
