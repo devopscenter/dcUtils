@@ -195,6 +195,8 @@ if [[ $BV != "4"* ]]; then
         echo "to be the shell that you use, but the scripts will look specifically for bash."
         echo "You will need to update your version of bash to the major revison 4.  The"
         echo "devops.center scripts work with the latest bash version 4."
+        echo "Please use your normal installation method for installing/upgrading new"
+        echo "software to install/update 'bash'."
         exit 1
     elif [[ ${OSNAME} == "Darwin" ]]; then
         echo "The devops.center scripts all run with Bash version 4+.  It doesn't have"
@@ -243,7 +245,6 @@ fi
 #-------------------------------------------------------------------------------
 # clone dcUtils where the user wants it
 #-------------------------------------------------------------------------------
-set -x
 echo 
 echo "First we need to grab a clone of the devops.center utilitities: dcUtils"
 echo "And for that, we need a directory location on your machine.  It can go"
@@ -259,27 +260,39 @@ else
     dcUtilsBaseDir=${aBaseDir}
 fi
 
-if [[ ! -d ${dcUtilsBaseDir} ]]; then
-    echo "That directory ${dcUtilsBaseDir} doesn't exists"
-    read -i "y" -p "Do you want it created [y or n]: " -e createdReply
-    if [[ ${createdReply} == "y" ]]; then
-        mkdir -p ${dcUtilsBaseDir}
-    else
-        echo "not created."
-        exit 1
+if [[ ! -d "${dcUtilsBaseDir}/dcUtils" ]]; then
+    if [[ ! -d ${dcUtilsBaseDir} ]]; then
+        echo "That directory ${dcUtilsBaseDir} doesn't exists"
+        read -i "y" -p "Do you want it created [y or n]: " -e createdReply
+        if [[ ${createdReply} == "y" ]]; then
+            mkdir -p ${dcUtilsBaseDir}
+        else
+            echo "not created."
+            exit 1
+        fi
     fi
+
+    cd ${dcUtilsBaseDir}
+    echo "cloning dcUtils in directory: ${dcUtilsBaseDir}"
+    git clone https://github.com/devopscenter/dcUtils.git
+
+    dcUTILS="${dcUtilsBaseDir}/dcUtils"
+else
+    dcUTILS="${dcUtilsBaseDir}/dcUtils"
+
+    echo 
+    echo "Great, it looks like you already have that directory."
+    echo "we'll just update it"
+    echo
+
+    cd ${dcUTILS}
+    git pull origin master
 fi
 
-cd ${dcUtilsBaseDir}
-echo "cloning dcUtils in directory: ${dcUtilsBaseDir}"
-git clone https://github.com/devopscenter/dcUtils.git
-dcUTILS=${dcUtilsBaseDir}/dcUtils
 
 #-------------------------------------------------------------------------------
 # now we need to get the bootstrap aws config and credentials
 #-------------------------------------------------------------------------------
-
-exit
 
 #-------------------------------------------------------------------------------
 # get some details to go into settings:
@@ -309,7 +322,7 @@ echo
 echo "Enter your username, one word and no spaces all lowercase letters."
 echo "This value will be used to create an IAM user specifically for you."
 echo 
-read -p "Enter your user name and press [ENTER]: " userName
+read -i $USER -p "Enter your user name and press [ENTER]: " -e userName
 if [[ -z ${userName} ]]; then
     echo "Entering the user name is required, exiting..."
     exit 1
