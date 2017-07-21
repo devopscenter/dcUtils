@@ -151,8 +151,10 @@ runAWSConfigure()
 #-------------------------------------------------------------------------------
 createUserSpecificKeys()
 {
-    # TODO: call the ssh-keygen to create a private/public set of keys
-    echo "in createUserSpecificKeys"
+    # call the ssh-keygen to create a private/public set of keys
+    echo "Creating ssh access keys (dcaccess-key) to be used to access the AWS instances"
+    ssh-keygen -t rsa -N "" -f ~/.ssh/dcaccess-key -q
+    mv ~/.ssh/dcaccess-key ~/.ssh/dcaccess-key.pem
 }
 
 
@@ -166,7 +168,9 @@ createUserSpecificKeys()
 sendKeysTodc()
 {
     # TODO: determine how to get the keys to devops.center
-    echo "in sendKeysTodc"
+    echo "And now we need to transfer the ~/.ssh/dcaccess-key.pub over to devops.center"
+    echo "so they can spread it over all the instances associated with the customer."
+    echo
 }
 
 
