@@ -998,7 +998,8 @@ def getBaseDirectory():
         with open(baseSettingsDir + "/settings") as f:
             lines = [line.rstrip('\n') for line in f]
         for item in lines:
-            print("=>{}<=".format(item))
+            if item == "DEV_BASE_DIR":
+                print("=>{}<=".format(item))
 
     else:
         print ("You will need to re-run this command with the -d option to"
