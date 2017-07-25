@@ -997,6 +997,9 @@ def getBaseDirectory():
         # get the base directory from the settings file
         with open(baseSettingsDir + "/settings") as f:
             lines = [line.rstrip('\n') for line in f]
+        for item in lines:
+            print("=>{}<=".format(item))
+
     else:
         print ("You will need to re-run this command with the -d option to"
                "specify the base directory to continue.")
