@@ -976,6 +976,32 @@ def checkBaseDirectory(baseDirectory):
 
     return retBaseDir
 
+def getBaseDirectory():
+    # read the ~/.dcConfig/settings
+    baseSettingsDir = expanduser("~") + "/.dcConfig"
+    if not os.path.exists(baseSettingsDir):
+        print ("You seem to be missing the $HOME/.dcConfig directory,"
+               "you will need to run the RUN-ME-FIRST.sh script that "
+               "established that directory and the settings file that"
+               "contains the initial base directory for you application"
+               "development.")
+        sys.exit(1)
+
+    if os.file.exists(baseSettingsDir + "/baseDirectory"):
+        # TODO check to see if they have entered a --workspace option
+        #      otherwise  take the base directory from the current  workspace
+        with open(baseSettingsDir + "/baseDirectory") as f:
+            lines = [line.rstrip('\n') for line in f]
+
+    if os.file.exists(baseSettingsDir + "/settings"):
+        # get the base directory from the settings file
+        with open(baseSettingsDir + "/settings") as f:
+            lines = [line.rstrip('\n') for line in f]
+    else:
+        print ("You will need to re-run this command with the -d option to"
+               "specify the base directory to continue.")
+        sys.exit(1)
+
 
 def checkArgs():
     parser = argparse.ArgumentParser(
