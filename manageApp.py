@@ -976,6 +976,7 @@ def checkBaseDirectory(baseDirectory):
 
     return retBaseDir
 
+
 def getBaseDirectory():
     # read the ~/.dcConfig/settings
     baseSettingsDir = expanduser("~") + "/.dcConfig"
@@ -999,7 +1000,9 @@ def getBaseDirectory():
             lines = [line.rstrip('\n') for line in f]
         for item in lines:
             if "DEV_BASE_DIR" in item:
-                print("=>{}<=".format(item))
+                lineArray = item.split('=')
+                developmentBaseDir = lineArray[1]
+                print("=>{}<=".format(developmentBaseDir))
 
     else:
         print ("You will need to re-run this command with the -d option to"
@@ -1095,7 +1098,6 @@ def checkArgs():
                         'function.',
                         action="store_true",
                         required=False)
-
 
     try:
         args, unknown = parser.parse_known_args()
