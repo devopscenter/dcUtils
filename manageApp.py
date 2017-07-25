@@ -993,6 +993,16 @@ def getBaseDirectory():
         #      otherwise  take the base directory from the current  workspace
         with open(baseSettingsDir + "/baseDirectory") as f:
             lines = [line.rstrip('\n') for line in f]
+        workspaceName = ''
+        for item in lines:
+            if "CURRENT_WORKSPACE" in item:
+                lineArray = item.split('=')
+                workspaceName = '_' + lineArray[1] + '_BASE_CUSTOMER_DIR'
+
+            if workspaceName in item:
+                anotherLineArray = item.split('=')
+                developmentBaseDir = anotherLineArray[1]
+                return(developmentBaseDir)
 
     if os.path.isfile(baseSettingsDir + "/settings"):
         # get the base directory from the settings file
@@ -1002,7 +1012,7 @@ def getBaseDirectory():
             if "DEV_BASE_DIR" in item:
                 lineArray = item.split('=')
                 developmentBaseDir = lineArray[1]
-                print("=>{}<=".format(developmentBaseDir))
+                return(developmentBaseDir)
 
     else:
         print ("You will need to re-run this command with the -d option to"
@@ -1106,7 +1116,8 @@ def checkArgs():
         sys.exit(1)
 
     if args.getBaseDir:
-        getBaseDirectory()
+        retBaseDir = getBaseDirectory()
+        print("=>{}<=".format(retBaseDir))
         sys.exit(1)
 
     retEnvList = pythonGetEnv(initialCreate=True)
