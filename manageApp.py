@@ -987,13 +987,13 @@ def getBaseDirectory():
                "development.")
         sys.exit(1)
 
-    if os.file.exists(baseSettingsDir + "/baseDirectory"):
+    if os.path.isfile(baseSettingsDir + "/baseDirectory"):
         # TODO check to see if they have entered a --workspace option
         #      otherwise  take the base directory from the current  workspace
         with open(baseSettingsDir + "/baseDirectory") as f:
             lines = [line.rstrip('\n') for line in f]
 
-    if os.file.exists(baseSettingsDir + "/settings"):
+    if os.path.isfile(baseSettingsDir + "/settings"):
         # get the base directory from the settings file
         with open(baseSettingsDir + "/settings") as f:
             lines = [line.rstrip('\n') for line in f]
@@ -1087,11 +1087,20 @@ def checkArgs():
                         'command arg',
                         default='',
                         required=False)
+    parser.add_argument('-g', '--getBaseDir', help='call the getBaseDirectory'
+                        'function.',
+                        action="store_true",
+                        required=False)
+
 
     try:
         args, unknown = parser.parse_known_args()
     except SystemExit:
         pythonGetEnv()
+        sys.exit(1)
+
+    if args.getBaseDir:
+        getBaseDirectory()
         sys.exit(1)
 
     retEnvList = pythonGetEnv(initialCreate=True)
