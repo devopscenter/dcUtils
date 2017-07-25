@@ -100,6 +100,7 @@ setupIAMUser()
         # add the login to a group so that the policy can be attached to the group rather
         # than the user
         addToGroup=$(aws --profile ${INITIAL_PROFILE} --region ${REGION} iam add-user-to-group --user-name ${IAMUserToCreate} --group-name ${IAMUserGroup} 2>&1 > /dev/null)
+        # and add the public key transfer group also
         sleep 2
     else
         # create the keys for the user
@@ -167,26 +168,26 @@ createUserSpecificKeys()
 #-------------------------------------------------------------------------------
 sendKeysTodc()
 {
-    # TODO: determine how to get the keys to devops.center
-    echo "And now we need to transfer the ~/.ssh/dcaccess-key.pub over to devops.center"
-    echo "so they can spread it over all the instances associated with the customer."
+    # TODO: when creating the groups that will be used by the IAM users, need to create
+    #       one that has the policies: IAMUserSSHKeys
+    #       this group will be used for the script in this function to upload the ssh public
+    #       keys to the IAM role
+    #       PLACEHOLDER name for the group: public-key-transfer
+
+    echo "And now we need to associate the public key with the new IAM user"
     echo
-}
+    # send the public key to the IAM user just created and devops.center will disseminate
+    # it to the appropriate instances
+    # add group public-key-tranfer to the IAM user
+    aws --profile ${INITIAL_PROFILE} --region ${REGION} iam add-user-to-group --user-name ${USER_NAME} --group-name public-key-transfer 2>&1 > /dev/null
+    sleep 2
 
+    # upload the public key
+    UPLOAD=$(aws --profile ${INITIAL_PROFILE} --region ${REGION} iam upload-ssh-public-key --user-name ${USER_NAME} --ssh-public-key-body "$(cat ~/.ssh/dcaccess-key.pub) 2>&1 > /dev/null")
+    sleep 2
 
-#---  FUNCTION  ----------------------------------------------------------------
-#          NAME:  getMyIP
-#   DESCRIPTION:  sends a request to the devops server requesting to get the IP
-#                 of this machine as it will be seen by the instances which are 
-#                 outside of the local network.
-#    PARAMETERS:  
-#       RETURNS:  
-#-------------------------------------------------------------------------------
-getMyIP()
-{
-    # TODO: create the server call for returning my IP"
-    #       and then add the code to execute that
-    echo "in getMyIP"
+    # remove the group public-key-tranfer from the IAM user
+    aws --profile ${INITIAL_PROFILE} --region ${REGION} iam remove-user-from-group --user-name ${USER_NAME} --group-name public-key-transfer 2>&1 > /dev/null
 }
 
 
@@ -216,21 +217,30 @@ writeToSettings()
 #-------------------------------------------------------------------------------
 cleanUpAWSConfigs()
 {
-    if [[ ${ALREADY_HAS_AWS_CONFIGS} == "no" ]]; then
-        cd ~/.aws
-        diff config.OLD config | grep '^>' | sed 's/^>\ //' > config.NEW
-        diff credentials.OLD credentials | grep '^>' | sed 's/^>\ //' > credentials.NEW
+    cd ~/.aws
+    diff config.OLD config | grep '^>' | sed 's/^>\ //' > config.NEW
+    diff credentials.OLD credentials | grep '^>' | sed 's/^>\ //' > credentials.NEW
 
-        #-------------------------------------------------------------------------------
-        # make the NEW ones the ones to keep
-        #-------------------------------------------------------------------------------
-        mv config.NEW config
-        mv credentials.NEW credentials
+    #-------------------------------------------------------------------------------
+    # make the NEW ones the ones to keep
+    #-------------------------------------------------------------------------------
+    mv config.NEW config
+    mv credentials.NEW credentials
 
-        #-------------------------------------------------------------------------------
-        # and remove the OLD ones
-        #-------------------------------------------------------------------------------
-        rm config.OLD credentials.OLD
+    #-------------------------------------------------------------------------------
+    # and remove the OLD ones
+    #-------------------------------------------------------------------------------
+    rm config.OLD credentials.OLD
+
+    if [[ ${ALREADY_HAS_AWS_CONFIGS} == "yes" ]]; then
+        # they had an original config and credentials.  Append the new files to the 
+        # original ones
+        cat config >> config.ORIGINAL
+        cat credentials >> credentials.ORIGINAL
+
+        # and move the original back to the only copy left in the .aws directory.
+        mv config.ORIGINAL config
+        mv credentials.ORIGINAL credentials
     fi
 }
 
@@ -243,33 +253,36 @@ cleanUpAWSConfigs()
 #-------------------------------------------------------------------------------
 bootstrapAWSConfigs()
 {
-    if [[ ! -f $HOME/.aws/credentials ]]; then
-        if [[ -f "${BASE_DIR}/bootstrap-aws.tar" ]]; then
-            # set this flag so that we know we can do the cleanup after the scripts is done
-            ALREADY_HAS_AWS_CONFIGS="no"
+    ALREADY_HAS_AWS_CONFIGS="no"
 
-            cd $HOME
-            tar -xf ${BASE_DIR}/bootstrap-aws.tar
-            cp ~/.aws/config ~/.aws/config.OLD
-            cp ~/.aws/credentials ~/.aws/credentials.OLD
-        else
-            echo 
-            echo "Could not find the bootstrap-aws tar ball which is required to begin"
-            echo "this script.  Contact the devops.center representative to ensure that"
-            echo "the file is created and put into the directory: ${BASE_DIR}"
-            echo
-            exit 1
-        fi
+    if [[ -f $HOME/.aws/credentials ]]; then
+        # copy the original config and credentials so we don't bother them
+        mv ~/.aws/config ~/.aws/config.ORIGINAL
+        mv ~/.aws/credentials ~/.aws/credentials.ORIGINAL
 
-        #-------------------------------------------------------------------------------
-        # NOTE: Don't forget to remove the bootstrap sections out of the config and credentials
-        # when this script is done
-        #-------------------------------------------------------------------------------
-    else
         # set this to yes, meaning that they already had a config/credentials file so do NOT
         # clean it up
         ALREADY_HAS_AWS_CONFIGS="yes"
     fi
+
+    if [[ -f "${BASE_DIR}/bootstrap-aws.tar" ]]; then
+        cd $HOME
+        tar -xf ${BASE_DIR}/bootstrap-aws.tar
+        cp ~/.aws/config ~/.aws/config.OLD
+        cp ~/.aws/credentials ~/.aws/credentials.OLD
+    else
+        echo 
+        echo "Could not find the bootstrap-aws tar ball which is required to begin"
+        echo "this script.  Contact the devops.center representative to ensure that"
+        echo "the file is created and put into the directory: ${BASE_DIR}"
+        echo
+        exit 1
+    fi
+
+    #-------------------------------------------------------------------------------
+    # NOTE: Don't forget to remove the bootstrap sections out of the config and credentials
+    # when this script is done
+    #-------------------------------------------------------------------------------
 }
 
 
@@ -514,14 +527,6 @@ createUserSpecificKeys
 # and make the shared key available to devops.center 
 #-------------------------------------------------------------------------------
 sendKeysTodc
-
-#-------------------------------------------------------------------------------
-# need to get the IP of this machine running.  Send a request to the devops.center
-# server to the function that will return the IP this machine has.  This is done
-# because it could be that this machine is NATted and the real IP is only gotten
-# by leaving the local network.
-#-------------------------------------------------------------------------------
-getMyIP
 
 #-------------------------------------------------------------------------------
 # we have collected all the information we need now write it out to .dcConfig/settings
