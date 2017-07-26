@@ -102,6 +102,8 @@ doProcessDCEnv()
 #-------------------------------------------------------------------------------
 checkHostAccess()
 {
+    echo "Going to checking all the hosts for ssh access.  A response for each connection will be presented:"
+
     # first check for expect so that we can script the ssh login
     EXPECT=$(which expect)
 
@@ -132,7 +134,6 @@ checkHostAccess()
     #EXPECT_CMD="${EXPECT} -f $PWD/scripts/sshcmd.exp %h ${TMP_CONFIG}"
     #ALL_OUTPUT=$(PDSH_SSH_ARGS_APPEND=$(echo -F "$TMP_CONFIG") pdsh -u 30 -R exec -w "$NAME_LIST_STR" ${EXPECT} -f ${THIS_DIR}/scripts/sshcmd.exp %h ${TMP_CONFIG})
 
-    echo "Checking all the hosts for ssh access.  A response for each connection will be presented:"
 
     for HOST_NAME in  ${NAME_LIST[@]}
     do
