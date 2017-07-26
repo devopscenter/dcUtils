@@ -43,9 +43,6 @@
 #set -o errexit      # exit immediately if command exits with a non-zero status
 #set -x             # essentially debug mode
 
-# set up the dcUTILS to point to this directory
-dcUTILS="."
-
 #---  FUNCTION  ----------------------------------------------------------------
 #          NAME:  usage
 #   DESCRIPTION:  function that gets called to show the user how this script should
