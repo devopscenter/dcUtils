@@ -208,6 +208,9 @@ writeToSettings()
     echo "REGION=${REGION}" >> ~/.dcConfig/settings
     echo "DEV_BASE_DIR=${DEV_BASE_DIR}" >> ~/.dcConfig/settings
     echo  >> ~/.dcConfig/settings
+    echo "export dcUTILS=${dcUTILS}" >> ~/.dcConfig/settings
+    echo "export PYTHONPATH=$PYTHONPATH:${dcUTILS}/scripts" >> ~/.dcConfig/settings
+    echo "export PATH=${dcUTILS}:$PATH" >> ~/.dcConfig/settings
     echo "unset CUSTOMER_NAME" >> ~/.dcConfig/settings
     echo "unset PROFILE" >> ~/.dcConfig/settings
     echo "unset USER_NAME" >> ~/.dcConfig/settings
