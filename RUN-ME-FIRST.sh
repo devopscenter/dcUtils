@@ -201,6 +201,7 @@ sendKeysTodc()
 writeToSettings()
 {
     echo "dcUTILS=${dcUTILS}" > ~/.dcConfig/settings
+    echo "PYTHONPATH=$PYTHONPATH:${dcUTILS}/scripts" > ~/.dcConfig/settings
     echo "CUSTOMER_NAME=${CUSTOMER_NAME}" >> ~/.dcConfig/settings
     echo "PROFILE=${PROFILE}" >> ~/.dcConfig/settings
     echo "USER_NAME=${USER_NAME}" >> ~/.dcConfig/settings
