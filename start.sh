@@ -104,7 +104,7 @@ fi
 #-------------------------------------------------------------------------------
 
 # TODO - determine if we want to run in the customers directory
-cd $dcUTILS
+#cd ${dcUTILS}
 
 if [[ ${DEBUG} -eq 1 ]]; then
     DOCKER_COMPOSE_FILE="${BASE_CUSTOMER_DIR}/${dcDEFAULT_APP_NAME}/${CUSTOMER_APP_UTILS}/config/${CUSTOMER_APP_ENV}/docker-compose-debug.yml"
