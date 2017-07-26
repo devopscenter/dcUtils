@@ -36,6 +36,7 @@ class ManageAppName:
         self.utilsPath = utilsPath
         self.baseDir = baseDirectory
         self.altName = altName.upper()
+        self.dcUtils = os.environ["dcUTILS"]
 
         # put the baseDirectory path in the users $HOME/.dcConfig/baseDirectory
         # file so that subsequent scripts can use it as a base to work
@@ -515,17 +516,20 @@ class ManageAppName:
         # and get the template Dockerfile, requirements for each of the sub
         # directories
         webDockerFile = baseStack + "/web/Dockerfile"
-        shutil.copyfile("templates/Dockerfile-web", webDockerFile)
+        shutil.copyfile(self.dcUtils + "/templates/Dockerfile-web",
+                        webDockerFile)
 
         workerDockerFile = baseStack + "/worker/Dockerfile"
-        shutil.copyfile("templates/Dockerfile-worker", workerDockerFile)
+        shutil.copyfile(self.dcUtils + "/templates/Dockerfile-worker",
+                        workerDockerFile)
 
         webShFile = baseStack + "/web/web.sh"
-        shutil.copyfile("templates/web.sh", webShFile)
+        shutil.copyfile(self.dcUtils + "/templates/web.sh", webShFile)
 
         supervisorConfFile = baseStack + \
             "/worker/supervisor-djangorq-worker.conf"
-        shutil.copyfile("templates/supervisor-djangorq-worker.conf",
+        shutil.copyfile(self.dcUtils +
+                        "/templates/supervisor-djangorq-worker.conf",
                         supervisorConfFile)
 
         # need to change the entry in the work Dockerfile that references the
@@ -685,10 +689,12 @@ class ManageAppName:
 
         # copy the docker-compose template files
         composeFile = baseConfig + "/docker-compose.yml"
-        shutil.copyfile("templates/docker-compose.yml", composeFile)
+        shutil.copyfile(self.dcUtils + "/templates/docker-compose.yml",
+                        composeFile)
 
         composeDebugFile = baseConfig + "/docker-compose-debug.yml"
-        shutil.copyfile("templates/docker-compose-debug.yml", composeDebugFile)
+        shutil.copyfile(self.dcUtils + "/templates/docker-compose-debug.yml",
+                        composeDebugFile)
 
         # need to change the env file name and path to represent what is
         # created with this script
