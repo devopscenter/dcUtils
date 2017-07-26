@@ -1001,7 +1001,7 @@ def getBaseDirectory():
 
             if workspaceName in item:
                 anotherLineArray = item.split('=')
-                developmentBaseDir = anotherLineArray[1]
+                developmentBaseDir = anotherLineArray[1] + '/'
                 return(developmentBaseDir)
 
     if os.path.isfile(baseSettingsDir + "/settings"):
@@ -1011,7 +1011,7 @@ def getBaseDirectory():
         for item in lines:
             if "DEV_BASE_DIR" in item:
                 lineArray = item.split('=')
-                developmentBaseDir = lineArray[1]
+                developmentBaseDir = lineArray[1] + '/'
                 return(developmentBaseDir)
 
     else:
@@ -1104,10 +1104,6 @@ def checkArgs():
                         'command arg',
                         default='',
                         required=False)
-    parser.add_argument('-g', '--getBaseDir', help='call the getBaseDirectory'
-                        'function.',
-                        action="store_true",
-                        required=False)
 
     try:
         args, unknown = parser.parse_known_args()
@@ -1115,10 +1111,16 @@ def checkArgs():
         pythonGetEnv()
         sys.exit(1)
 
-    if args.getBaseDir:
+    # before going further we need to check whether there is a slash at the
+    # end of the value in destinationDir
+    if args.baseDirectory:
+        retBaseDir = checkBaseDirectory(args.baseDirectory)
+    else:
         retBaseDir = getBaseDirectory()
-        print("=>{}<=".format(retBaseDir))
-        sys.exit(1)
+        if not retBaseDir:
+            print("Could not determine the baseDirectory, you will need to "
+                  "re-run this script and provide the -d option.")
+            sys.exit(1)
 
     retEnvList = pythonGetEnv(initialCreate=True)
 
@@ -1128,11 +1130,6 @@ def checkArgs():
     retOptions = args.cmdOptions
     retAppURL = args.appPath
     retUtilsURL = args.utilsPath
-
-    # before going further we need to check whether there is a slash at the
-    # end of the value in destinationDir
-    if args.baseDirectory:
-        retBaseDir = checkBaseDirectory(args.baseDirectory)
 
     if "WORKSPACE_NAME" in retEnvList:
         retWorkspaceName = retEnvList["WORKSPACE_NAME"]
