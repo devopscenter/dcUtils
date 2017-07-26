@@ -719,9 +719,6 @@ class ManageAppName:
                 "dcDEFAULT_APP_NAME=" + self.appName + "\n"
                 "dcHOME=" + self.baseDir + self.appName + "\n"
                 "\n"
-                "# change dcUTILS to where you have put the devops.center\n"
-                "# dcUtils directory\n"
-                "dcUTILS=" + self.baseDir + "dcUtils\n"
                 'dcDATA=${dcHOME}/dataload\n'
                 'dcAPP=${dcHOME}/' + self.dcAppName + "\n"
                 "\n"
