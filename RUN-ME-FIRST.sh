@@ -207,6 +207,13 @@ writeToSettings()
     echo "USER_NAME=${USER_NAME}" >> ~/.dcConfig/settings
     echo "REGION=${REGION}" >> ~/.dcConfig/settings
     echo "DEV_BASE_DIR=${DEV_BASE_DIR}" >> ~/.dcConfig/settings
+    echo  >> ~/.dcConfig/settings
+    echo "unset CUSTOMER_NAME" >> ~/.dcConfig/settings
+    echo "unset PROFILE" >> ~/.dcConfig/settings
+    echo "unset USER_NAME" >> ~/.dcConfig/settings
+    echo "unset REGION" >> ~/.dcConfig/settings
+    echo "unset DEV_BASE_DIR" >> ~/.dcConfig/settings
+    
 }
 
 
@@ -546,10 +553,17 @@ cleanUpAWSConfigs
 # tell the user to add path to dcUtils to the $PATH
 #-------------------------------------------------------------------------------
 echo
-echo "**NOTE**"
-echo "You will need to add the directory for dcUtils (${dcUTILS}) to your PATH variable"
-echo "and export it.  This would go into your shell rc file where the specific rc file is"
+echo "** NOTE **"
+echo "You will need to add a line in your shell rc file where the specific rc file is "
 echo "dependent on what shell (ie bash, zsh, csh,...) you run when interacting with the the terminal"
+echo "the line is : "
+echo "               source ~/.dcConfig/settings"
+echo "this will put the minimaal amount of environment variables in your environment "
+echo "and put $dcUTILS into your PATH, both of which are needed to run the devops.center"
+echo "scripts. THen you will need to either log out and log back in, or if you cant't "
+echo "log out, then in each terminal window that you use execute that source command."
+echo "If you don't put it in the appropriate rc file then any new terminal you open will"
+echo "not have the proper environment variables to run the devops.center scripts."
 echo
 
 
