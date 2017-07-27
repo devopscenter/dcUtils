@@ -85,17 +85,20 @@ awscli
 
 ### Installing
 
-#### Clone devops.center dcUtils
-The devops.center application framework is manipulated by the scripts that are found
-in the devopscenter/dcUtils repository on github.com. Use git to clone that
-repository to somewhere on your local machine.  Make note the location as this will
-be used later.
+#### run RUN-ME-FIRST.sh
+The devops.center application framework is manipulated by the scripts that are
+found in the devopscenter/dcUtils repository on github.com. THis is cloned 
+during the initial install script: RUN-ME-FIRST.sh.  This will be placed into 
+a shared directory and you will execute it from there.  It will ask a series
+of questions, what is your application name, what do you want for your username 
+to be in the cloud environment, what directory do you want dcUtils cloned to,
+what directory do you want for your application development, etc. 
 
 ```
-run the install-script.sh
+RUN-ME-FIRST.sh
 ```
 
-#### Create the local directory structure
+#### The local directory structure
 In order for the devops.center framework to keep track of the files associated with
 an application it is required that a directory be identified/created to house the
 application directory structure.  This will be the base directory for any/all
