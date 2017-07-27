@@ -92,7 +92,15 @@ during the initial install script: RUN-ME-FIRST.sh.  This will be placed into
 a shared directory and you will execute it from there.  It will ask a series
 of questions, what is your application name, what do you want for your username 
 to be in the cloud environment, what directory do you want dcUtils cloned to,
-what directory do you want for your application development, etc. 
+what directory do you want for your application development, etc.   The last 
+step to RUN-ME-FIRST.sh is that a line will need to be added to your shell rc
+file, such that a couple of new environemnt variables may be introduced to your
+command line sessions.  You will need to determine which rc file that you need to 
+put the source command in as it is dependent on which shell you use when
+interacting with the command line in a terminal window.  The line to put will 
+be 'source $HOME/.dcConfig/settings', of note it will add the dcUtils path to the
+$PATH variable, so that you can execute the dcUtils scripts from anywhere within
+your local machine.
 
 ```
 RUN-ME-FIRST.sh
@@ -110,13 +118,13 @@ specific directory for your application.
 
 #### *(new applications)* Create the application
 In order to create a new application the script manageApp.py needs to be run.  This
-script is located in the devops.center dcUtils directory.  So, you will need to change
-directory to this location.  This is the location that you clone the dcUtils
-repository in to.
+script is located in the devops.center dcUtils directory.  The scripts can be accessed
+from anywhere once the source command mentioned above is executed for your terminal
+session.
 
-Once there execute the script (from within dcUtils):
+Execute the script:
 
-    ./manageApp.py -a appName -c create
+    manageApp.py -a appName -c create
 
 where the options are:
 
@@ -152,8 +160,13 @@ fleshed out with sane defaults.
 If there is already an existing application repository and you will be joining
 in on the development, then you will run the manageApp.py script with the same options
 except the command to run will be join. This will clone the application
-repository
-from github.  So, the arguments would be:
+repository from github.
+
+Execute the script:
+
+    manageApp.py -a appName -c create
+
+where the options are:
 
     -a appName                   # the application name you have chosen
     -c join                      # the command for joining an existing development
