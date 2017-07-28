@@ -352,7 +352,7 @@ clonedcUtils()
 }
 
 
-#-----  End of Function definittion  -------------------------------------------
+#-----  End of Function definition  -------------------------------------------
 
 
 # get BASE_DIR from getMyPath
