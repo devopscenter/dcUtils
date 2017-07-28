@@ -19,7 +19,7 @@ brew install --with-genders pdsh
 You'll also need to configure the aws cli tool.  You can run `aws configure` for interactive setup, where you'll need to provide your AWS credentials a default region and a profile name.  For more info, see http://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html
 
 Key management:
-Finally, paws needs to know where to find your SSH keys.  There are two methods for paws to find the keys, one is to collect all the instance access keys into one common shared directory. This common directory is defined in the environment (dcCOMMON_SHARED_DIR) when dcUtils was installed.  Change the value of this variable to point to the directory that houses your keys as required by your local environment.
+Finally, paws needs to know where to find your SSH keys.  There are two methods for paws to find the keys, one is to collect all the instance access keys into one common shared directory. This common directory is defined in the environment (dcCOMMON_SHARED_DIR) when dcUtils was installed.  This value will serve as the base directory when looking up where the shared keys are.
 
 The second method is to provide the --appName and --env on the paws command line.  This will specify the application and environment to use to look up the key in the appropriate keys directory in the appName-utils directory structure.  The keys are created at the time of instance creation and using this method will require no further external copying. 
 
