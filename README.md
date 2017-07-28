@@ -87,7 +87,7 @@ awscli
 
 #### run RUN-ME-FIRST.sh
 The devops.center application framework is manipulated by the scripts that are
-found in the devopscenter/dcUtils repository on github.com. THis is cloned 
+found in the devopscenter/dcUtils repository on github.com. This is cloned 
 during the initial install script: RUN-ME-FIRST.sh.  This will be placed into 
 a shared directory and you will execute it from there.  It will ask a series
 of questions, what is your application name, what do you want for your username 
