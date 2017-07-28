@@ -6,9 +6,9 @@ Caution is advised!  (A good sanity check before running any command is using th
 ## Setup:
 
 You'll need to install awscli and pdsh if you haven't already.  For OS X, you can install both with homebrew, which can be installed with:
-`/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"`
 
 ```
+/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 brew install awscli
 ```
 and
