@@ -207,6 +207,7 @@ writeToSettings()
     echo "USER_NAME=${USER_NAME}" >> ~/.dcConfig/settings
     echo "REGION=${REGION}" >> ~/.dcConfig/settings
     echo "DEV_BASE_DIR=${DEV_BASE_DIR}" >> ~/.dcConfig/settings
+    echo "dcCOMMON_SHARED_DIR=${dcCOMMON_SHARED_DIR}" >> ~/.dcConfig/settings
     echo  >> ~/.dcConfig/settings
     echo "export dcUTILS=${dcUTILS}" >> ~/.dcConfig/settings
     echo "export PYTHONPATH=$PYTHONPATH:${dcUTILS}/scripts" >> ~/.dcConfig/settings
@@ -436,9 +437,14 @@ fi
 #     ??? I don't think so...directory path to common shared directory ... if there is one
 #     
 #-------------------------------------------------------------------------------
+
+
+#-------------------------------------------------------------------------------
+# get customer name
+#-------------------------------------------------------------------------------
 echo 
-echo "Next, you will be asked to enter your company name.  This will be used"
-echo "as the value for the AWS profile and should be the same for everyone "
+echo "First, we ask for your customer name.  This will be used"
+echo "as the value for the cloud based profile and should be the same for everyone "
 echo "within the company.  One word and not spaces all lowercase letters."
 echo 
 read -p "Enter your customer name and press [ENTER]: "  customerName
@@ -450,9 +456,13 @@ fi
 CUSTOMER_NAME=${customerName,,}
 PROFILE=${CUSTOMER_NAME}
 
+
+#-------------------------------------------------------------------------------
+# get user name  for the cloud environment
+#-------------------------------------------------------------------------------
 echo 
 echo "Enter your username, one word and no spaces all lowercase letters."
-echo "This value will be used to create an IAM user specifically for you."
+echo "This value will be used to create an cloud user specifically for you."
 echo 
 read -i $USER -p "Enter your user name and press [ENTER]: " -e userName
 if [[ -z ${userName} ]]; then
@@ -461,10 +471,35 @@ if [[ -z ${userName} ]]; then
 fi
 USER_NAME=${userName,,}
 
+
+#-------------------------------------------------------------------------------
+# get the base directory name for the  shared drive path
+#-------------------------------------------------------------------------------
+echo
+echo "We need the directory path to wher the shared drive is located on your local"
+echo "machine.  This will be used to look for shared keys and other administrative"
+echo "functions that are shared between all developers working with the devops.center"
+echo "tools."
+echo
+read -i "~/Google Drive"  -p "Enter the shared drive path and press [ENTER]: " -e sharedDrivePath
+
+if [[ ${sharedDrivePath} == "~"* || ${sharedDrivePath} == "\$HOME"* ]]; then
+    homePath=$(echo $HOME)
+    partialCommonDir=${sharedDrivePath#*/}
+    dcCOMMON_SHARED_DIR="${homePath}/${partialCommonDir}"
+else
+    dcCOMMON_SHARED_DIR=${sharedDrivePath}
+fi
+
+
+#-------------------------------------------------------------------------------
+# if using AWS get the region for the instances
+#-------------------------------------------------------------------------------
 echo 
-echo "Enter the region that the AWS instances will be in when they are created."
-echo "This value can be obtained from the main authenticatin user if it is not known."
-echo "the value is typically us-west-2 or us-east-1."
+echo "If the cloud environment you are using is AWS, enter the region that the cloud "
+echo "instances will be in when they are created. This value can be obtained from the"
+echo "main authentication user if it is not known. "
+echo "(The value is typically us-west-2 or us-east-1.)"
 echo 
 read -i us-west-2  -p "Enter the region and press [ENTER]: " -e region
 if [[ -z ${region} ]]; then
@@ -473,12 +508,16 @@ else
     REGION=${region,,}
 fi
 
+
+#-------------------------------------------------------------------------------
+# get the local development directory
+#-------------------------------------------------------------------------------
 echo  
-echo  "Enter the directory name that will serve as the basis for you application development"
-echo  "that the AWS instances will be in when they are created. The devops.center scripts will use"
-echo  "this directory to put the application development files and the application website."
-echo  "This can be anywhere within your local machine and named anything you would like.  A suggestion"
-echo  "might be to put it in your home directory and call it devops: ~/devops/apps"
+echo "Enter the directory name that will serve as the basis for you application development"
+echo "The devops.center scripts will use this directory to put the application development"
+echo "files and the application website. This can be anywhere within your local machine and"
+echo "named anything you would like.  A suggestion might be to put it in your "
+echo "home directory and call it devops: ~/devops/apps"
 echo  
 read -i "~/devops/apps" -p "Enter the directory and press [ENTER]: "  -e localDevBaseDir
 if [[ -z ${localDevBaseDir} ]]; then
