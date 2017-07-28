@@ -86,17 +86,14 @@ dcStartLog "Docker containers for application: ${dcDEFAULT_APP_NAME} env: ${ENV}
 # at the same time.  The ports will collide and the db container will not start.
 #-------------------------------------------------------------------------------
 
-OSNAME=$(uname -s)
-if [[ ${OSNAME} == "Darwin" ]]; then
-    postgres=$(ps -ef|grep postgres | grep -v grep)
-    set -e
-    if [ -n "$postgres" ]; then
-        dcLog "*** courtesy warning ***"
-        dcLog "postgres running, please exit postgres and try starting again."
-        return 1 2> /dev/null || exit 1
-    fi
-    set +e
+postgres=$(ps -ef|grep postgres | grep -v grep)
+set -e
+if [ -n "$postgres" ]; then
+    dcLog "*** courtesy warning ***"
+    dcLog "postgres running, please exit postgres and try starting again."
+    return 1 2> /dev/null || exit 1
 fi
+set +e
 
 #-------------------------------------------------------------------------------
 # We have all the information for this so lets run the docker-compose up with
