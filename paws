@@ -219,7 +219,9 @@ else
     # the Google Drive.  Since it could be named something else or just because it has a space in
     # the name, we need to expand it once so that we can use it below when finding the key.
     # dcCOMMON_SHARED_DIR is set when dcUtils is installed and put into the environmnet.
-    dcCOMMON_SHARED_DIR=$(grep dcCOMMON_SHARED_DIR ~/.dcConfig/settings)
+    aKeyValue=$(grep dcCOMMON_SHARED_DIR ~/.dcConfig/settings)
+    var1=${aKeyValue#*\"}
+    dcCOMMON_SHARED_DIR=${var1%\"}
 
     if [[ -z ${dcCOMMON_SHARED_DIR} ]]; then
         COMMON_KEY_DIR=$(cd $HOME/Googl*;pwd)
