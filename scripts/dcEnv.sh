@@ -7,6 +7,10 @@
 # 
 #   DESCRIPTION: script to include in other scripts that set up the environment
 #                and provides some basic utility functions
+#                NOTE: this script differs than the one that is put on the 
+#                instances as the one on the instance doesn't know about the 
+#                shared drive.  This one will use the dcCOMMON_SHARED_DIR found
+#                in the .dcConfig/settings file that was set up with RUN_ME_FIRST.sh
 # 
 #       OPTIONS: ---
 #  REQUIREMENTS: ---
@@ -20,7 +24,9 @@
 
 #set -o nounset                              # Treat unset variables as an error
 
-GOOGLE_DIR=$(find $HOME -maxdepth 1 -type d -name Googl*)
+driveName=$(grep dcCOMMON_SHARED_DIR ~/.dcConfig/settings)
+var1=${driveName#*\"}
+dcCOMMON_SHARED_DIR=${var1%\"}
 
 dcLog()
 {
@@ -55,8 +61,8 @@ dcTrackEvent()
     CUSTOMER_APP_NAME=$2
     EVENT=$3
     MSG=$4
-    if [[ -n ${GOOGLE_DIR} ]]; then
-        TRACKING_FILE="${GOOGLE_DIR}/devops.center/monitoring/dcEventTracking.txt"
+    if [[ -n ${dcCOMMON_SHARED_DIR} ]]; then
+        TRACKING_FILE="${dcCOMMON_SHARED_DIR}/devops.center/monitoring/dcEventTracking.txt"
 
         if [[ ! -f ${TRACKING_FILE} ]]; then
             dcLog "ERROR: $TRACKING_FILE not found, the event will not be written"
