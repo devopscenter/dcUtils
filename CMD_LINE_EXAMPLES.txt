@@ -1,21 +1,37 @@
 manageApp.py
 # basic create that sets up a workspacename
-./manageApp.py -d ~/devops/testscripts/dev2/Client2/ -w WOW -a WOW-App -c create
+manageApp.py -w WOW -a WOW-App -c create
+
+# to add a new environment name for those that don't use the basic dev, staging, prod
+# to create an environment called devprod:
+manageApp.py -a WOW-App -c update -o "newEnv=devprod"
+    # NOTE: make sure you run deployenv.sh after adding the new environment like:
+    deployenv.sh -e devprod
+
 
 deployenv.sh
+# basic start that takes the default workspace and default application and default environment
+# which is local (ie, docker)
+deployeenv.sh
+
 
 switchWorkspace.sh
+# to see what the current workspace is defined
+switchWorkspace.sh
 
-start.sh 
+# to actually change it use the -n and give it a valid workspace name
+switchWorkspace.sh -n default
+
+
+start-dc-containers.sh 
+# basic start that takes the default workspace and default application
+start-dc-containers.sh
 
 stop.sh
+# basic start that takes the default workspace and default application
+stop-dc-containers.sh
 
-paws
 
 enter-container.py
-
-
-
-updateAppInstance.py
-
-./updateAppInstance.py -c ~/dcDemo/apps/dcDemoBlog/dcDemoBlog-utils/config/dcDevTestArchitecture.json -a dcDemoBlog -e dev -d dcDemoBlog-dev-web6 -x dcDemoBlog-dev-access.pem
+# no arguments are necessary, the script will go out and search for the containers you have
+# and give a list for you to pick from

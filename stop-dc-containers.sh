@@ -1,13 +1,11 @@
 #!/bin/bash -
 #===============================================================================
 #
-#          FILE: start.sh
+#          FILE: stop.sh
 #
-#         USAGE: ./start.sh
+#         USAGE: ./stop.sh
 #
-#   DESCRIPTION: This script will start the docker containers for the default
-#                application name (found in the personal.env or set when
-#                deployenv.sh is run)
+#   DESCRIPTION:  Stops the containers that were started with docker-compose
 #
 #       OPTIONS: ---
 #  REQUIREMENTS: ---
@@ -15,7 +13,7 @@
 #         NOTES: ---
 #        AUTHOR: Gregg Jensen (), gjensen@devops.center
 #  ORGANIZATION: devops.center
-#       CREATED: 11/17/2016 11:07:36
+#       CREATED: 11/17/2016 16:27:42
 #      REVISION:  ---
 #===============================================================================
 
@@ -32,10 +30,11 @@
 #-------------------------------------------------------------------------------
 function usage
 {
-    echo -e "Usage: start.sh [--appName appName] [--env theEnv] [-d]"
+    echo -e "Usage: stop.sh [--appName appName] [--env theEnv]"
     echo
-    echo -e "This script will start the docker containers for the application"
-    echo -e "to be able to set up a local devlopment environment."
+    echo -e "This script will stop the docker containers found running that are"
+    echo -e "specific to the application and no others.  The containers will be "
+    echo -e "stopped so the state will not be lost when they are started again"
     echo 
     echo -e "--appName is the name of the application that you want to"
     echo -e "      run as the default app for the current session. This is "
@@ -57,7 +56,6 @@ if [[ $1 == '-h' ]]; then
 fi
 
 NEW=${@}
-dcUTILS="."
 
 envToSource="$(${dcUTILS}/scripts/process_dc_env.py ${NEW})"
 
@@ -78,25 +76,13 @@ while [[ $# -gt 0 ]]; do
     shift
 done
 
-
-dcStartLog "Docker containers for application: ${dcDEFAULT_APP_NAME} env: ${ENV}"
-
 #-------------------------------------------------------------------------------
-# first we need to see if postgresql is running locally, and if so stop and
-# let the user know that we can't run the db containers and the local postgresql
-# at the same time.  The ports will collide and the db container will not start.
+# Draw attention to the appName that is being used by this session!!
 #-------------------------------------------------------------------------------
-postgres=$(ps -ef|grep postgres | grep -v grep)
-set -e
-if [ -n "$postgres" ]; then
-    dcLog "*** courtesy warning ***"
-    dcLog "postgres running on os/x, please exit and try starting again."
-    return 1 2> /dev/null || exit 1
-fi
-set +e
+dcStartLog "Stopping docker containers for application: ${dcDEFAULT_APP_NAME} env: ${ENV}"
 
 #-------------------------------------------------------------------------------
-# We have all the information for this so lets run the docker-compose up with
+# We have all the information for this so lets run the docker-compose down with
 # the appropriate appName
 #-------------------------------------------------------------------------------
 
@@ -108,7 +94,7 @@ if [[ ${DEBUG} -eq 1 ]]; then
 else
     DOCKER_COMPOSE_FILE="${BASE_CUSTOMER_DIR}/${dcDEFAULT_APP_NAME}/${CUSTOMER_APP_UTILS}/config/${CUSTOMER_APP_ENV}/docker-compose.yml"
 fi
-# echo ${DOCKER_COMPOSE_FILE}
+#dcLog ${DOCKER_COMPOSE_FILE}
 
 export GENERATED_ENV_FILE="${dcHOME}/${CUSTOMER_APP_UTILS}/environments/.generatedEnvFiles/dcEnv-${CUSTOMER_APP_NAME}-local.env"
 
@@ -121,39 +107,16 @@ if [[ ! -f ${DOCKER_COMPOSE_FILE} ]]; then
     exit 1
 fi
 
-NUM_NETWORKS=$(docker network ls | grep -sc "_dcnet")
-export NET_NUMBER=$((20+$NUM_NETWORKS))
-#echo "Network subnet used: 172.${NET_NUMBER}.0"
 
+#-------------------------------------------------------------------------------
+# get the number of applications running by the name of the specialized network
+# bridge created.
+#-------------------------------------------------------------------------------
+NUM_NETWORKS=$(docker network ls | grep -c "_dcnet" )
+export NET_NUMBER=$((20+$NUM_NETWORKS-1))
 
-CMDTORUN="docker-compose -f ${DOCKER_COMPOSE_FILE} -p ${dcDEFAULT_APP_NAME} up -d"
-dcLog  ${CMDTORUN}
+CMDTORUN="docker-compose -f ${DOCKER_COMPOSE_FILE} -p ${dcDEFAULT_APP_NAME} stop"
+#dcLog  ${CMDTORUN}
 ${CMDTORUN}
 
 dcEndLog "Finished..."
-exit
-
-#-------------------------------------------------------------------------------
-#  TODO: figure out a cross platform way to open terminals for the containers
-#        In the meantime have the user use the script ${dcUtils}/enter-container.py
-#        in different terminals.   Or if they want to see the debug logs for any
-#        of the containers use the show-docker-logs.py and select a running container
-#-------------------------------------------------------------------------------
-new_tab() {
-  sleep 1
-  TAB_NAME=$1
-  COMMAND=$2
-  COMMANDINSIDE=$3
-  osascript \
-    -e "tell application \"Terminal\" to activate" > /dev/null
-  sleep 1
-  osascript \
-    -e "tell application \"System Events\" to tell process \"Terminal\" to keystroke \"t\" using command down" \
-    -e "tell application \"Terminal\" to do script \"$COMMAND\" in selected tab of the front window" > /dev/null
-  sleep 2
-  osascript \
-    -e "tell application \"Terminal\" to do script \"printf '\\\e]1;$TAB_NAME\\\a'; $COMMANDINSIDE\" in selected tab of the front window" > /dev/null
-}
-
-new_tab "Web Container" "cd $dcUTILS && docker exec -it web-1 /bin/bash" " "
-new_tab "Worker Container" "cd $dcUTILS && docker exec -it worker-1 /bin/bash" " "

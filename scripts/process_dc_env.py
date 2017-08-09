@@ -32,6 +32,32 @@ class Process_dc_Env:
         else:
             self.generateEnvFiles = False
 
+    def getdcUtilsDirectory(self):
+        # read the ~/.dcConfig/settings
+        baseSettingsDir = expanduser("~") + "/.dcConfig"
+        if not os.path.exists(baseSettingsDir):
+            print ("You seem to be missing the $HOME/.dcConfig directory,"
+                   "you will need to run the RUN-ME-FIRST.sh script that "
+                   "established that directory and the settings file that"
+                   "contains the initial base directory for you application"
+                   "development and where dcUtils is installed.")
+            sys.exit(1)
+
+        if os.path.isfile(baseSettingsDir + "/settings"):
+            # get the base directory from the settings file
+            with open(baseSettingsDir + "/settings") as f:
+                lines = [line.rstrip('\n') for line in f]
+            for item in lines:
+                if "dcUTILS" in item:
+                    lineArray = item.split('=')
+                    dcUtilsDir = lineArray[1]
+                    return(dcUtilsDir)
+
+        # otherwise return current dir
+        # this works for the scripts executed from the  dcUtils directory.
+        # otherwise make sure it is in your environment
+        return(os.getcwd())
+
     def process_dc_env(self):
 
         # ---------------------------------------------------------------------
@@ -41,7 +67,7 @@ class Process_dc_Env:
         # ---------------------------------------------------------------------
         dcUtils = os.getenv("dcUTILS")
         if not dcUtils:
-            dcUtils = "."
+            dcUtils = self.getdcUtilsDirectory()
         self.envList["dcUTILS"] = dcUtils
 
         # ---------------------------------------------------------------------
@@ -83,7 +109,7 @@ class Process_dc_Env:
             # check the # one from the env and make sure it is not the
             # __DEFAULT__ one.
             # -----------------------------------------------------------------
-            #if self.envList["dcDEFAULT_APP_NAME"] == "__DEFAULT__":
+            # if self.envList["dcDEFAULT_APP_NAME"] == "__DEFAULT__":
             #    print ("The dcDEFAULT_APP_NAME environment variable has not " +
             #           "been set and has not been made available. This " +
             #           "should be identified when running deployenv.sh by " +
@@ -119,24 +145,25 @@ class Process_dc_Env:
                            "an alternate base directory?")
                     sys.exit(1)
             else:
-                command = '/usr/bin/env bash -c "source ' + \
-                    self.dcBaseConfig + ' && echo \$BASE_CUSTOMER_DIR"'
+                with open(self.dcBaseConfig) as f:
+                    lines = [line.rstrip('\n') for line in f]
+                workspaceName = ''
+                for item in lines:
+                    if "CURRENT_WORKSPACE" in item:
+                        lineArray = item.split('=')
+                        workspaceName = '_' + lineArray[1] + \
+                                        '_BASE_CUSTOMER_DIR'
 
-                try:
-                    output = subprocess.check_output(command,
-                                                     stderr=subprocess.STDOUT,
-                                                     shell=True)
-
-                    self.baseDir = output.rstrip('\n')
-                    self.envList["BASE_CUSTOMER_DIR"] = self.baseDir
-                except subprocess.CalledProcessError:
-                    logging.exception("There was an issue with sourcing "
-                                      "$HOME/.dcConfig/basedirectory " +
-                                      "getting base directory")
-
+                    if workspaceName in item:
+                        anotherLineArray = item.split('=')
+                        self.baseDir = anotherLineArray[1]
+                        self.envList["BASE_CUSTOMER_DIR"] = self.baseDir
+                        return
         else:
-            print ("Can not read the baseDirectory file in " +
-                   "~/.dcConfig.center, have you run manageApp.py yet? ")
+            print ("ERROR: can not determine the base directory as it "
+                   "does not appear that you have run manageApp.py to "
+                   "set up your application.  This must be done before "
+                   "you can run this script.")
             sys.exit(1)
 
     def getBaseAppName(self):

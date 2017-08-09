@@ -43,9 +43,6 @@
 #set -o errexit      # exit immediately if command exits with a non-zero status
 #set -x             # essentially debug mode
 
-# set up the dcUTILS to point to this directory
-dcUTILS="."
-
 #---  FUNCTION  ----------------------------------------------------------------
 #          NAME:  usage
 #   DESCRIPTION:  function that gets called to show the user how this script should
@@ -111,7 +108,7 @@ function fixUpFile
 
     # execute a python script to remove duplicates.  If there are duplicates it will
     # leave the last key/value as the latest key/value to use
-    ./scripts/fixUpEnvFile.py --inputFile ${tmpFile} --outputFile ${tmpFile2}
+    ${dcUTILS}/scripts/fixUpEnvFile.py --inputFile ${tmpFile} --outputFile ${tmpFile2}
 
     mv ${tmpFile2} ${tmpFile}
 
@@ -166,15 +163,15 @@ if [[ $TYPE != "instance" ]]; then
     else
         eval "$envToSource"
     fi
+else
+    source /usr/local/bin/dcEnv.sh
 fi
-
-source /usr/local/bin/dcEnv.sh
 
 dcStartLog "Deploying for application: ${CUSTOMER_APP_NAME} env: ${ENV}"
 #-------------------------------------------------------------------------------
 # handle the case where the type is an instance
 #-------------------------------------------------------------------------------
-if [[ $TYPE = "instance" ]]; then
+if [[ $TYPE == "instance" ]]; then
 
     dcLog "Deploying for type: instance"
     # TODO look into the destination files below and see what would need to be done about
@@ -223,9 +220,9 @@ if [[ $TYPE = "instance" ]]; then
         # if it exists it needs to be removed so that we don't keep adding to it.
         # TODO if there is something in this file after the install and before we run this then we need to do the
         # same steps for this file as was done by environment above
-        sed -e 's/^/export /'  environments/common.env | sudo tee  /etc/default/supervisor
+        sed -e 's/^/export /'  ${dcUTILS}/environments/common.env | sudo tee  /etc/default/supervisor
     else
-        sed -e 's/^/export /'  environments/common.env | sudo tee -a /etc/default/supervisor
+        sed -e 's/^/export /'  ${dcUTILS}/environments/common.env | sudo tee -a /etc/default/supervisor
     fi
 
     if [[ -e ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/common.env ]]; then
@@ -271,13 +268,13 @@ else
     # if it doesn't already exist
     #-------------------------------------------------------------------------------
     if [[ ! -f ${BASE_CUSTOMER_APP_UTILS_DIR}/config/health_checks ]]; then
-        cp templates/health_checks ${BASE_CUSTOMER_APP_UTILS_DIR}/config/health_checks
+        cp ${dcUTILS}/templates/health_checks ${BASE_CUSTOMER_APP_UTILS_DIR}/config/health_checks
     fi
 
     # next set up the devops.center common env.
     dcLog "combining global common.env"
-    TEMP_FILE="./.tmp-local.env"
-    cp environments/common.env ${TEMP_FILE}
+    TEMP_FILE="${dcUTILS}/.tmp-local.env"
+    cp ${dcUTILS}/environments/common.env ${TEMP_FILE}
 
     # get the Customer specific utils and web dir and put it in the file
     echo "BASE_CUSTOMER_DIR=${BASE_CUSTOMER_DIR}"  >> ${TEMP_FILE}

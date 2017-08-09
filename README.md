@@ -5,46 +5,59 @@ the effort necessary to deploy the application while freeing up the developer
 to focus more on the application code.  The environment provides a solid repeatable
 framework that also makes it easy to move from one environment to another
 (for example from dev->QA->production) using the same code in each
-environment.  This is achieved by utilizing two packages dcStack and dcUtils.
-dcUtils is described here.
+environment.  This is achieved by utilizing the devops.center framework of which
+one of the packages is dcUtils.  dcUtils is described here.
 
 ## High level flow for a brand new installation:
 
-    - Use git to clone devops.center dcUtils somewhere where you will have
-      easy access to it.
-    - Change directory to dcUtils
-    - Optional create a local directory that will be the base for the application
-      directory structure that will be created by manageApp.py. If you choose an
-      existing directory note that you will have to provide the name of the
-      application with each dcUtils command.
-    - Create the application by using manageApp.py with the create command and a
-      base directory path and an application name.  This will create a standardized
-      directory structure that houses configurations and keys for the different
-      environemnts that the application will run in.  There will be two main directories
-      one for the frontend application and another for the utility configurations.
-      Once it is determined to be an appropriate state the two directories can be pushed
-      to a git repository.  This will put it in a state that others than can join in
-      development on the code as explained in the Joining Development section
+    - run RUN-ME-FIRST.sh    This script will step through a series of questions
+      that your answers will set some initial defaults and create the necessary
+      user information within the cloud system.  This will clone the devops.center
+      dcUtils which has the scripts that you will utilize to interact with the 
+      devops.center framework and the cloud instances for your application.
+    - during RUN-ME-FIRST.sh a local directory will be created that will be the base
+      for the application directory structure that will be created by manageApp.py.
+      If you choose an existing directory note that you will have to provide the name of the
+      application with each dcUtils command as it will search that directory for 
+      the application and if it finds other directories it will not know how to use them 
+    - RUN-ME-FIRST.sh will also set up the dcUTILS environment variable and also put the
+      path to dcUtils in the $PATH environment variable. This script will also ask you to 
+      put the command to 'source ~/.dcConfig/settings' into your shell rc file.  Which rc
+      file you need to put it in will be dependent on which shell you execute in on a normal
+      basis, when interacting with a command line.  Once this file is source, you can access
+      any of the scripts in dcUtils from anywhere on your local machine.  NOTE: it will also
+      add to the environemnt variable $PYTHONPATH, so if you utilize this variable you should
+      check it after the source command has been executed and adjust it if it needs it. 
+    - Create the application by using manageApp.py with the create command and 
+      an application name.  This will create a standardized directory structure that
+      houses configurations and keys for the different environemnts that the application
+      will run in.  There will be two main directories one for the frontend application
+      and another for the utility configurations.  Once it is determined to be an 
+      appropriate state the two directories can be pushed to a git repository.
+      This will put it in a state that others than can join in development on the
+      code as explained in the Joining Development section
     - Change directory to the newly created directory structure and navigate to the
       appName-utils/environments directory.
     - Edit personal.env as appropriate
-        make sure dcUTILS is pointing to the directory where you have pulled
-            the dcUtils repo
     - Edit the local.env and add the SYSLOG_SERVER, SYSLOG_PORT and SYSLOG_PROTO
-        definitions.  And add the PGPOOL_CONFIG_FILE as well
-    - Change to the devops.center dcUtils and run the deployenv.sh script to set
-      up the environment for the application.
+      definitions. devops.center has examples of the values that would go into these
+      variables when using papertrail, but it can be anything you use for your combined
+      log service. And add the PGPOOL_CONFIG_FILE as well.
+    - Execute the deployenv.sh script to set up the environment for the application.
     - Execute start.sh
 
 ### High level flow for joining development already in progress
 
-    - Use git to clone devops.center dcUtils somewhere where you will have
-      easy access to it.
-    - Change directory to dcUtils
-    - Optional create a local directory that will be the base for the application
-      directory structure that will be created by manageApp.py. If you choose an
-      existing directory note that you will have to provide the name of the
-      application with each command.
+    - run RUN-ME-FIRST.sh    This script will step through a series of questions
+      that your answers will set some initial defaults and create the necessary
+      user information within the cloud system.  This will clone the devops.center
+      dcUtils which has the scripts that you will utilize to interact with the 
+      devops.center framework and the cloud instances for your application.
+    - during RUN-ME-FIRST.sh a local directory will be created that will be the base
+      for the application directory structure that will be created by manageApp.py.
+      If you choose an existing directory note that you will have to provide the name of the
+      application with each dcUtils command as it will search that directory for 
+      the application and if it finds other directories it will not know how to use them 
     - Join the application by using manageApp.py with the join command using a
       base directory path to be used to put the application directory structure in
           This will do a git clone of the already existing app and utils repository
@@ -72,17 +85,28 @@ awscli
 
 ### Installing
 
-#### Clone devops.center dcUtils
-The devops.center application framework is manipulated by the scripts that are found
-in the devopscenter/dcUtils repository on github.com. Use git to clone that
-repository to somewhere on your local machine.  Make note the location as this will
-be used later.
+#### run RUN-ME-FIRST.sh
+The devops.center application framework is manipulated by the scripts that are
+found in the devopscenter/dcUtils repository on github.com. This is cloned 
+during the initial install script: RUN-ME-FIRST.sh.  This will be placed into 
+a shared directory and you will execute it from there.  It will ask a series
+of questions, what is your application name, what do you want for your username 
+to be in the cloud environment, what directory do you want dcUtils cloned to,
+what directory do you want for your application development, etc.   The last 
+step to RUN-ME-FIRST.sh is that a line will need to be added to your shell rc
+file, such that a couple of new environemnt variables may be introduced to your
+command line sessions.  You will need to determine which rc file that you need to 
+put the source command in as it is dependent on which shell you use when
+interacting with the command line in a terminal window.  The line to put will 
+be 'source $HOME/.dcConfig/settings', of note it will add the dcUtils path to the
+$PATH variable, so that you can execute the dcUtils scripts from anywhere within
+your local machine.
 
 ```
-run the install-script.sh
+RUN-ME-FIRST.sh
 ```
 
-#### Create the local directory structure
+#### The local directory structure
 In order for the devops.center framework to keep track of the files associated with
 an application it is required that a directory be identified/created to house the
 application directory structure.  This will be the base directory for any/all
@@ -94,25 +118,24 @@ specific directory for your application.
 
 #### *(new applications)* Create the application
 In order to create a new application the script manageApp.py needs to be run.  This
-script is located in the devops.center dcUtils directory.  So, you will need to change
-directory to this location.  This is the location that you clone the dcUtils
-repository in to.
+script is located in the devops.center dcUtils directory.  The scripts can be accessed
+from anywhere once the source command mentioned above is executed for your terminal
+session.
 
-Once there execute the script (from within dcUtils):
+Execute the script:
 
-    ./manageApp.py -a appName -d /local/base/directory -c create
+    manageApp.py -a appName -c create
 
 where the options are:
 
     -a appName                   # the application name you have chosen
-    -d /local/base/directory     # local directory you identified/created to house
-                                 # the application(s) directory structure
     -c create                    # the command of create
 
 Doing a create will take the arguments and create a new directory in the base
 directory and use the appName as the name of the directory.  The base directory
 is stored in .dcConfig/baseDirectory which will be created (if it doesn't exist)
-in your $HOME directory.
+in your $HOME directory.  Initially, the base directory is retrieved from the
+~/.dcConfig/settings that is created when you run RUN-ME-FIRST.sh.  
 
 There will be prompt that you will need to answer about the frontend of the application.
 In most applications the front end is implemented as a web page, so the default is
@@ -137,12 +160,15 @@ fleshed out with sane defaults.
 If there is already an existing application repository and you will be joining
 in on the development, then you will run the manageApp.py script with the same options
 except the command to run will be join. This will clone the application
-repository
-from github.  So, the arguments would be:
+repository from github.
+
+Execute the script:
+
+    manageApp.py -a appName -c create
+
+where the options are:
 
     -a appName                   # the application name you have chosen
-    -d /local/base/directory     # local directory you identified/created to house
-                                 # the application(s) directory structure
     -c join                      # the command for joining an existing development
                                  # effort
     --appPath                     # repository for an existing app directory
@@ -175,14 +201,13 @@ And then there is the personal.env file.  This is where you can put the settings
 you would like to be specific to your development and meant to be different from others
 on your team.  This will will be ignored when working with git.
 
-Of special note about these is the order in which they are read in; commone, the environment
+Of special note about these is the order in which they are read in; common, the environment
 specific one and then the personal. If a variable appears in two of the env files, the one
 in the file that is read in last will be the one with the value when it is written to the 
 appName-utils/environments/.genereratedEnvFile/dcEnv-appName-ENV file.
 
 So, you can either update the environment specific file or you can do the personal.env
-file.  At least, change the personal.env file, modifying the dcUTILS variable to point
-to where you cloned the devops.center dcUtils repository.
+file.  
 
 #### Run deployenv.sh
 After you have the environment files how you want them, than it is time to collect all
@@ -221,8 +246,8 @@ A basic template is provided for the docker-compose.yml and is placed in the dir
 
     /baseDirectory/appName/appName-utils/config/local
 
-This will will need to reflect the services that you are using for the application.
-Most likely the only thing you would have to do with these is to comment a container
+This will need to reflect the services that you are using for the application.
+Most likely the only thing you would have to do with these is to comment out a container
 if you are not going to be using it for your local development if assistance is needed,
 reach out to devops.center support.
 
@@ -230,15 +255,15 @@ reach out to devops.center support.
 At this point all the necessary administrative duties have been addressed and starting
 the application is as simple as using the command (from within dcUtils):
 
-    ./start.sh
+    start-dc-containers.sh
 
-NOTE: if you have multilpe applications in your base directory you will need to add
+NOTE: if you have multiple applications in your base directory you will need to add
 the --appName option to signify which one you are starting
 
 #### Stop the application
 And then to stop the application (from within dcUtils):
 
-    ./stop.sh
+    stop-dc-containers.sh
 
 NOTE: if you have multilpe applications in your base directory you will need to add
 the --appName option to signify which one you are stopping
@@ -254,10 +279,13 @@ this file will be constructed and the directory will placed into the file with t
 workspace name set to 'default'.  
 
 If you have the need or desire to support multiple workspaces (say you have two 
-customers and want to keep the applications separate), you can use the --workspaceName
-(-w) option on any of the scripts and specify the workspace you want to reference. 
-The script will read the $HOME/.dcConfig file and determine the base path for that
-name and use it appropriately.
+customers or you just want to keep two or more applications separate), you can use
+the --workspaceName (-w) option on any of the scripts and specify the workspace you
+want to reference.  The script will read the $HOME/.dcConfig/baseDirectory file and
+determine the base path for that name and use it appropriately.  You will need to 
+use the --baseDirectory (-d) option when building a new application with  manageApp.py 
+and using the --workspaceName option.  This should be the only time you would need to
+add the --baseDirectory option with manageApp.py
 
 Also, if you are going to be doing a lot of work in this workspace you can use the
 switchWorkspace.sh script to change the default workspace to this name.  Then you 

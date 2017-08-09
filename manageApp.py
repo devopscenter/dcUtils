@@ -36,6 +36,7 @@ class ManageAppName:
         self.utilsPath = utilsPath
         self.baseDir = baseDirectory
         self.altName = altName.upper()
+        self.dcUtils = os.environ["dcUTILS"]
 
         # put the baseDirectory path in the users $HOME/.dcConfig/baseDirectory
         # file so that subsequent scripts can use it as a base to work
@@ -515,17 +516,20 @@ class ManageAppName:
         # and get the template Dockerfile, requirements for each of the sub
         # directories
         webDockerFile = baseStack + "/web/Dockerfile"
-        shutil.copyfile("templates/Dockerfile-web", webDockerFile)
+        shutil.copyfile(self.dcUtils + "/templates/Dockerfile-web",
+                        webDockerFile)
 
         workerDockerFile = baseStack + "/worker/Dockerfile"
-        shutil.copyfile("templates/Dockerfile-worker", workerDockerFile)
+        shutil.copyfile(self.dcUtils + "/templates/Dockerfile-worker",
+                        workerDockerFile)
 
         webShFile = baseStack + "/web/web.sh"
-        shutil.copyfile("templates/web.sh", webShFile)
+        shutil.copyfile(self.dcUtils + "/templates/web.sh", webShFile)
 
         supervisorConfFile = baseStack + \
             "/worker/supervisor-djangorq-worker.conf"
-        shutil.copyfile("templates/supervisor-djangorq-worker.conf",
+        shutil.copyfile(self.dcUtils +
+                        "/templates/supervisor-djangorq-worker.conf",
                         supervisorConfFile)
 
         # need to change the entry in the work Dockerfile that references the
@@ -685,10 +689,12 @@ class ManageAppName:
 
         # copy the docker-compose template files
         composeFile = baseConfig + "/docker-compose.yml"
-        shutil.copyfile("templates/docker-compose.yml", composeFile)
+        shutil.copyfile(self.dcUtils + "/templates/docker-compose.yml",
+                        composeFile)
 
         composeDebugFile = baseConfig + "/docker-compose-debug.yml"
-        shutil.copyfile("templates/docker-compose-debug.yml", composeDebugFile)
+        shutil.copyfile(self.dcUtils + "/templates/docker-compose-debug.yml",
+                        composeDebugFile)
 
         # need to change the env file name and path to represent what is
         # created with this script
@@ -713,9 +719,6 @@ class ManageAppName:
                 "dcDEFAULT_APP_NAME=" + self.appName + "\n"
                 "dcHOME=" + self.baseDir + self.appName + "\n"
                 "\n"
-                "# change dcUTILS to where you have put the devops.center\n"
-                "# dcUtils directory\n"
-                "dcUTILS=" + self.baseDir + "dcUtils\n"
                 'dcDATA=${dcHOME}/dataload\n'
                 'dcAPP=${dcHOME}/' + self.dcAppName + "\n"
                 "\n"
@@ -1001,7 +1004,7 @@ def getBaseDirectory():
 
             if workspaceName in item:
                 anotherLineArray = item.split('=')
-                developmentBaseDir = anotherLineArray[1]
+                developmentBaseDir = anotherLineArray[1] + '/'
                 return(developmentBaseDir)
 
     if os.path.isfile(baseSettingsDir + "/settings"):
@@ -1011,7 +1014,7 @@ def getBaseDirectory():
         for item in lines:
             if "DEV_BASE_DIR" in item:
                 lineArray = item.split('=')
-                developmentBaseDir = lineArray[1]
+                developmentBaseDir = lineArray[1] + '/'
                 return(developmentBaseDir)
 
     else:
@@ -1104,10 +1107,6 @@ def checkArgs():
                         'command arg',
                         default='',
                         required=False)
-    parser.add_argument('-g', '--getBaseDir', help='call the getBaseDirectory'
-                        'function.',
-                        action="store_true",
-                        required=False)
 
     try:
         args, unknown = parser.parse_known_args()
@@ -1115,10 +1114,16 @@ def checkArgs():
         pythonGetEnv()
         sys.exit(1)
 
-    if args.getBaseDir:
+    # before going further we need to check whether there is a slash at the
+    # end of the value in destinationDir
+    if args.baseDirectory:
+        retBaseDir = checkBaseDirectory(args.baseDirectory)
+    else:
         retBaseDir = getBaseDirectory()
-        print("=>{}<=".format(retBaseDir))
-        sys.exit(1)
+        if not retBaseDir:
+            print("Could not determine the baseDirectory, you will need to "
+                  "re-run this script and provide the -d option.")
+            sys.exit(1)
 
     retEnvList = pythonGetEnv(initialCreate=True)
 
@@ -1128,11 +1133,6 @@ def checkArgs():
     retOptions = args.cmdOptions
     retAppURL = args.appPath
     retUtilsURL = args.utilsPath
-
-    # before going further we need to check whether there is a slash at the
-    # end of the value in destinationDir
-    if args.baseDirectory:
-        retBaseDir = checkBaseDirectory(args.baseDirectory)
 
     if "WORKSPACE_NAME" in retEnvList:
         retWorkspaceName = retEnvList["WORKSPACE_NAME"]
