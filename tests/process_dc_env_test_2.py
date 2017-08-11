@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 import sys
-import os
 import argparse
 # There is a PEP8 warning about this next line not being at the top of the file.
 # The better answer is to append the $dcUTILS/scripts directory to the sys.path

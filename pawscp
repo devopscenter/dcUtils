@@ -3,10 +3,10 @@
 #
 #                    FILE: paws.sh
 # 
-#                 USAGE: ./paws.sh 
+#                 USAGE: ./pawscp
 # 
-#     DESCRIPTION: Provides access to AWS instances using known keys in the application
-#                                utilise keys directory of the app-utils respository
+#     DESCRIPTION: Provides file copy capabilities to/from AWS instances using known keys in the application
+#                                utilise keys directory of the dcUtils respository
 # 
 #             OPTIONS: ---
 #    REQUIREMENTS: ---
@@ -28,38 +28,25 @@ PROFILE="default"
 function usage
 {
     echo -e "Description:"
-    echo -e "    paws is a tool that makes it easier to connect to and work with AWS EC2 instances.    First, it uses the aws cli tool to query an account for running ec2-instances.    Next, it either returns a list of instances, connects to an individual instance, or runs commands on one or more of them.\n\n    Caution is advised!    (A good sanity check before running any command is using the -l option to see which hosts you're targeting).\n"
+    echo -e "    pawscp is a tool that makes it easier to transfer files to and from and AWS EC2 instances.   \n"
     echo -e "Usage:"
     echo -e "    Optional arguments that can be used with any other combination of arguments:"
     echo -e "    [-p PROFILE] [-r REGION]\n"
-    echo -e "    List all instances, or instances and their tags:"
-    echo -e "    paws {-l | -L}"
-    echo -e "        -l\tno argument, returns a list of all instances"
-    echo -e "        -L\tno argument, returns a list of all instances and their tags\n"
-    echo -e "    Connect to a host interactively:"
-    echo -e "    paws -c"
-    echo -e "        -c\tno argument, displays a list of hosts and prompts for selection\n"
-    echo -e "    Connect to a specified host:"
-    echo -e "    paws -c HOST"
-    echo -e "        -c\taws Name to log into with SSH\n"
-    echo -e "    Run a command on one or more instances in parallel, using a list of names:"
-    echo -e "    paws -w HOST1,HOST2 '<COMMAND>'"
-    echo -e "        -w\tlist of hosts, separated by commas\n"
-    echo -e "    Run a command on one or more instances in parallel, using tags:"
-    echo -e "    paws -t KEY=VALUE '<COMMAND>'"
-    echo -e "        -t\ttag KEY and VALUE pairs, in the form of KEY=VALUE\n"
-    echo -e "    Run a command on all instances in parallel:"
-    echo -e "    paws '<COMMAND>'\n"
-    echo -e "    Check host access, report any failures and add any new authoritization requests"
-    echo -e "    paws -p PROFILE [-r REGION} -x\n"
+    echo -e "    [host/all:]file1 [host/all:]file2" 
+    echo 
+    echo -e "    The gist of this is to be able to copy a file from the local machine to a remote instance (host) or to all the "
+    echo -e "    hosts for a given PROFILE and REGION. Hence, the following scenarios are supported: "
+    echo -e "    if one of the files has 'all:'  - then that file is either a directory or file name "
+    echo -e "        that will receive the other file"
+    echo -e "    if both of the files has 'all:' -  prepended to the file, then that is an error."
+    echo -e "    If there is no 'host:' or 'all:' -  it will take file1 and transfer it to all hosts found for PROFILE and REGION"
+    echo -e "        at the file2 location"
+    echo -e "    If host is missing from either and one has a colon: it will take the file that doesn't have the colon and put it"
+    echo -e "        on each host found in the PROFILE and REGION "
+    echo -e "    If host is missing from either and each has a colon: that's an error since it doesn't know where to put it"
+    echo -e "    If host is available one each: that's not supported yet ... to copy between instances"
     echo -e "Examples:"
     echo -e "    List tags for all instances for the default account:    paws -L"
-    echo -e "    Interactively connect to an instance for the client1 account in the us-west-2 region:    paws -p client1 -r us-west-2 -c"
-    echo -e "    Connect to the web1 instance for the client1 account:    paws -p client1 -c web1"
-    echo -e "    Run the 'hostname' command on all instances for the client1 account:    paws -p client1 'hostname'"
-    echo -e "    Run the 'ls' command on the web1 and web2 instances for the client1 account:    paws -p client1 -w web1,web2 'ls'"
-    echo -e "    Run the 'w' command on instances tagged as Env=dev for the client1 account:    paws -p client1 -t Env=dev 'w'"
-    echo -e "    Run the 'date' command on instances tagged as Name=db1 for the default account:    paws -t Name=db1 'date'"
 }
 
 if [[ -z $1 ]]; then
@@ -113,26 +100,6 @@ checkHostAccess()
     fi
 
     NAME_LIST=$(echo $DESCRIBE_ALL| jq -r '.Reservations[].Instances[].Tags[]| select(.Key == "Name").Value')
-
-    #-------------------------------------------------------------------------------
-    # the commented out section was an attempt to check all in parallel.  It does, but
-    # the ALL_OUPUT would need to be gone through and looked for specific things.  
-    # This would take a lot to make it have user friendly output, when doing them in 
-    # order takes just a smidgin more time but the output is WAY more friendly to work 
-    # with.  Not to mention it will be easier to maintain.
-    # take the list and make it a comma separated string host names
-    #-------------------------------------------------------------------------------
-    ##TMP_STR=""
-    #for HOST_NAME in ${NAME_LIST[@]}
-    #do
-    #    TMP_STR="${TMP_STR}${HOST_NAME},"
-    #done
-    ## and the loop added one extra and it's easier to remove after the fact so here it is
-    #NAME_LIST_STR=${TMP_STR/%,/}
-
-    #THIS_DIR=$(pwd)
-    #EXPECT_CMD="${EXPECT} -f $PWD/scripts/sshcmd.exp %h ${TMP_CONFIG}"
-    #ALL_OUTPUT=$(PDSH_SSH_ARGS_APPEND=$(echo -F "$TMP_CONFIG") pdsh -u 30 -R exec -w "$NAME_LIST_STR" ${EXPECT} -f ${THIS_DIR}/scripts/sshcmd.exp %h ${TMP_CONFIG})
 
 
     for HOST_NAME in  ${NAME_LIST[@]}
