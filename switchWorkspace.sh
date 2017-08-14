@@ -49,7 +49,7 @@ usage ()
         # remove off the backend part
         workspaceAlmost=${worksspaceLeftSide/%_BASE_CUSTOMER_DIR/}
         workspaceName=${workspaceAlmost/_/}
-        echo "$workspaceName"
+        echo "${workspaceName,,}"
     done
     echo
 
