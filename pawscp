@@ -24,6 +24,9 @@
 # NOTE: requires pdsh and aws-cli
 
 PROFILE="default"
+SOURCE_DIR=$HOME
+declare -a NEW_SSH_CONFIG_VARS
+DO_NOT_RUN='false'
 
 function usage
 {
@@ -31,22 +34,28 @@ function usage
     echo -e "    pawscp is a tool that makes it easier to transfer files to and from and AWS EC2 instances.   \n"
     echo -e "Usage:"
     echo -e "    Optional arguments that can be used with any other combination of arguments:"
-    echo -e "    [-p PROFILE] [-r REGION]\n"
+    echo -e "    [-p PROFILE] [-r REGION] [-t \"TAG=VALUE\"\n"
     echo -e "    [host/all:]file1 [host/all:]file2" 
+    echo 
+    echo -e "  NOTE: the file1 and file2 arguments need to be the last two arguments"
     echo 
     echo -e "    The gist of this is to be able to copy a file from the local machine to a remote instance (host) or to all the "
     echo -e "    hosts for a given PROFILE and REGION. Hence, the following scenarios are supported: "
-    echo -e "    if one of the files has 'all:'  - then that file is either a directory or file name "
+    echo -e "    if one of the files has just has a colon and no host then that file is either a directory or file name "
     echo -e "        that will receive the other file"
-    echo -e "    if both of the files has 'all:' -  prepended to the file, then that is an error."
-    echo -e "    If there is no 'host:' or 'all:' -  it will take file1 and transfer it to all hosts found for PROFILE and REGION"
-    echo -e "        at the file2 location"
-    echo -e "    If host is missing from either and one has a colon: it will take the file that doesn't have the colon and put it"
-    echo -e "        on each host found in the PROFILE and REGION "
+    echo -e "    if both of the files has have a colon and no host prepended to the file, then that is an error."
+   # echo -e "    If there is no 'host:' or 'all:' -  it will take file1 and transfer it to all hosts found for PROFILE and REGION"
+   # echo -e "        at the file2 location"
     echo -e "    If host is missing from either and each has a colon: that's an error since it doesn't know where to put it"
-    echo -e "    If host is available one each: that's not supported yet ... to copy between instances"
     echo -e "Examples:"
-    echo -e "    List tags for all instances for the default account:    paws -L"
+    echo -e "    copy a file from the local machine to a specific destination host and put the file in the home directory."
+    echo -e "    pawscp -p devops.center ~/filetotransfer destHost:~"
+    echo
+    echo -e "    copy a file from the local machine to all instances available for the PROFILE and REGION host and put the file in the home directory."
+    echo -e "    pawscp -p devops.center -r us-west-2 ~/filetotransfer :~"
+    echo
+    echo -e "    copy a file from the local machine to all instances available for the PROFILE and REGION with the given tag and put the file in the home directory."
+    echo -e "    pawscp -p devops.center -r us-west-2 -t "App=dcDemoBlog" ~/filetotransfer :~"
 }
 
 if [[ -z $1 ]]; then
@@ -78,44 +87,329 @@ doProcessDCEnv()
 
 
 #---  FUNCTION  ----------------------------------------------------------------
-#          NAME:  checkHostAccess
-#   DESCRIPTION:  function that will iterate through all instances found for a 
-#                 given profile and try to log in.  It will print out any that 
-#                 could not be reached.  If there is a new IP of the instance that
-#                 needs to be added to the local authorization file it will be accepted
-#                 and added.
+#          NAME:  doTheCopy
+#   DESCRIPTION:  executes the file copy between the src and destination
 #    PARAMETERS:  
 #       RETURNS:  
 #-------------------------------------------------------------------------------
-checkHostAccess()
+doTheCopy()
 {
-    echo "Going to checking all the hosts for ssh access.  A response for each connection will be presented:"
-
-    # first check for expect so that we can script the ssh login
-    EXPECT=$(which expect)
-
-    if [[ ! ${EXPECT} ]] ; then 
-        echo "Can not run without the \'expect\' module available"
-        exit 1
+#    echo "First file: ${FIRST_FILE}"
+#    echo "First host: ${FIRST_HOST}"
+#    echo "Second file: ${SECOND_FILE}"
+#    echo "Second host: ${SECOND_HOST}"
+    
+    if [[ ${FIRST_HOST_ALL} == 'true' ]]; then
+        echo "The second file will be copied to all instances into directory ${FIRST_FILE}"
+    elif [[ ${SECOND_HOST_ALL} == 'true' ]]; then
+        echo "The first file will be copied to all instances into directory ${SECOND_FILE}"
     fi
 
-    NAME_LIST=$(echo $DESCRIBE_ALL| jq -r '.Reservations[].Instances[].Tags[]| select(.Key == "Name").Value')
-
-
-    for HOST_NAME in  ${NAME_LIST[@]}
+    for theItem in "${NEW_SSH_CONFIG_VARS[@]}"
     do
-        # connect to the single host
-        #ssh -oStrictHostKeyChecking=no -oCheckHostIP=no -F "$TMP_CONFIG" "$HOST"
-        ${EXPECT} -f scripts/sshcmd.exp ${HOST_NAME} ${TMP_CONFIG} 2>&1 > /dev/null
-        if [[ $? -eq 0 ]]; then
-            echo "${HOST_NAME} is good"
+        IFS=$','; configItemList=($theItem); unset IFS;
+        if [[ ${FIRST_HOST_ALL} == 'true' ]]; then
+            myscp "${FIRST_FILE}" "${configItemList[0]}" "${SECOND_FILE}" "${SECOND_HOST}"
         else
-            echo "${HOST_NAME} has a problem logging in"
+            myscp "${FIRST_FILE}" "${FIRST_HOST}" "${SECOND_FILE}" "${configItemList[0]}"
         fi
     done
 }
 
 
+#---  FUNCTION  ----------------------------------------------------------------
+#          NAME:  myscp
+#   DESCRIPTION:  just the scp line
+#    PARAMETERS:  
+#       RETURNS:  
+#-------------------------------------------------------------------------------
+myscp()
+{
+    local FIRST_FILE=$1
+    local FIRST_HOST=$2
+    local SECOND_FILE=$3
+    local SECOND_HOST=$4
+    if [[ -z ${FIRST_HOST} ]]; then
+        if [[ ${DO_NOT_RUN} == 'true' ]]; then
+            echo "scp -F ${TMP_CONFIG} ${FIRST_FILE} ${SECOND_HOST}:${SECOND_FILE}"
+        else
+            scp -F ${TMP_CONFIG} ${FIRST_FILE} "${SECOND_HOST}:${SECOND_FILE}"
+        fi
+    else
+        if [[ ${DO_NOT_RUN} == 'true' ]]; then
+            echo "scp -F ${TMP_CONFIG} ${FIRST_HOST}:${FIRST_FILE} ${SECOND_FILE}"
+        else
+            scp -F ${TMP_CONFIG} "${FIRST_HOST}:${FIRST_FILE}" ${SECOND_FILE}
+        fi
+    fi
+}
+
+
+#---  FUNCTION  ----------------------------------------------------------------
+#          NAME:  getAllRunningInstances
+#   DESCRIPTION:  gets all running instances...duh!
+#    PARAMETERS:  
+#       RETURNS:  
+#-------------------------------------------------------------------------------
+getAllRunningInstances()
+{
+    #-------------------------------------------------------------------------------
+    # get full description of running instances from api and filter data using jq 
+    # instead of with aws-cli
+    #-------------------------------------------------------------------------------
+    if ! [[ -z "$REGION" ]]; then
+        DESCRIBE_ALL=$(aws --profile "$PROFILE" --region "$REGION" ec2 describe-instances --filters Name=instance-state-name,Values=running)
+    else
+        DESCRIBE_ALL=$(aws --profile "$PROFILE" ec2 describe-instances --filters Name=instance-state-name,Values=running)
+    fi
+
+}
+
+
+#---  FUNCTION  ----------------------------------------------------------------
+#          NAME:  getKeyDir
+#   DESCRIPTION:  determine the path to the keys
+#    PARAMETERS:  
+#       RETURNS:  
+#-------------------------------------------------------------------------------
+getKeyDir() 
+{
+    COMMON_KEY_DIR=''
+    if [[ ${APPNAME} ]]; then
+        doProcessDCEnv
+    else
+        # we will be using the common key directory so we need to get the base name which is under
+        # the Google Drive.  Since it could be named something else or just because it has a space in
+        # the name, we need to expand it once so that we can use it below when finding the key.
+        # dcCOMMON_SHARED_DIR is set when dcUtils is installed and put into the environmnet.
+        aKeyValue=$(grep dcCOMMON_SHARED_DIR ~/.dcConfig/settings)
+        var1=${aKeyValue#*\"}
+        dcCOMMON_SHARED_DIR=${var1%\"}
+
+        if [[ -z ${dcCOMMON_SHARED_DIR} ]]; then
+            COMMON_KEY_DIR=$(cd $HOME/Googl*;pwd)
+        else
+            # now strip out the key and '=' to get to the path
+            COMMON_KEY_DIR=${dcCOMMON_SHARED_DIR#*=}
+        fi
+    fi
+}
+
+
+#---  FUNCTION  ----------------------------------------------------------------
+#          NAME:  cleanUpPathList
+#   DESCRIPTION:  
+#    PARAMETERS:  
+#       RETURNS:  
+#-------------------------------------------------------------------------------
+cleanUpPathList()
+{
+    local pathsToKey="${1}"
+    retVal=$2
+
+    numPaths=${#pathsToKey[@]}
+    if [[ numPaths -ne 0 ]]; then
+        retPath=""
+       c=0 
+       while [[ ${c} -lt ${numPaths} ]]; do
+            if [[ "${pathsToKey[${c}]}" != *"Permission denied"* ]] && [[ "${pathsToKey[${c}]}" != *"find:"* ]]; then
+                eval "$retVal=\"${pathsToKey[${c}]}\""
+                return
+            fi
+            c=$(($c+1))
+       done
+
+    else
+        echo "ERROR: No access key file ($keyName.pem) for this instance: $HOST could be found"
+        rm -f ${TMP_CONFIG}
+        exit 1
+    fi
+}
+
+
+#---  FUNCTION  ----------------------------------------------------------------
+#          NAME:  getPathToKey
+#   DESCRIPTION:  
+#    PARAMETERS:  
+#       RETURNS:  
+#-------------------------------------------------------------------------------
+getPathToKey()
+{
+    local keyName=$1
+    pathToKey=$2
+
+    if [[ ${dcDEFAULT_APP_NAME} ]]; then
+        # check the appUtils keys first
+        pathsToKey=($(find ${BASE_CUSTOMER_DIR}/${dcDEFAULT_APP_NAME}/${CUSTOMER_APP_UTILS} -name "$keyName.pem"))
+        numPaths=${#pathsToKey[@]}
+        if [[ numPaths -ne 0 ]]; then
+            RETVAL=''
+            cleanUpPathList "${pathsToKey[@]}" RETVAL
+            eval "$pathToKey=\"${RETVAL}\""
+        else
+            # not there so lets check the pool
+            pathsToKey="$(find ${COMMON_KEY_DIR} -path "*/${PROFILE}/keys/${keyName}.pem" 2>&1)"
+            RETVAL=''
+            cleanUpPathList "${pathsToKey[@]}" RETVAL
+            eval "$pathToKey=\"${RETVAL}\""
+        fi
+    else
+        RETVAL="${COMMON_KEY_DIR}/${PROFILE}/keys/${keyName}.pem"
+        eval "$pathToKey=\"${RETVAL}\""
+    fi
+}
+
+
+#---  FUNCTION  ----------------------------------------------------------------
+#          NAME:  determineHosts
+#   DESCRIPTION:  Called if the user doesn't specify one host in the copy
+#    PARAMETERS:  
+#       RETURNS:  
+#-------------------------------------------------------------------------------
+determineHosts()
+{
+    #-------------------------------------------------------------------------------
+    # determine the file and host to copy between
+    #-------------------------------------------------------------------------------
+    FIRST_HOST_ALL='false'
+    if [[ ${FIRST_ARG} == *":"* ]]; then
+        FIRST_FILE=${FIRST_ARG#*:}
+        FIRST_HOST=${FIRST_ARG%:*}
+        if [[ -z ${FIRST_HOST} ]];  then
+            # they put the colon but no host meaning all hosts
+            FIRST_HOST_ALL='true'
+        fi
+    else
+        FIRST_FILE=${FIRST_ARG}
+    fi
+
+    SECOND_HOST_ALL='false'
+    if [[ ${SECOND_ARG} == *":"* ]]; then
+        SECOND_FILE=${SECOND_ARG#*:}
+        SECOND_HOST=${SECOND_ARG%:*}
+        if [[ -z ${SECOND_HOST} ]];  then
+            # they put the colon but no host meaning all hosts
+            SECOND_HOST_ALL='true'
+        fi
+    else
+        SECOND_FILE=${SECOND_ARG}
+    fi
+
+    if [[ ${FIRST_HOST} ]] && [[ ${SECOND_HOST} ]]; then
+        echo 
+        echo "There is a host associated with both files, and that is not supported."
+        echo
+        exit 1
+    fi
+
+    # get all the running instances so we can possible cull some out
+    getAllRunningInstances
+
+    if [[ -z ${FIRST_HOST} ]] && [[ -z ${SECOND_HOST} ]]; then
+        #echo "you want to copy to one or many instances"
+
+        #-------------------------------------------------------------------------------
+        # if no -t option
+        #-------------------------------------------------------------------------------
+        if [[ -z "$TAG" ]]; then
+            #-------------------------------------------------------------------------------
+            # if no -t, create ssh config for all instances
+            #-------------------------------------------------------------------------------
+            SSH_CONFIG_VARS=($(echo "$DESCRIBE_ALL"| jq -c '.Reservations[]|.Instances[]|[[.Tags[]|select(.Key | contains("Name"))|.Value],.PublicIpAddress,.KeyName]'))
+
+        #-------------------------------------------------------------------------------
+        # if -t option specified, create ssh config only for tagged instances
+        #-------------------------------------------------------------------------------
+        else
+            #-------------------------------------------------------------------------------
+            # ensure tags are properly formatted
+            #-------------------------------------------------------------------------------
+            if [[ "$TAG" =~ ^[a-zA-Z].*=[a-zA-Z].* ]]; then
+                TAG_KEY=$(echo "$TAG"|awk -F\= '{ print $1 }')
+                TAG_VALUE=$(echo "$TAG"|awk -F\= '{ print $2 }')
+            else
+                echo -e "Tags should be in the form key=value, no quotes\n"
+                usage
+                exit 1
+            fi
+            
+            #-------------------------------------------------------------------------------
+            # create ssh config for tagged instances
+            #-------------------------------------------------------------------------------
+            SSH_CONFIG_VARS=($(echo -e "$DESCRIBE_ALL"| jq "[.Reservations[]|select(.Instances[]|.Tags[]|.Key == \""$TAG_KEY"\" and .Value == \""$TAG_VALUE"\")]|{Reservations: .}"|jq -c '.Reservations[]|.Instances[]|[[.Tags[]|select(.Key | contains("Name"))|.Value],.PublicIpAddress,.KeyName]'))
+        fi
+    else
+        # you have a single host to copy to so get the SSH_CONFIG_VARS for this host
+        if [[ ${FIRST_HOST} ]]; then
+            HOST_TO_USE=${FIRST_HOST}
+        else
+            HOST_TO_USE=${SECOND_HOST}
+        fi
+
+        SSH_CONFIG_VARS=($(echo -e "$DESCRIBE_ALL"| jq "[.Reservations[]|select(.Instances[]|.Tags[]|.Key == \"Name\" and .Value == \""$HOST_TO_USE"\")]|{Reservations: .}"|jq -c '.Reservations[]|.Instances[]|[[.Tags[]|select(.Key | contains("Name"))|.Value],.PublicIpAddress,.KeyName]'))
+    fi
+
+# list out the destintaions
+#    for item in ${SSH_CONFIG_VARS[@]}
+#    do
+#        echo ${item}
+#    done
+}
+
+
+#---  FUNCTION  ----------------------------------------------------------------
+#          NAME:  createSSHConfigFile
+#   DESCRIPTION:  
+#    PARAMETERS:  
+#       RETURNS:  
+#-------------------------------------------------------------------------------
+createSSHConfigFile()
+{
+    #-------------------------------------------------------------------------------
+    # create .ssh directory if it doesn't exist
+    #-------------------------------------------------------------------------------
+    if [[ ! -d "${SOURCE_DIR}/.ssh" ]]; then
+        mkdir "${SOURCE_DIR}/.ssh"
+    fi
+
+    #-------------------------------------------------------------------------------
+    # create and populate temporary .ssh/config file
+    #-------------------------------------------------------------------------------
+    TMP_CONFIG=$(mktemp "${HOME}"/.ssh/.config.XXXXX)
+    numSSH_CONFIG="${#SSH_CONFIG_VARS[@]}"
+    q=0
+    while [[ $q -lt ${numSSH_CONFIG} ]]; do
+        ITEMLIST=()
+        ITEMSTRING=''
+        ITEMSTRING=$(echo "${SSH_CONFIG_VARS[${q}]}"|tr -d ']["')
+        IFS=$','; ITEMLIST=($ITEMSTRING); unset IFS;
+        numItems=${#ITEMLIST[@]}
+        if [[ $numItems -gt 2 ]]; then
+            if [[ ${ITEMLIST[2]} =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]];then
+                q=$(($q+1))
+                continue
+            fi
+            pathToKey=''
+            getPathToKey ${ITEMLIST[2]} pathToKey
+            NEW_SSH_CONFIG_VARS+=("${ITEMLIST[0]},${ITEMLIST[1]},${pathToKey}")
+        fi
+        q=$(($q+1))
+    done
+
+    for theItem in "${NEW_SSH_CONFIG_VARS[@]}"
+    do
+        IFS=$','; configItemList=($theItem); unset IFS;
+        echo "Host ${configItemList[0]}" >> $TMP_CONFIG
+        echo " hostname ${configItemList[1]}" >> $TMP_CONFIG
+        echo " identityfile \"${configItemList[2]}\"" >> $TMP_CONFIG
+        echo " user ubuntu" >> $TMP_CONFIG
+        echo >> $TMP_CONFIG
+    done
+}
+
+#---- end of functions ---------------------------------------------------------
+
+#---- start of main ------------------------------------------------------------
 
 NEW_CMD_LINE=''
 APPNAME=''
@@ -157,14 +451,15 @@ while [[ $# -gt 0 ]]; do
         -e | --env) shift
              NEW_CMD_LINE="${NEW_CMD_LINE} --env $1"
                  ;;
-        -x | --checkHostAccess)
-             CHECK_HOST_ACCESS='true'
+        --test )
+             DO_NOT_RUN='true'
                  ;;
         -h ) usage
              exit 1
 	             ;;
- [!-]* ) if [[ $# -eq 1 ]]; then
-             PDSH_CMD=$1
+ [!-]* ) if [[ $# -eq 2 ]]; then
+             FIRST_ARG=$1
+             SECOND_ARG=$2
 	     elif ! [[ -z "$HOST" ]]; then
              echo -e "Too many/few of the 1 required parameters.\n"
              usage
@@ -178,270 +473,21 @@ while [[ $# -gt 0 ]]; do
     shift
 done
 
-COMMON_KEY_DIR=''
-if [[ ${APPNAME} ]]; then
-    doProcessDCEnv
-else
-    # we will be using the common key directory so we need to get the base name which is under
-    # the Google Drive.  Since it could be named something else or just because it has a space in
-    # the name, we need to expand it once so that we can use it below when finding the key.
-    # dcCOMMON_SHARED_DIR is set when dcUtils is installed and put into the environmnet.
-    aKeyValue=$(grep dcCOMMON_SHARED_DIR ~/.dcConfig/settings)
-    var1=${aKeyValue#*\"}
-    dcCOMMON_SHARED_DIR=${var1%\"}
+# determine the key dir
+getKeyDir
 
-    if [[ -z ${dcCOMMON_SHARED_DIR} ]]; then
-        COMMON_KEY_DIR=$(cd $HOME/Googl*;pwd)
-    else
-        # now strip out the key and '=' to get to the path
-        COMMON_KEY_DIR=${dcCOMMON_SHARED_DIR#*=}
-    fi
-fi
+#determine the hosts
+determineHosts
 
-#-------------------------------------------------------------------------------
-# check for the existance of pdsh/ssh command
-#-------------------------------------------------------------------------------
-if ! [[ "$LIST_NAMES" ]] && ! [[ "$CONNECT" ]] && ! [[ "$HOST" ]] && ! [[ ${CHECK_HOST_ACCESS} ]] && [[ -z "$PDSH_CMD" ]]; then
-    echo -e "pdsh/ssh command required.\n"
-    usage
-    exit 1
-fi
+# create the ssh config file the scp will use
+createSSHConfigFile
 
-#-------------------------------------------------------------------------------
-# get the directory of paws
-# http://stackoverflow.com/questions/59895/can-a-bash-script-tell-what-directory-its-stored-in
-#-------------------------------------------------------------------------------
-#SOURCE="${BASH_SOURCE[0]}"
-#while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
-#    SOURCE_DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
-#    SOURCE="$(readlink "$SOURCE")"
-#    [[ $SOURCE != /* ]] && SOURCE="$SOURCE_DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
-#done
-#SOURCE_DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
-SOURCE_DIR=$HOME
-#
-#-------------------------------------------------------------------------------
-# get full description of running instances from api and filter data using jq instead of with aws-cli
-#-------------------------------------------------------------------------------
-if ! [[ -z "$REGION" ]]; then
-    DESCRIBE_ALL=$(aws --profile "$PROFILE" --region "$REGION" ec2 describe-instances --filters Name=instance-state-name,Values=running)
-else
-    DESCRIBE_ALL=$(aws --profile "$PROFILE" ec2 describe-instances --filters Name=instance-state-name,Values=running)
-fi
-
-#-------------------------------------------------------------------------------
-# LIST ONLY
-#-------------------------------------------------------------------------------
-if [[ "$LIST_NAMES" == 'true' ]] || [[ "$CONNECT" == 'true' ]]; then
-    LIST_FULL=$(echo $DESCRIBE_ALL| jq -cS '.Reservations[]|.Instances[]|[[[.Tags[]|select(.Key | contains("Name"))]|from_entries],[[.Tags[]|select(.Key | contains("Name")|not)]|from_entries]]'|sed 's/,{/: /g'|tr -d '[]{}"'|tr ':' '='|sed 's/= /: /g'|tr ',' ' ')
-
-    i=1
-    while read -r line; do
-        #-------------------------------------------------------------------------------
-        # FOR NAMES ONLY number each line to use for selection
-        #-------------------------------------------------------------------------------
-        if [[ "$LIST_ALL" != 'true' ]]; then
-            line=$(echo -e "$line"|awk -F= '{print $2}'|awk '{print $1}')
-        fi    
-        #-------------------------------------------------------------------------------
-        # FOR BOTH NAMES AND ALL
-        #-------------------------------------------------------------------------------
-        NUMBERED_LINE="${i}. ${line}\n"
-        NUMBERED_LIST="${NUMBERED_LIST}${NUMBERED_LINE}"
-        i=$((i+1))
-    done < <(echo -e "$LIST_FULL"|grep -v '^$'|sort)
-
-fi
-
-#-------------------------------------------------------------------------------
-# for -l option, output list and exit
-#-------------------------------------------------------------------------------
-if [[ "$LIST_NAMES" ]]; then
-    echo -en "$NUMBERED_LIST"
-    exit
-fi
-
-#-------------------------------------------------------------------------------
-# for -c but no host specified, so prompt for input
-#-------------------------------------------------------------------------------
-if [[ -z "${HOST+x}" ]] && [[ "$CONNECT" ]]; then
-    echo -e "$NUMBERED_LIST"
-    echo "enter selection number (return to quit)"
-    read -r number
-
-    if [[ -z ${number} || ${number} -eq 0 ]]; then
-        echo "exiting "
-        exit 1
-    fi
-
-    while read -r line; do
-        LINE_NUMBER=$(echo "$line"|awk -F. '{print $1}')
-        if [[ "$LINE_NUMBER" == "$number" ]]; then
-            HOST=$(echo -e "$line"|awk '{print $2}')
-        fi
-    done < <(echo -e "$NUMBERED_LIST")
-fi
-#-------------------------------------------------------------------------------
-# if no -t option
-#-------------------------------------------------------------------------------
-if [[ -z "$TAG" ]]; then
-    #-------------------------------------------------------------------------------
-    # if -c option specified, create for single instance
-    #-------------------------------------------------------------------------------
-    if [[ "$HOST" ]]; then
-        SSH_CONFIG_VARS=($(echo -e "$DESCRIBE_ALL"| jq "[.Reservations[]|select(.Instances[]|.Tags[]|.Key == \"Name\" and .Value == \""$HOST"\")]|{Reservations: .}"|jq -c '.Reservations[]|.Instances[]|[[.Tags[]|select(.Key | contains("Name"))|.Value],.PublicIpAddress,.KeyName]'))
-    else
-        #-------------------------------------------------------------------------------
-        # if no -c and no -t, create ssh config for all instances
-        #-------------------------------------------------------------------------------
-        SSH_CONFIG_VARS=($(echo "$DESCRIBE_ALL"| jq -c '.Reservations[]|.Instances[]|[[.Tags[]|select(.Key | contains("Name"))|.Value],.PublicIpAddress,.KeyName]'))
-    fi
-
-#-------------------------------------------------------------------------------
-# if -t option specified, create ssh config only for tagged instances
-#-------------------------------------------------------------------------------
-else
-    #-------------------------------------------------------------------------------
-    # ensure tags are properly formatted
-    #-------------------------------------------------------------------------------
-    if [[ "$TAG" =~ ^[a-zA-Z].*=[a-zA-Z].* ]]; then
-        TAG_KEY=$(echo "$TAG"|awk -F\= '{ print $1 }')
-        TAG_VALUE=$(echo "$TAG"|awk -F\= '{ print $2 }')
-    else
-        echo -e "Tags should be in the form key=value, no quotes\n"
-        usage
-        exit 1
-    fi
-    
-    #-------------------------------------------------------------------------------
-    # create ssh config for tagged instances
-    #-------------------------------------------------------------------------------
-    SSH_CONFIG_VARS=($(echo -e "$DESCRIBE_ALL"| jq "[.Reservations[]|select(.Instances[]|.Tags[]|.Key == \""$TAG_KEY"\" and .Value == \""$TAG_VALUE"\")]|{Reservations: .}"|jq -c '.Reservations[]|.Instances[]|[[.Tags[]|select(.Key | contains("Name"))|.Value],.PublicIpAddress,.KeyName]'))
-fi
-
-#-------------------------------------------------------------------------------
-# create .ssh directory if it doesn't exist
-#-------------------------------------------------------------------------------
-if [[ ! -d "${SOURCE_DIR}/.ssh" ]]; then
-    mkdir "${SOURCE_DIR}/.ssh"
-fi
-
-#-------------------------------------------------------------------------------
-# create and populate temporary .ssh/config file
-#-------------------------------------------------------------------------------
-cleanUpPathList()
-{
-    local pathsToKey="${1}"
-    retVal=$2
-
-    numPaths=${#pathsToKey[@]}
-    if [[ numPaths -ne 0 ]]; then
-        retPath=""
-       c=0 
-       while [[ ${c} -lt ${numPaths} ]]; do
-            if [[ "${pathsToKey[${c}]}" != *"Permission denied"* ]] && [[ "${pathsToKey[${c}]}" != *"find:"* ]]; then
-                eval "$retVal=\"${pathsToKey[${c}]}\""
-                return
-            fi
-            c=$(($c+1))
-       done
-
-    else
-        echo "ERROR: No access key file ($keyName.pem) for this instance: $HOST could be found"
-        rm -f ${TMP_CONFIG}
-        exit 1
-    fi
-}
-
-getPathToKey()
-{
-    local keyName=$1
-    pathToKey=$2
-
-    if [[ ${dcDEFAULT_APP_NAME} ]]; then
-        # check the appUtils keys first
-        pathsToKey=($(find ${BASE_CUSTOMER_DIR}/${dcDEFAULT_APP_NAME}/${CUSTOMER_APP_UTILS} -name "$keyName.pem"))
-        numPaths=${#pathsToKey[@]}
-        if [[ numPaths -ne 0 ]]; then
-            RETVAL=''
-            cleanUpPathList "${pathsToKey[@]}" RETVAL
-            eval "$pathToKey=\"${RETVAL}\""
-        else
-            # not there so lets check the pool
-            #pathsToKey="$(find $HOME/Google* -path "*/${PROFILE}/keys/${keyName}.pem" 2>&1)"
-            pathsToKey="$(find ${COMMON_KEY_DIR} -path "*/${PROFILE}/keys/${keyName}.pem" 2>&1)"
-            RETVAL=''
-            cleanUpPathList "${pathsToKey[@]}" RETVAL
-            eval "$pathToKey=\"${RETVAL}\""
-        fi
-    else
-        RETVAL="${COMMON_KEY_DIR}/${PROFILE}/keys/${keyName}.pem"
-        eval "$pathToKey=\"${RETVAL}\""
-    fi
-}
-
-TMP_CONFIG=$(mktemp "${HOME}"/.ssh/.config.XXXXX)
-numSSH_CONFIG="${#SSH_CONFIG_VARS[@]}"
-q=0
-declare -a NEW_SSH_CONFIG_VARS
-while [[ $q -lt ${numSSH_CONFIG} ]]; do
-    ITEMLIST=()
-    ITEMSTRING=''
-    ITEMSTRING=$(echo "${SSH_CONFIG_VARS[${q}]}"|tr -d ']["')
-    IFS=$','; ITEMLIST=($ITEMSTRING); unset IFS;
-    numItems=${#ITEMLIST[@]}
-    if [[ $numItems -gt 2 ]]; then
-        if [[ ${ITEMLIST[2]} =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]];then
-            q=$(($q+1))
-            continue
-        fi
-        pathToKey=''
-        getPathToKey ${ITEMLIST[2]} pathToKey
-        NEW_SSH_CONFIG_VARS+=("${ITEMLIST[0]},${ITEMLIST[1]},${pathToKey}")
-    fi
-    q=$(($q+1))
-done
-
-for theItem in "${NEW_SSH_CONFIG_VARS[@]}"
-do
-    IFS=$','; configItemList=($theItem); unset IFS;
-    echo "Host ${configItemList[0]}" >> $TMP_CONFIG
-    echo " hostname ${configItemList[1]}" >> $TMP_CONFIG
-    echo " identityfile \"${configItemList[2]}\"" >> $TMP_CONFIG
-    echo " user ubuntu" >> $TMP_CONFIG
-    echo >> $TMP_CONFIG
-done
-
-#-------------------------------------------------------------------------------
-# if the -c option is specified, connect to the host with ssh
-#-------------------------------------------------------------------------------
-if [[ "$HOST" ]] || [[ ${CHECK_HOST_ACCESS} == 'true' ]]; then
-    if [[ ${CHECK_HOST_ACCESS} == 'true' ]]; then
-        # run the function that will itereate over all the hosts
-        checkHostAccess
-    else
-        # connect to the single host
-        ssh -F "$TMP_CONFIG" "$HOST"
-    fi
-#-------------------------------------------------------------------------------
-# otherwise, run commands with pdsh
-#-------------------------------------------------------------------------------
-else
-    if ! [[ "$HOSTS" ]]; then
-        #-------------------------------------------------------------------------------
-        # generate host list to pass pdsh
-        #-------------------------------------------------------------------------------
-        HOSTS=$(grep Host "$TMP_CONFIG"|awk '{print $2}'|tr '\n' ',')
-    fi
-    #-------------------------------------------------------------------------------
-    # final pdsh command
-    #-------------------------------------------------------------------------------
-    PDSH_SSH_ARGS_APPEND=$(echo -F "$TMP_CONFIG") pdsh -u 30 -w "$HOSTS" "$PDSH_CMD"
-fi
+# do the copy
+doTheCopy
 
 #-------------------------------------------------------------------------------
 # remove temporary .ssh/config file
 #-------------------------------------------------------------------------------
- if [[ -f "$TMP_CONFIG" ]]; then
-     rm "$TMP_CONFIG"
- fi
+if [[ -f "$TMP_CONFIG" ]]; then
+    rm "$TMP_CONFIG"
+fi
