@@ -102,7 +102,13 @@ doProcessDCEnv()
 #-------------------------------------------------------------------------------
 checkHostAccess()
 {
-    echo "Going to checking all the hosts for ssh access.  A response for each connection will be presented:"
+    if [[ ${DO_NOT_RUN} == "true" ]]; then
+        echo "Would check the following hosts for access:"
+        echo 
+
+    else
+        echo "Going to checking all the hosts for ssh access.  A response for each connection will be presented:"
+    fi
 
     # first check for expect so that we can script the ssh login
     EXPECT=$(which expect)
@@ -134,18 +140,23 @@ checkHostAccess()
     #EXPECT_CMD="${EXPECT} -f $PWD/scripts/sshcmd.exp %h ${TMP_CONFIG}"
     #ALL_OUTPUT=$(PDSH_SSH_ARGS_APPEND=$(echo -F "$TMP_CONFIG") pdsh -u 30 -R exec -w "$NAME_LIST_STR" ${EXPECT} -f ${THIS_DIR}/scripts/sshcmd.exp %h ${TMP_CONFIG})
 
-
     for HOST_NAME in  ${NAME_LIST[@]}
     do
-        # connect to the single host
-        #ssh -oStrictHostKeyChecking=no -oCheckHostIP=no -F "$TMP_CONFIG" "$HOST"
-        ${EXPECT} -f scripts/sshcmd.exp ${HOST_NAME} ${TMP_CONFIG} 2>&1 > /dev/null
-        if [[ $? -eq 0 ]]; then
-            echo "${HOST_NAME} is good"
+        if [[ ${DO_NOT_RUN} == "false" ]]; then
+            # connect to the single host
+            #ssh -oStrictHostKeyChecking=no -oCheckHostIP=no -F "$TMP_CONFIG" "$HOST"
+            ${EXPECT} -f scripts/sshcmd.exp ${HOST_NAME} ${TMP_CONFIG} 2>&1 > /dev/null
+            if [[ $? -eq 0 ]]; then
+                echo "${HOST_NAME} is good"
+            else
+                echo "${HOST_NAME} has a problem logging in"
+            fi
         else
-            echo "${HOST_NAME} has a problem logging in"
+            # they just want to see what would happen
+            echo ${HOST_NAME}
         fi
     done
+    echo
 }
 
 
@@ -153,6 +164,7 @@ checkHostAccess()
 NEW_CMD_LINE=''
 APPNAME=''
 WORKSPACENAME=''
+DO_NOT_RUN='false'
 while [[ $# -gt 0 ]]; do
     case $1 in
         -p ) shift
@@ -192,6 +204,9 @@ while [[ $# -gt 0 ]]; do
                  ;;
         -x | --checkHostAccess)
              CHECK_HOST_ACCESS='true'
+                 ;;
+        --test )
+             DO_NOT_RUN='true'
                  ;;
         -h ) usage
              exit 1
@@ -468,7 +483,22 @@ else
     #-------------------------------------------------------------------------------
     # final pdsh command
     #-------------------------------------------------------------------------------
-    PDSH_SSH_ARGS_APPEND=$(echo -F "$TMP_CONFIG") pdsh -u 30 -w "$HOSTS" "$PDSH_CMD"
+    if [[ ${DO_NOT_RUN} == 'false' ]]; then
+        # go ahead and run it
+        PDSH_SSH_ARGS_APPEND=$(echo -F "$TMP_CONFIG") pdsh -u 30 -w "$HOSTS" "$PDSH_CMD"
+    else
+        # they just want to see what would happen
+        echo 
+        echo "Test would run command: $PDSH_CMD"
+        echo
+        echo "For these hosts:"
+        for aHost in ${HOSTS//,/ }
+        do
+            echo ${aHost}
+        done
+        echo 
+
+    fi
 fi
 
 #-------------------------------------------------------------------------------
