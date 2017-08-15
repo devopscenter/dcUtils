@@ -39,8 +39,20 @@ usage ()
     echo -e "    checked by looking at the $HOME/.dcConfig/baseDirectory file"
     echo
     CURRENT=$(grep "CURRENT_WORKSPACE=" ${HOME}/.dcConfig/baseDirectory)
-    echo  -e "Current workspace is: ${CURRENT#CURRENT_WORKSPACE=}"
+    echo -e "Current workspace is: ${CURRENT#CURRENT_WORKSPACE=}"
     echo
+    echo -e "Possible workspaces:"
+    grep "_BASE_CUSTOMER_DIR=" ~/.dcConfig/baseDirectory | while read line
+    do
+        # get the keyword on the left side of the equal sign
+        worksspaceLeftSide=${line%=*}
+        # remove off the backend part
+        workspaceAlmost=${worksspaceLeftSide/%_BASE_CUSTOMER_DIR/}
+        workspaceName=${workspaceAlmost/_/}
+        echo "${workspaceName,,}"
+    done
+    echo
+
 }
 
 #-------------------------------------------------------------------------------
