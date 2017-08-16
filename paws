@@ -352,19 +352,27 @@ else
     #-------------------------------------------------------------------------------
     # ensure tags are properly formatted
     #-------------------------------------------------------------------------------
-    if [[ "$TAG" =~ ^[a-zA-Z].*=[a-zA-Z].* ]]; then
-        TAG_KEY=$(echo "$TAG"|awk -F\= '{ print $1 }')
-        TAG_VALUE=$(echo "$TAG"|awk -F\= '{ print $2 }')
-    else
-        echo -e "Tags should be in the form key=value, no quotes\n"
-        usage
-        exit 1
-    fi
-    
+    # remove any spaces between tags if there are any
+    tagsNoSpaces=${TAG//[[:blank:]]/}
+    # split on the , and create an array of tags:w
+    TAGS=(${tagsNoSpaces//,/ })
+
     #-------------------------------------------------------------------------------
     # create ssh config for tagged instances
     #-------------------------------------------------------------------------------
-    SSH_CONFIG_VARS=($(echo -e "$DESCRIBE_ALL"| jq "[.Reservations[]|select(.Instances[]|.Tags[]|.Key == \""$TAG_KEY"\" and .Value == \""$TAG_VALUE"\")]|{Reservations: .}"|jq -c '.Reservations[]|.Instances[]|[[.Tags[]|select(.Key | contains("Name"))|.Value],.PublicIpAddress,.KeyName]'))
+    if [[ ${REGION} ]]; then
+        CMD_TO_RUN="aws --profile "$PROFILE" --region "$REGION" ec2 describe-instances --filters Name=instance-state-name,Values=running "
+    else
+        CMD_TO_RUN="aws --profile "$PROFILE" ec2 describe-instances --filters Name=instance-state-name,Values=running "
+    fi
+    for tagLine in ${TAGS[@]}
+    do
+        KV=(${tagLine//=/ })
+        CMD_TO_RUN+="\"Name=tag-value,Values=${KV[1]}\" "
+    done
+    CMD_TO_RUN+="| jq -c '.Reservations[]|.Instances[]|[[.Tags[]|select(.Key | contains(\"Name\"))|.Value],.PublicIpAddress,.KeyName]'"
+
+    SSH_CONFIG_VARS=($(eval ${CMD_TO_RUN}))
 fi
 
 #-------------------------------------------------------------------------------
