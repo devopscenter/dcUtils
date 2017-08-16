@@ -146,27 +146,6 @@ myscp()
 
 
 #---  FUNCTION  ----------------------------------------------------------------
-#          NAME:  getAllRunningInstances
-#   DESCRIPTION:  gets all running instances...duh!
-#    PARAMETERS:  
-#       RETURNS:  
-#-------------------------------------------------------------------------------
-getAllRunningInstances()
-{
-    #-------------------------------------------------------------------------------
-    # get full description of running instances from api and filter data using jq 
-    # instead of with aws-cli
-    #-------------------------------------------------------------------------------
-    if ! [[ -z "$REGION" ]]; then
-        DESCRIBE_ALL=$(aws --profile "$PROFILE" --region "$REGION" ec2 describe-instances --filters Name=instance-state-name,Values=running)
-    else
-        DESCRIBE_ALL=$(aws --profile "$PROFILE" ec2 describe-instances --filters Name=instance-state-name,Values=running)
-    fi
-
-}
-
-
-#---  FUNCTION  ----------------------------------------------------------------
 #          NAME:  getKeyDir
 #   DESCRIPTION:  determine the path to the keys
 #    PARAMETERS:  
@@ -302,8 +281,6 @@ determineHosts()
         exit 1
     fi
 
-    # get all the running instances so we can possible cull some out
-    getAllRunningInstances
 
     if [[ -z ${FIRST_HOST} ]] && [[ -z ${SECOND_HOST} ]]; then
         #echo "you want to copy to one or many instances"
@@ -315,28 +292,38 @@ determineHosts()
             #-------------------------------------------------------------------------------
             # if no -t, create ssh config for all instances
             #-------------------------------------------------------------------------------
-            SSH_CONFIG_VARS=($(echo "$DESCRIBE_ALL"| jq -c '.Reservations[]|.Instances[]|[[.Tags[]|select(.Key | contains("Name"))|.Value],.PublicIpAddress,.KeyName]'))
+
+            if [[ ${REGION} ]]; then
+                SSH_CONFIG_VARS=($(aws --profile "$PROFILE" --region "$REGION" ec2 describe-instances --filters Name=instance-state-name,Values=running | jq -c '.Reservations[]|.Instances[]|[[.Tags[]|select(.Key | contains("Name"))|.Value],.PublicIpAddress,.KeyName]'))
+            else
+                SSH_CONFIG_VARS=($(aws --profile "$PROFILE"  ec2 describe-instances --filters Name=instance-state-name,Values=running | jq -c '.Reservations[]|.Instances[]|[[.Tags[]|select(.Key | contains("Name"))|.Value],.PublicIpAddress,.KeyName]'))
+            fi
 
         #-------------------------------------------------------------------------------
         # if -t option specified, create ssh config only for tagged instances
         #-------------------------------------------------------------------------------
         else
-            #-------------------------------------------------------------------------------
-            # ensure tags are properly formatted
-            #-------------------------------------------------------------------------------
-            if [[ "$TAG" =~ ^[a-zA-Z].*=[a-zA-Z].* ]]; then
-                TAG_KEY=$(echo "$TAG"|awk -F\= '{ print $1 }')
-                TAG_VALUE=$(echo "$TAG"|awk -F\= '{ print $2 }')
-            else
-                echo -e "Tags should be in the form key=value, no quotes\n"
-                usage
-                exit 1
-            fi
-            
+            # remove any spaces between tags if there are any
+            tagsNoSpaces=${TAG//[[:blank:]]/}
+            # split on the , and create an array of tags:w
+            TAGS=(${tagsNoSpaces//,/ })
+
             #-------------------------------------------------------------------------------
             # create ssh config for tagged instances
             #-------------------------------------------------------------------------------
-            SSH_CONFIG_VARS=($(echo -e "$DESCRIBE_ALL"| jq "[.Reservations[]|select(.Instances[]|.Tags[]|.Key == \""$TAG_KEY"\" and .Value == \""$TAG_VALUE"\")]|{Reservations: .}"|jq -c '.Reservations[]|.Instances[]|[[.Tags[]|select(.Key | contains("Name"))|.Value],.PublicIpAddress,.KeyName]'))
+            if [[ ${REGION} ]]; then
+                CMD_TO_RUN="aws --profile "$PROFILE" --region "$REGION" ec2 describe-instances --filters Name=instance-state-name,Values=running "
+            else
+                CMD_TO_RUN="aws --profile "$PROFILE" ec2 describe-instances --filters Name=instance-state-name,Values=running "
+            fi
+            for tagLine in ${TAGS[@]}
+            do
+                KV=(${tagLine//=/ })
+                CMD_TO_RUN+="\"Name=tag-value,Values=${KV[1]}\" "
+            done
+            CMD_TO_RUN+="| jq -c '.Reservations[]|.Instances[]|[[.Tags[]|select(.Key | contains(\"Name\"))|.Value],.PublicIpAddress,.KeyName]'"
+
+            SSH_CONFIG_VARS=($(eval ${CMD_TO_RUN}))
         fi
     else
         # you have a single host to copy to so get the SSH_CONFIG_VARS for this host
@@ -346,7 +333,15 @@ determineHosts()
             HOST_TO_USE=${SECOND_HOST}
         fi
 
-        SSH_CONFIG_VARS=($(echo -e "$DESCRIBE_ALL"| jq "[.Reservations[]|select(.Instances[]|.Tags[]|.Key == \"Name\" and .Value == \""$HOST_TO_USE"\")]|{Reservations: .}"|jq -c '.Reservations[]|.Instances[]|[[.Tags[]|select(.Key | contains("Name"))|.Value],.PublicIpAddress,.KeyName]'))
+        if [[ ${REGION} ]]; then
+            CMD_TO_RUN="aws --profile "$PROFILE" --region "$REGION" ec2 describe-instances --filters Name=instance-state-name,Values=running "
+        else
+            CMD_TO_RUN="aws --profile "$PROFILE" ec2 describe-instances --filters Name=instance-state-name,Values=running "
+        fi
+        CMD_TO_RUN+="\"Name=tag-value,Values=${HOST_TO_USE}\" "
+        CMD_TO_RUN+="| jq -c '.Reservations[]|.Instances[]|[[.Tags[]|select(.Key | contains(\"Name\"))|.Value],.PublicIpAddress,.KeyName]'"
+
+        SSH_CONFIG_VARS=($(eval ${CMD_TO_RUN}))
     fi
 
 # list out the destintaions
@@ -405,6 +400,30 @@ createSSHConfigFile()
         echo " user ubuntu" >> $TMP_CONFIG
         echo >> $TMP_CONFIG
     done
+}
+
+
+#---  FUNCTION  ----------------------------------------------------------------
+#          NAME:  parseTags
+#   DESCRIPTION:  pull out the key value paris in the tags the user passed in
+#    PARAMETERS:  
+#       RETURNS:  
+#-------------------------------------------------------------------------------
+parseTags()
+{
+    local tags=$1
+
+    echo ${tags}
+    tagsNoSpaces=${tags//[[:blank:]]/}
+    echo ${tagsNoSpaces}
+    tagLinesAsArray=(${tagsNoSpaces//,/ })
+    for tagLine in ${tagLinesAsArray[@]}
+    do
+        echo "=>${tagLine}<="
+        tmpKV=(${tagLine//=/ })
+        echo "tag=${tmpKV[0]} value=${tmpKV[1]}"
+    done
+    exit
 }
 
 #---- end of functions ---------------------------------------------------------
