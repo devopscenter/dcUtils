@@ -131,13 +131,13 @@ myscp()
     local SECOND_HOST=$4
     if [[ -z ${FIRST_HOST} ]]; then
         if [[ ${DO_NOT_RUN} == 'true' ]]; then
-            echo "scp -F ${TMP_CONFIG} "${FIRST_FILE} ${SECOND_HOST}:${SECOND_FILE}"
+            echo "scp -F ${TMP_CONFIG} ${FIRST_FILE} ${SECOND_HOST}:${SECOND_FILE}"
         else
             scp -F ${TMP_CONFIG} "${FIRST_FILE}" "${SECOND_HOST}:${SECOND_FILE}"
         fi
     else
         if [[ ${DO_NOT_RUN} == 'true' ]]; then
-            echo "scp -F ${TMP_CONFIG} "${FIRST_HOST}:${FIRST_FILE} ${SECOND_FILE}"
+            echo "scp -F ${TMP_CONFIG} ${FIRST_HOST}:${FIRST_FILE} ${SECOND_FILE}"
         else
             scp -F ${TMP_CONFIG} "${FIRST_HOST}:${FIRST_FILE}" "${SECOND_FILE}"
         fi
