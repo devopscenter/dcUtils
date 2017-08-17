@@ -403,29 +403,6 @@ createSSHConfigFile()
 }
 
 
-#---  FUNCTION  ----------------------------------------------------------------
-#          NAME:  parseTags
-#   DESCRIPTION:  pull out the key value paris in the tags the user passed in
-#    PARAMETERS:  
-#       RETURNS:  
-#-------------------------------------------------------------------------------
-parseTags()
-{
-    local tags=$1
-
-    echo ${tags}
-    tagsNoSpaces=${tags//[[:blank:]]/}
-    echo ${tagsNoSpaces}
-    tagLinesAsArray=(${tagsNoSpaces//,/ })
-    for tagLine in ${tagLinesAsArray[@]}
-    do
-        echo "=>${tagLine}<="
-        tmpKV=(${tagLine//=/ })
-        echo "tag=${tmpKV[0]} value=${tmpKV[1]}"
-    done
-    exit
-}
-
 #---- end of functions ---------------------------------------------------------
 
 #---- start of main ------------------------------------------------------------
