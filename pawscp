@@ -99,11 +99,11 @@ doTheCopy()
 #    echo "Second file: ${SECOND_FILE}"
 #    echo "Second host: ${SECOND_HOST}"
     
-    if [[ ${FIRST_HOST_ALL} == 'true' ]]; then
-        echo "The second file will be copied to all instances into directory ${FIRST_FILE}"
-    elif [[ ${SECOND_HOST_ALL} == 'true' ]]; then
-        echo "The first file will be copied to all instances into directory ${SECOND_FILE}"
-    fi
+#    if [[ ${FIRST_HOST_ALL} == 'true' ]]; then
+#        echo "The second file will be copied to all instances into directory ${FIRST_FILE}"
+#    elif [[ ${SECOND_HOST_ALL} == 'true' ]]; then
+#        echo "The first file will be copied to all instances into directory ${SECOND_FILE}"
+#    fi
 
     for theItem in "${NEW_SSH_CONFIG_VARS[@]}"
     do
@@ -133,13 +133,13 @@ myscp()
         if [[ ${DO_NOT_RUN} == 'true' ]]; then
             echo "scp -F ${TMP_CONFIG} ${FIRST_FILE} ${SECOND_HOST}:${SECOND_FILE}"
         else
-            scp -F ${TMP_CONFIG} "${FIRST_FILE}" "${SECOND_HOST}:${SECOND_FILE}"
+            scp -q -F ${TMP_CONFIG} "${FIRST_FILE}" "${SECOND_HOST}:${SECOND_FILE}"
         fi
     else
         if [[ ${DO_NOT_RUN} == 'true' ]]; then
             echo "scp -F ${TMP_CONFIG} ${FIRST_HOST}:${FIRST_FILE} ${SECOND_FILE}"
         else
-            scp -F ${TMP_CONFIG} "${FIRST_HOST}:${FIRST_FILE}" "${SECOND_FILE}"
+            scp -q -F ${TMP_CONFIG} "${FIRST_HOST}:${FIRST_FILE}" "${SECOND_FILE}"
         fi
     fi
 }
