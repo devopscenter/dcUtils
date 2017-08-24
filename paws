@@ -67,6 +67,24 @@ if [[ -z $1 ]]; then
     exit 1
 fi
 
+#---  FUNCTION  ----------------------------------------------------------------
+#          NAME:  getBasePath
+#   DESCRIPTION:  gets the path where this file is executed from...somewhere alone the $PATH
+  #    PARAMETERS:
+#       RETURNS:
+#-------------------------------------------------------------------------------
+getBasePath()
+{
+    SOURCE="${BASH_SOURCE[0]}"
+    while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
+      DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+      SOURCE="$(readlink "$SOURCE")"
+      [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was   located
+    done
+	BASE_DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+}
+
+
 #-------------------------------------------------------------------------------
 # handle arguments: need conditionals for appropriate number of arguments/options
 #-------------------------------------------------------------------------------
@@ -145,7 +163,7 @@ checkHostAccess()
         if [[ ${DO_NOT_RUN} == "false" ]]; then
             # connect to the single host
             #ssh -oStrictHostKeyChecking=no -oCheckHostIP=no -F "$TMP_CONFIG" "$HOST"
-            ${EXPECT} -f scripts/sshcmd.exp ${HOST_NAME} ${TMP_CONFIG} 2>&1 > /dev/null
+            ${EXPECT} -f ${BASE_DIR}/scripts/sshcmd.exp ${HOST_NAME} ${TMP_CONFIG} 2>&1 > /dev/null
             if [[ $? -eq 0 ]]; then
                 echo "${HOST_NAME} is good"
             else
@@ -245,6 +263,8 @@ else
         COMMON_KEY_DIR=${dcCOMMON_SHARED_DIR#*=}
     fi
 fi
+
+getBasePath
 
 #-------------------------------------------------------------------------------
 # check for the existance of pdsh/ssh command
@@ -352,19 +372,27 @@ else
     #-------------------------------------------------------------------------------
     # ensure tags are properly formatted
     #-------------------------------------------------------------------------------
-    if [[ "$TAG" =~ ^[a-zA-Z].*=[a-zA-Z].* ]]; then
-        TAG_KEY=$(echo "$TAG"|awk -F\= '{ print $1 }')
-        TAG_VALUE=$(echo "$TAG"|awk -F\= '{ print $2 }')
-    else
-        echo -e "Tags should be in the form key=value, no quotes\n"
-        usage
-        exit 1
-    fi
-    
+    # remove any spaces between tags if there are any
+    tagsNoSpaces=${TAG//[[:blank:]]/}
+    # split on the , and create an array of tags:w
+    TAGS=(${tagsNoSpaces//,/ })
+
     #-------------------------------------------------------------------------------
     # create ssh config for tagged instances
     #-------------------------------------------------------------------------------
-    SSH_CONFIG_VARS=($(echo -e "$DESCRIBE_ALL"| jq "[.Reservations[]|select(.Instances[]|.Tags[]|.Key == \""$TAG_KEY"\" and .Value == \""$TAG_VALUE"\")]|{Reservations: .}"|jq -c '.Reservations[]|.Instances[]|[[.Tags[]|select(.Key | contains("Name"))|.Value],.PublicIpAddress,.KeyName]'))
+    if [[ ${REGION} ]]; then
+        CMD_TO_RUN="aws --profile "$PROFILE" --region "$REGION" ec2 describe-instances --filters Name=instance-state-name,Values=running "
+    else
+        CMD_TO_RUN="aws --profile "$PROFILE" ec2 describe-instances --filters Name=instance-state-name,Values=running "
+    fi
+    for tagLine in ${TAGS[@]}
+    do
+        KV=(${tagLine//=/ })
+        CMD_TO_RUN+="\"Name=tag-value,Values=${KV[1]}\" "
+    done
+    CMD_TO_RUN+="| jq -c '.Reservations[]|.Instances[]|[[.Tags[]|select(.Key | contains(\"Name\"))|.Value],.PublicIpAddress,.KeyName]'"
+
+    SSH_CONFIG_VARS=($(eval ${CMD_TO_RUN}))
 fi
 
 #-------------------------------------------------------------------------------
@@ -416,7 +444,8 @@ getPathToKey()
             eval "$pathToKey=\"${RETVAL}\""
         else
             # not there so lets check the pool
-            pathsToKey="$(find $HOME/Google* -path "*/${PROFILE}/keys/${keyName}.pem" 2>&1)"
+            #pathsToKey="$(find $HOME/Google* -path "*/${PROFILE}/keys/${keyName}.pem" 2>&1)"
+            pathsToKey="$(find ${COMMON_KEY_DIR} -path "*/${PROFILE}/keys/${keyName}.pem" 2>&1)"
             RETVAL=''
             cleanUpPathList "${pathsToKey[@]}" RETVAL
             eval "$pathToKey=\"${RETVAL}\""
