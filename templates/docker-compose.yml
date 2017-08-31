@@ -1,18 +1,14 @@
 version: '2'
-# Assumes docker for mac.
-#
-# - There is no docker0 bridge network in docker for mac: https://docs.docker.com/docker-for-mac/networking/
-#   so alias names for the containers are commented out.
-#
+
 services:
     web:
         container_name: "${dcDEFAULT_APP_NAME}_${CUSTOMER_APP_ENV}_web-1"
         hostname: "${dcDEFAULT_APP_NAME}_${CUSTOMER_APP_ENV}_web-1"
         image: "devopscenter/DC_UNIQUE_ID.web:${dcSTACK_VERSION}"
         ports:
-            - "80:80"
-            - "8000:8000"
-            - "443:443"
+            - "${DOCKER_STATIC_IP_1}:80:80"
+            - "${DOCKER_STATIC_IP_1}:8000:8000"
+            - "${DOCKER_STATIC_IP_1}:443:443"
         links:
             - "pgmaster-1"
             - "worker"
@@ -29,13 +25,15 @@ services:
             - "${GENERATED_ENV_FILE}"
         volumes_from:
             - syslog
-
+        networks:
+            local_network:
+                ipv4_address: "${DOCKER_STATIC_IP_1}"
     worker:
         container_name: "${dcDEFAULT_APP_NAME}_${CUSTOMER_APP_ENV}_worker-1"
         hostname: "${dcDEFAULT_APP_NAME}_${CUSTOMER_APP_ENV}_worker-1"
         image: "devopscenter/DC_UNIQUE_ID.worker:${dcSTACK_VERSION}"
         ports:
-            - "5555:5555"
+            - "${DOCKER_STATIC_IP_2}:5555:5555"
         links:
             - "pgmaster-1"
             - "redismaster"
@@ -50,13 +48,16 @@ services:
             - "${GENERATED_ENV_FILE}"
         volumes_from:
             - syslog
+        networks:
+            local_network:
+                ipv4_address: "${DOCKER_STATIC_IP_2}"
 
     pgmaster-1:
         container_name: "${dcDEFAULT_APP_NAME}_${CUSTOMER_APP_ENV}_pgmaster-1"
         hostname: "${dcDEFAULT_APP_NAME}_${CUSTOMER_APP_ENV}_pgmaster-1"
         image: "devopscenter/db_postgres:${dcSTACK_VERSION}"
         ports:
-            - "5432:5432"
+            - "${DOCKER_STATIC_IP_3}:5432:5432"
         env_file:
             - "${GENERATED_ENV_FILE}"
         volumes:
@@ -67,6 +68,9 @@ services:
         working_dir: "/data/deploy/current"
         volumes_from:
             - syslog
+        networks:
+            local_network:
+                ipv4_address: "${DOCKER_STATIC_IP_3}"
 
 
     redismaster:
@@ -76,7 +80,7 @@ services:
         env_file:
             - "${GENERATED_ENV_FILE}"
         ports:
-            - "6379:6379"
+            - "${DOCKER_STATIC_IP_4}:6379:6379"
         volumes:
             - redis:/media/data/redis
             - "${dcUTILS}:/utils"
@@ -84,6 +88,9 @@ services:
         working_dir: "/data/deploy/current"
         volumes_from:
             - syslog
+        networks:
+            local_network:
+                ipv4_address: "${DOCKER_STATIC_IP_4}"
 
     syslog:
         container_name: "${dcDEFAULT_APP_NAME}_${CUSTOMER_APP_ENV}_syslog"
@@ -100,7 +107,19 @@ services:
                 syslog-facility: local0
                 env: LOG_NAME
                 tag: "{{ (.ExtraAttributes nil).LOG_NAME}} {{.Name}}"
+        networks:
+            local_network:
+                ipv4_address: "${DOCKER_STATIC_IP_5}"
 
+# user defined network
+networks:
+      local_network:
+          driver: bridge
+          ipam:
+              driver: default
+              config:
+                -  subnet: "${DOCKER_SUBNET_TO_USE}"
+  ~
 # Must include all named volumes in V2 compose file format.
 volumes:
     redis:

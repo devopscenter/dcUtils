@@ -10,9 +10,9 @@ services:
         hostname: "${dcDEFAULT_APP_NAME}_${CUSTOMER_APP_ENV}_web-1"
         image: "devopscenter/DC_UNIQUE_ID.web-debug:${dcSTACK_VERSION}"
         ports:
-            - "80:80"
-            - "8000:8000"
-            - "443:443"
+            - "${DOCKER_STATIC_IP_1}:80:80"
+            - "${DOCKER_STATIC_IP_1}:8000:8000"
+            - "${DOCKER_STATIC_IP_1}:443:443"
         links:
             - "pgmaster-1"
         volumes:
@@ -27,13 +27,16 @@ services:
             - "${GENERATED_ENV_FILE}"
         volumes_from:
             - syslog
+        networks:
+            local_network:
+                ipv4_address: "${DOCKER_STATIC_IP_1}"
 
     pgmaster-1:
         container_name: "${dcDEFAULT_APP_NAME}_${CUSTOMER_APP_ENV}_pgmaster-1"
         hostname: "${dcDEFAULT_APP_NAME}_${CUSTOMER_APP_ENV}_pgmaster-1"
         image: "devopscenter/db_postgres:${dcSTACK_VERSION}"
         ports:
-            - "5432:5432"
+            - "${DOCKER_STATIC_IP_2}:5432:5432"
         env_file:
             - "${GENERATED_ENV_FILE}"
         volumes:
@@ -44,6 +47,9 @@ services:
         working_dir: "/data/deploy/current"
         volumes_from:
             - syslog
+        networks:
+            local_network:
+                ipv4_address: "${DOCKER_STATIC_IP_2}"
 
 
     syslog:
@@ -61,6 +67,9 @@ services:
                 syslog-facility: local0
                 env: LOG_NAME
                 tag: "{{ (.ExtraAttributes nil).LOG_NAME}} {{.Name}}"
+        networks:
+            local_network:
+                ipv4_address: "${DOCKER_STATIC_IP_3}"
 
 # Must include all named volumes in V2 compose file format.
 volumes:
