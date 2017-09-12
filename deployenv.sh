@@ -206,6 +206,12 @@ if [[ $TYPE == "instance" ]]; then
     #dcLog "CUSTOMER_APP_UTILS=${CUSTOMER_APP_UTILS}"  >> ${TEMP_FILE}
     #dcLog "CUSTOMER_APP_WEB=${CUSTOMER_APP_WEB}" >> ${TEMP_FILE}
 
+    dcLog "... instance.env into global environment file if available"
+    # instance.env has the tags for this instance that will be made to be environment variables
+    if [[ -e ${HOME}/.dcConfig/instance.env ]]; then
+        cat ${HOME}/.dcConfig/instance.env | sudo tee -a /etc/environment
+    fi
+
     dcLog "... common.env into global environment file"
     # only bring in the common.env if one exists for the environment and if not there
     # check the base environments directory as a last resort (in case they have only one)
