@@ -157,6 +157,9 @@ while [[ $# -gt 0 ]]; do
         --debug|-d )
             DEBUG=1
             ;;
+        --service|-s ) shift;
+            SERVICE_TO_STOP=$1
+            ;;
     esac
     shift
 done
@@ -195,9 +198,13 @@ fi
 # set up the exported variables and anything else that needs to be cleaned up that we created in start-dc-containers.sh
 setupNetwork
 
+if [[ ${SERVICE_TO_STOP} ]]; then
+    CMDTORUN="docker-compose -f ${DOCKER_COMPOSE_FILE} -p ${dcDEFAULT_APP_NAME} stop ${SERVICE_TO_START}"
+else
+    CMDTORUN="docker-compose -f ${DOCKER_COMPOSE_FILE} -p ${dcDEFAULT_APP_NAME} stop"
+fi
 # and bring it all down
-CMDTORUN="docker-compose -f ${DOCKER_COMPOSE_FILE} -p ${dcDEFAULT_APP_NAME} stop"
-#dcLog  ${CMDTORUN}
+dcLog  "${CMDTORUN}"
 ${CMDTORUN}
 
 dcEndLog "Finished..."
