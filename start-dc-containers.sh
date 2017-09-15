@@ -202,7 +202,6 @@ findContainerName()
         fi
         c=$(($c + 1))
     done
-    set +x
 }
 
 
@@ -291,7 +290,6 @@ SERVICES=($(docker-compose -f ${DOCKER_COMPOSE_FILE} config --services))
 for service in ${SERVICES[@]}
 do
     CONTAINER_NAME=$(findContainerName $service)
-        set -x
     serviceIP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${CONTAINER_NAME})
     hostEntry=$(grep ${CONTAINER_NAME} /etc/hosts)
 
