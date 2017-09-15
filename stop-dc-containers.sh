@@ -46,6 +46,91 @@ function usage
     exit 1
 }
 
+#---  FUNCTION  ----------------------------------------------------------------
+#          NAME:  setupNetwork
+#   DESCRIPTION:  ensures the user defined network for this container is set up
+#    PARAMETERS:
+#       RETURNS:
+#-------------------------------------------------------------------------------
+setupNetwork()
+{
+    # get the subnet definition from the customers utils/config/local directory
+    DOCKER_SUBNET_FILE="${BASE_CUSTOMER_DIR}/${dcDEFAULT_APP_NAME}/${CUSTOMER_APP_UTILS}/config/${CUSTOMER_APP_ENV}/docker-subnet.conf"
+
+
+    if [[ -f ${DOCKER_SUBNET_FILE} ]]; then
+        # need to get the docker-subnet.conf from the app-utils/config/local
+        aLine=$(grep DOCKER_SUBNET_TO_USE ${DOCKER_SUBNET_FILE})
+        export DOCKER_SUBNET_TO_USE=${aLine/*=}
+        SUBNET_TO_USE=${DOCKER_SUBNET_TO_USE%\.*}
+    else
+        # choose a default subnet 
+        SUBNET_TO_USE=${DEFAULT_SUBNET}
+    fi
+
+    # first th estatic IP for the services
+    export DOCKER_SYSLOG_IP="${SUBNET_TO_USE}.2"
+    export DOCKER_REDIS_IP="${SUBNET_TO_USE}.3"
+    export DOCKER_PGMASTER_IP="${SUBNET_TO_USE}.4"
+    export DOCKER_WEB_1_IP="${SUBNET_TO_USE}.10"
+    export DOCKER_WORKER_1_IP="${SUBNET_TO_USE}.20"
+
+    # need to set up the exposed port differently between OSX and Linux.  With OSX the syntax is IP:PORT:PORT where as with
+    # linux the only thing needed is just the port number
+    if [[ ${OSNAME} == "Darwin" ]]; then
+        # web
+        export DOCKER_WEB_1_PORT_80="${DOCKER_WEB_1_IP}:80:80"
+        export DOCKER_WEB_1_PORT_8000="${DOCKER_WEB_1_IP}:8000:8000"
+        export DOCKER_WEB_1_PORT_443="${DOCKER_WEB_1_IP}:443:443"
+
+        # worker
+        export DOCKER_WORKER_1_PORT_5555="${DOCKER_WEB_1_IP}:5555:5555"
+
+        # postgres
+        export DOCKER_PGMASTER_PORT_5432="${DOCKER_PGMASTER_IP}:5432:5432"
+
+        # redis
+        export DOCKER_REDIS_PORT_6379="${DOCKER_REDIS_IP}:6379:6379"
+
+		# need to unalias the ports on lo0
+		interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_SYSLOG_IP}")
+		if [[ -z ${interfaceOutput} ]]; then
+			sudo ifconfig lo0 -alias "${DOCKER_SYSLOG_IP}"
+		fi
+		interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_REDIS_IP}")
+		if [[ -z ${interfaceOutput} ]]; then
+			sudo ifconfig lo0 -alias "${DOCKER_REDIS_IP}"
+		fi
+		interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_PGMASTER_IP}")
+		if [[ -z ${interfaceOutput} ]]; then
+			sudo ifconfig lo0 -alias "${DOCKER_PGMASTER_IP}"
+		fi
+		interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_WEB_1_IP}")
+		if [[ -z ${interfaceOutput} ]]; then
+			sudo ifconfig lo0 -alias "${DOCKER_WEB_1_IP}"
+		fi
+		interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_WORKER_1_IP}")
+		if [[ -z ${interfaceOutput} ]]; then
+			sudo ifconfig lo0 -alias "${DOCKER_WORKER_1_IP}"
+		fi
+    else
+        # its linux so define the varialbes with just the port
+        # web
+        export DOCKER_WEB_1_PORT_80="80"
+        export DOCKER_WEB_1_PORT_8000="8000"
+        export DOCKER_WEB_1_PORT_443="443"
+
+        # worker
+        export DOCKER_WORKER_1_PORT_5555="5555"
+
+        # postgres
+        export DOCKER_PGMASTER_PORT_5432="5432"
+
+        # redis
+        export DOCKER_REDIS_PORT_6379="6379"
+    fi
+
+}
 
 #-------------------------------------------------------------------------------
 # Loop through the argument(s) and assign input args with the appropriate variables
@@ -107,14 +192,10 @@ if [[ ! -f ${DOCKER_COMPOSE_FILE} ]]; then
     exit 1
 fi
 
+# set up the exported variables and anything else that needs to be cleaned up that we created in start-dc-containers.sh
+setupNetwork
 
-#-------------------------------------------------------------------------------
-# get the number of applications running by the name of the specialized network
-# bridge created.
-#-------------------------------------------------------------------------------
-NUM_NETWORKS=$(docker network ls | grep -c "_dcnet" )
-export NET_NUMBER=$((20+$NUM_NETWORKS-1))
-
+# and bring it all down
 CMDTORUN="docker-compose -f ${DOCKER_COMPOSE_FILE} -p ${dcDEFAULT_APP_NAME} stop"
 #dcLog  ${CMDTORUN}
 ${CMDTORUN}

@@ -50,56 +50,6 @@ function usage
 }
 
 
-
-#---  FUNCTION  ----------------------------------------------------------------
-#          NAME:  setupNetwork
-#   DESCRIPTION:  ensures the user defined network for this container is set up
-#    PARAMETERS:
-#       RETURNS:
-#-------------------------------------------------------------------------------
-setupNetwork2()
-{
-
-    # get the subnet definition from the customers utils/config/local directory
-    DOCKER_SUBNET_FILE="${BASE_CUSTOMER_DIR}/${dcDEFAULT_APP_NAME}/${CUSTOMER_APP_UTILS}/config/${CUSTOMER_APP_ENV}/docker-subnet.conf"
-
-
-    if [[ -f ${DOCKER_SUBNET_FILE} ]]; then
-        # need to get the docker-subnet.conf from the app-utils/config/local
-        aLine=$(grep DOCKER_SUBNET_TO_USE ${DOCKER_SUBNET_FILE})
-        export DOCKER_SUBNET_TO_USE=${aLine/*=}
-        SUBNET_TO_USE=${DOCKER_SUBNET_TO_USE%\.*}
-    else
-        # choose a default subnet 
-        SUBNET_TO_USE=${DEFAULT_SUBNET}
-    fi
-
-    SERVICES=($(docker-compose -f ${DOCKER_COMPOSE_FILE} config --services 2>&1 > /dev/null))
-    NUM_SERVICES=${#SERVICES[@]}
-    count=0
-    
-    for number in {2..9}
-    do
-        if [[ ${count} -ge ${NUM_SERVICES} ]]; then
-            break
-        fi
-
-        # set up the statis ip
-        export DOCKER_STATIC_IP_$((${number}-1))="${SUBNET_TO_USE}.${number}"
-        count=$((${count}+1))
-
-        # if the os is OSX then we have to set up an alias on lo0 (the interface
-        # that docker talks on) to set up a connection to the container
-        # in linux the bridge is created with an interface that the host can access
-        if [[ ${OSNAME} == "Darwin" ]]; then
-            interfaceOutput=$(ifconfig lo0 | grep "${SUBNET_TO_USE}.${number}")
-            if [[ -z ${interfaceOutput} ]]; then
-                sudo ifconfig lo0 alias "${SUBNET_TO_USE}.${number}"
-            fi
-        fi
-    done
-}
-
 #---  FUNCTION  ----------------------------------------------------------------
 #          NAME:  setupNetwork
 #   DESCRIPTION:  ensures the user defined network for this container is set up
@@ -145,6 +95,31 @@ setupNetwork()
 
         # redis
         export DOCKER_REDIS_PORT_6379="${DOCKER_REDIS_IP}:6379:6379"
+
+        # since this operating system is OSX then we have to set up an alias on lo0 (the interface
+        # that docker talks on) to set up a connection to the container
+        # in linux the bridge is created with an interface that the host can access
+		interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_SYSLOG_IP}")
+		if [[ -z ${interfaceOutput} ]]; then
+			sudo ifconfig lo0 alias "${DOCKER_SYSLOG_IP}"
+		fi
+		interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_REDIS_IP}")
+		if [[ -z ${interfaceOutput} ]]; then
+			sudo ifconfig lo0 alias "${DOCKER_REDIS_IP}"
+		fi
+		interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_PGMASTER_IP}")
+		if [[ -z ${interfaceOutput} ]]; then
+			sudo ifconfig lo0 alias "${DOCKER_PGMASTER_IP}"
+		fi
+		interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_WEB_1_IP}")
+		if [[ -z ${interfaceOutput} ]]; then
+			sudo ifconfig lo0 alias "${DOCKER_WEB_1_IP}"
+		fi
+		interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_WORKER_1_IP}")
+		if [[ -z ${interfaceOutput} ]]; then
+			sudo ifconfig lo0 alias "${DOCKER_WORKER_1_IP}"
+		fi
+
     else
         # its linux so define the varialbes with just the port
         # web
@@ -286,6 +261,7 @@ dcLog  ${CMDTORUN}
 ${CMDTORUN}
 
 
+echo "\n\n##################\n" | sudo tee -a /etc/hosts > /dev/null
 SERVICES=($(docker-compose -f ${DOCKER_COMPOSE_FILE} config --services))
 for service in ${SERVICES[@]}
 do
