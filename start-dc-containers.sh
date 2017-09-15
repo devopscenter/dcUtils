@@ -205,6 +205,9 @@ while [[ $# -gt 0 ]]; do
         --debug|-d )
             DEBUG=1
             ;;
+        --service|-s )
+            SERVICE_TO_START=$1
+            ;;
     esac
     shift
 done
@@ -256,7 +259,12 @@ fi
 OSNAME=$(uname -s)
 setupNetwork
 
-CMDTORUN="docker-compose -f ${DOCKER_COMPOSE_FILE} -p ${dcDEFAULT_APP_NAME} up -d"
+if [[ ${SERVICE_TO_START} ]]; then
+    CMDTORUN="docker-compose -f ${DOCKER_COMPOSE_FILE} -p ${dcDEFAULT_APP_NAME} start ${SERVICE_TO_START}"
+else
+    CMDTORUN="docker-compose -f ${DOCKER_COMPOSE_FILE} -p ${dcDEFAULT_APP_NAME} up -d"
+fi
+
 dcLog  ${CMDTORUN}
 ${CMDTORUN}
 
