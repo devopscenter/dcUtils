@@ -205,7 +205,7 @@ while [[ $# -gt 0 ]]; do
         --debug|-d )
             DEBUG=1
             ;;
-        --service|-s )
+        --service|-s ) shift;
             SERVICE_TO_START=$1
             ;;
     esac
@@ -265,7 +265,7 @@ else
     CMDTORUN="docker-compose -f ${DOCKER_COMPOSE_FILE} -p ${dcDEFAULT_APP_NAME} up -d"
 fi
 
-dcLog  ${CMDTORUN}
+dcLog  "${CMDTORUN}"
 ${CMDTORUN}
 
 echo "The IPs for each cotainer will be put in /etc/hosts which requires sudo access."
