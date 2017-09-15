@@ -298,13 +298,13 @@ do
         tmpArray=(${hostEntry})
         if [[ ${tmpArray[0]} != ${serviceIP} ]]; then
             # the entry was there but the IP is different
-            #sudo sed -i.bak "/$CONTAINER_NAME/ s/.*/${tmpIP}    $CONTAINER_NAME/" /etc/hosts
             sudo sed -i.bak "/$CONTAINER_NAME/ s/.*/${serviceIP}    $CONTAINER_NAME/" /etc/hosts
-            #sudo sed -i.bak "s/.*${CONTAINER_NAME}/${tmpIP}    $CONTAINER_NAME/" /etc/hosts
         fi
     else
         # it wasn't there so append it
-        echo "${serviceIP}    ${CONTAINER_NAME} " | sudo tee -a /etc/hosts > /dev/null
+        if [[ ${serviceIP} ]]; then 
+            echo "${serviceIP}    ${CONTAINER_NAME} " | sudo tee -a /etc/hosts > /dev/null
+        fi
     fi
         set +x
 done
