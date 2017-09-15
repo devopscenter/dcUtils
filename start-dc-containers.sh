@@ -260,8 +260,11 @@ CMDTORUN="docker-compose -f ${DOCKER_COMPOSE_FILE} -p ${dcDEFAULT_APP_NAME} up -
 dcLog  ${CMDTORUN}
 ${CMDTORUN}
 
-
-echo "\n\n##################\n" | sudo tee -a /etc/hosts > /dev/null
+echo "The IPs for each cotainer will be put in /etc/hosts which requires sudo access."
+echo "So, you may be asked to enter your password to write these entries."
+echo | sudo tee -a /etc/hosts > /dev/null
+echo | sudo tee -a /etc/hosts > /dev/null
+echo "################## docker containers" | sudo tee -a /etc/hosts > /dev/null
 SERVICES=($(docker-compose -f ${DOCKER_COMPOSE_FILE} config --services))
 for service in ${SERVICES[@]}
 do
