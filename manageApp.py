@@ -697,7 +697,7 @@ class ManageAppName:
                         composeDebugFile)
 
         composeSubnetFile = baseConfig + "/docker-subnet.conf"
-        shutil.copyfile(self.dcUtils + "/templates/subnet.conf",
+        shutil.copyfile(self.dcUtils + "/templates/docker-subnet.conf",
                         composeSubnetFile)
 
         # need to change the env file name and path to represent what is
