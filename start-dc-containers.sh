@@ -57,7 +57,7 @@ function usage
 #    PARAMETERS:
 #       RETURNS:
 #-------------------------------------------------------------------------------
-setupNetwork()
+setupNetwork2()
 {
 
     # get the subnet definition from the customers utils/config/local directory
@@ -98,6 +98,70 @@ setupNetwork()
             fi
         fi
     done
+}
+
+#---  FUNCTION  ----------------------------------------------------------------
+#          NAME:  setupNetwork
+#   DESCRIPTION:  ensures the user defined network for this container is set up
+#    PARAMETERS:
+#       RETURNS:
+#-------------------------------------------------------------------------------
+setupNetwork()
+{
+    # get the subnet definition from the customers utils/config/local directory
+    DOCKER_SUBNET_FILE="${BASE_CUSTOMER_DIR}/${dcDEFAULT_APP_NAME}/${CUSTOMER_APP_UTILS}/config/${CUSTOMER_APP_ENV}/docker-subnet.conf"
+
+
+    if [[ -f ${DOCKER_SUBNET_FILE} ]]; then
+        # need to get the docker-subnet.conf from the app-utils/config/local
+        aLine=$(grep DOCKER_SUBNET_TO_USE ${DOCKER_SUBNET_FILE})
+        export DOCKER_SUBNET_TO_USE=${aLine/*=}
+        SUBNET_TO_USE=${DOCKER_SUBNET_TO_USE%\.*}
+    else
+        # choose a default subnet 
+        SUBNET_TO_USE=${DEFAULT_SUBNET}
+    fi
+
+    # first th estatic IP for the services
+    export DOCKER_SYSLOG_IP="${SUBNET_TO_USE}.2"
+    export DOCKER_REDIS_IP="${SUBNET_TO_USE}.3"
+    export DOCKER_PGMASTER_IP="${SUBNET_TO_USE}.4"
+    export DOCKER_WEB_1_IP="${SUBNET_TO_USE}.10"
+    export DOCKER_WORKER_1_IP="${SUBNET_TO_USE}.20"
+
+    # need to set up the exposed port differently between OSX and Linux.  With OSX the syntax is IP:PORT:PORT where as with
+    # linux the only thing needed is just the port number
+    if [[ ${OSNAME} == "Darwin" ]]; then
+        # web
+        export DOCKER_WEB_1_PORT_80="${DOCKER_WEB_1_IP}:80:80"
+        export DOCKER_WEB_1_PORT_8000="${DOCKER_WEB_1_IP}:8000:8000"
+        export DOCKER_WEB_1_PORT_443="${DOCKER_WEB_1_IP}:443:443"
+
+        # worker
+        export DOCKER_WORKER_1_PORT_5555="${DOCKER_WEB_1_IP}:5555:5555"
+
+        # postgres
+        export DOCKER_PGMASTER_PORT_5432="${DOCKER_PGMASTER_IP}:5432:5432"
+
+        # redis
+        export DOCKER_REDIS_PORT_6379="${DOCKER_REDIS_IP}:6379:6379"
+    else
+        # its linux so define the varialbes with just the port
+        # web
+        export DOCKER_WEB_1_PORT_80="80"
+        export DOCKER_WEB_1_PORT_8000="8000"
+        export DOCKER_WEB_1_PORT_443="443"
+
+        # worker
+        export DOCKER_WORKER_1_PORT_5555="5555"
+
+        # postgres
+        export DOCKER_PGMASTER_PORT_5432="5432"
+
+        # redis
+        export DOCKER_REDIS_PORT_6379="6379"
+    fi
+
 }
 
 
