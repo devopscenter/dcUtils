@@ -67,6 +67,15 @@ services:
             local_network:
                 ipv4_address: "${DOCKER_SYSLOG_IP}"
 
+# user defined network
+networks:
+      local_network:
+          driver: bridge
+          ipam:
+              driver: default
+              config:
+                -  subnet: "${DOCKER_SUBNET_TO_USE}"
+
 # Must include all named volumes in V2 compose file format.
 volumes:
     pg-db:
