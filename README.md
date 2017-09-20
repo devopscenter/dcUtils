@@ -44,7 +44,8 @@ one of the packages is dcUtils.  dcUtils is described here.
       variables when using papertrail, but it can be anything you use for your combined
       log service. And add the PGPOOL_CONFIG_FILE as well.
     - Execute the deployenv.sh script to set up the environment for the application.
-    - Execute start.sh
+    - To start in the local development environment with docker containers, execute:
+       start-dc-containers.sh
 
 ### High level flow for joining development already in progress
 
@@ -71,7 +72,8 @@ one of the packages is dcUtils.  dcUtils is described here.
     - Edit the personal.env file and change it as needed.
     - Run deployenv.sh to set up the environment for the application.
     - Modify the docker-compose.yml as necessary
-    - Execute start.sh
+    - To start in the local development environment with docker containers, execute:
+       start-dc-containers.sh
 
 ### Prerequisites
 
