@@ -17,7 +17,7 @@ services:
             - "${dcAPP}:/data/deploy/current"
             - "/wheelhouse"
             - "${dcDATA}:/dataload"
-            - "${dcUTILS}:/utils"
+            - "${dcUTILS}:/root/dcUtils"
             - "${APP_UTILS_CONFIG}:/app-utils/conf"
             - "${APP_UTILS_KEYS}:/app-utils/keys"
         working_dir: "/data/deploy/current"
@@ -40,7 +40,7 @@ services:
         volumes:
             - "${dcAPP}:/data/deploy/current"
             - /wheelhouse
-            - "${dcUTILS}:/utils"
+            - "${dcUTILS}:/root/dcUtils"
             - "${APP_UTILS_CONFIG}:/app-utils/conf"
             - "${APP_UTILS_KEYS}:/app-utils/keys"
         working_dir: "/data/deploy/current"
@@ -62,7 +62,7 @@ services:
             - "${GENERATED_ENV_FILE}"
         volumes:
             - pg-db:/media/data/postgres/
-            - "${dcUTILS}:/utils"
+            - "${dcUTILS}:/root/dcUtils"
             - "${APP_UTILS_CONFIG}:/app-utils/conf"
             - "${APP_UTILS_KEYS}:/app-utils/keys"
         working_dir: "/data/deploy/current"
@@ -83,7 +83,7 @@ services:
             - "${DOCKER_REDIS_PORT_6379}"
         volumes:
             - redis:/media/data/redis
-            - "${dcUTILS}:/utils"
+            - "${dcUTILS}:/root/dcUtils"
             - "${APP_UTILS_CONFIG}:/app-utils/conf"
         working_dir: "/data/deploy/current"
         volumes_from:
