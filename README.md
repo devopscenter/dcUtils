@@ -68,10 +68,8 @@ one of the packages is dcUtils.  dcUtils is described here.
       located in the app-name-utils/environments directory in the personal.env
       file
     - Change directory to the appName-utils/environments directory.
-    - Edit the personal.env file and modify the dcUtils variable to point to the
-      location where you cloned the devops.center/dcUtils directory
-    - Change to the devops.center dcUtils directory and run deployenv.sh to set
-      up the environment for the application.
+    - Edit the personal.env file and change it as needed.
+    - Run deployenv.sh to set up the environment for the application.
     - Modify the docker-compose.yml as necessary
     - Execute start.sh
 
