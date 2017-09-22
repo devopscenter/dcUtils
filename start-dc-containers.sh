@@ -312,6 +312,7 @@ do
     serviceIP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${CONTAINER_NAME})
     hostEntry=$(grep ${CONTAINER_NAME} /etc/hosts)
 
+    echo "${CONTAINER_NAME} => ${serviceIP}"
     if [[ ${hostEntry} ]]; then
         # it was there so we need to see if the IP is different
         tmpArray=(${hostEntry})

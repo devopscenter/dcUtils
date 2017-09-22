@@ -173,7 +173,8 @@ if [[ -f "$LOCAL_BACKUP_FILE" ]] && ! [[ -z "$NO_OVERWRITE" ]]; then
     echo -e "\nFile $LOCAL_BACKUP_FILE already exists and -n option was given. Skipping."
 else
     echo "Getting the backup file: ${S3_BACKUP_FILE} from the s3bucket: ${S3_BUCKET}"
-    sudo -u postgres aws s3 cp "s3://${S3_BUCKET}/${S3_BACKUP_FILE}" "$LOCAL_BACKUP_FILE"
+    aws s3 cp "s3://${S3_BUCKET}/${S3_BACKUP_FILE}" "$LOCAL_BACKUP_FILE"
+    sudo chown postgres:postgres "$LOCAL_BACKUP_FILE"
 fi
 export LOCAL_BACKUP_FILE
 
