@@ -285,8 +285,6 @@ fi
 OSNAME=$(uname -s)
 setupNetwork
 
-# allow multiple docker containers networks to talk to each other
-sudo iptables --flush DOCKER-ISOLATION
 
 if [[ ${SERVICE_TO_START} ]]; then
     CMDTORUN="docker-compose -f ${DOCKER_COMPOSE_FILE} -p ${dcDEFAULT_APP_NAME} start ${SERVICE_TO_START}"
@@ -296,6 +294,9 @@ fi
 
 dcLog  "${CMDTORUN}"
 ${CMDTORUN}
+
+# allow multiple docker containers networks to talk to each other, but needs to do it after the containers are up
+sudo iptables --flush DOCKER-ISOLATION
 
 echo "The IPs for each cotainer will be put in /etc/hosts which requires sudo access."
 echo "So, you may be asked to enter your password to write these entries."
