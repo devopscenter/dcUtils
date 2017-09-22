@@ -59,7 +59,8 @@ def main(argv):
     print "\nConnecting to: " + containerToUse
     print
     dockerCmdToRun = "docker exec -it " + containerToUse +  \
-        "  /bin/bash -c 'export TERM=xterm; exec bash'"
+        "  /bin/bash -c 'export TERM=xterm ' \
+        COLUMNS=$(tput cols) LINES=$(tput lines); exec bash'"
     subprocess.call(dockerCmdToRun, shell=True)
 
 
