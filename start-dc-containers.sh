@@ -285,6 +285,9 @@ fi
 OSNAME=$(uname -s)
 setupNetwork
 
+# allow multiple docker containers networks to talk to each other
+sudo iptables --flush DOCKER-ISOLATION
+
 if [[ ${SERVICE_TO_START} ]]; then
     CMDTORUN="docker-compose -f ${DOCKER_COMPOSE_FILE} -p ${dcDEFAULT_APP_NAME} start ${SERVICE_TO_START}"
 else
