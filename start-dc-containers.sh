@@ -295,11 +295,11 @@ fi
 dcLog  "${CMDTORUN}"
 ${CMDTORUN}
 
+echo "The IPs for each container will be put in /etc/hosts which requires sudo access."
+echo "So, you may be asked to enter your password to write these entries."
+
 # allow multiple docker containers networks to talk to each other, but needs to do it after the containers are up
 sudo iptables --flush DOCKER-ISOLATION
-
-echo "The IPs for each cotainer will be put in /etc/hosts which requires sudo access."
-echo "So, you may be asked to enter your password to write these entries."
 
 dockerSeparator="################## docker containers"
 separator=$(grep "${dockerSeparator}" /etc/hosts)
