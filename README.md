@@ -10,11 +10,13 @@ one of the packages is dcUtils.  dcUtils is described here.
 
 ## TL&DR
 To get the local development environment running
+```
     - RUN-ME-FIRST.sh
     - run manageApp.py to join or create an application
     - update env files as appropriate
     - run deployenv.sh
     - run start-dc-containers.sh
+```
 Of course there is more to it than that, hence the rest of the documentation...
 
 ## High level flow for a brand new installation:
