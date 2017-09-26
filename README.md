@@ -11,11 +11,11 @@ one of the packages is dcUtils.  dcUtils is described here.
 ## TL&DR
 To get the local development environment running
 ```
-    - RUN-ME-FIRST.sh
-    - run manageApp.py to join or create an application
-    - update env files as appropriate
-    - run deployenv.sh
-    - run start-dc-containers.sh
+    - [RUN-ME-FIRST.sh](README.md#installing)
+    - [run manageApp.py](README.md#new-applications-create-the-application) to join or create an application
+    - [update env files](README.md#edit-personalenv) as appropriate
+    - [run deployenv.sh](README.md#run-deployenvsh)
+    - [run start-dc-containers.sh](README.md#start-the-application)
 ```
 Of course there is more to it than that, hence the rest of the documentation...
 
@@ -50,7 +50,7 @@ scripts in dcUtils from anywhere on your local machine.  NOTE: it will also
 add to the environment variable $PYTHONPATH, so if you utilize this variable you should
 check it after the source command has been executed and adjust it if it needs it.
 
-#### Application creation
+#### [Application creation](README.md#new-applications-create-the-application)
 Create the application by using manageApp.py with the create command and
 an application name.  This will create a standardized directory structure utilizing
 the base directory identified from the RUN-ME-FIRST.sh script.  This directory
@@ -82,7 +82,7 @@ they can do this by using the join command to manageApp.py.  This will clone
 the code from a git repo and ensure that it is setup in the same standarized
 way to be able to use the devops.center tools.
 
-#### Initial configuration
+#### [Initial configuration](README.md#edit-personalenv)
 What will be created after running manageApp.py will be a directory in the base
 directory that will be the name the application (ie, the -a appName provided to
 manageApp.py). Go to this directory and you will see several directories, two of
@@ -110,12 +110,12 @@ And add the PGPOOL_CONFIG_FILE as well.
 
 Once the environment key/value pairs are set up they need to be combined into one
 file that the other devops.center scripts will use.  This unified environment
-file is created by running the devops.center script: deployenv.sh.
+file is created by running the devops.center script: [deployenv.sh](README.md#run-deployenvsh).
 
 Once completed and the application code is at a point to run, you can start up
 the local environment (using docker containers) by running the command:
 
-    start-dc-containers.sh
+    [start-dc-containers.sh](README.md#start-the-application)
 
 ### Prerequisites
 
