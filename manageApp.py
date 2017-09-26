@@ -1071,7 +1071,7 @@ def checkArgs():
         './manageApp.py --baseDirectory ~/someDir/YourAppDir\n'
         '            --appName YourApp\n'
         '            --command update\n'
-        '            --option "newEnv = UAT"\n',
+        '            --option "newEnv=UAT"\n',
 
         formatter_class=RawDescriptionHelpFormatter)
     parser.add_argument('-d', '--baseDirectory', help='The base directory '
