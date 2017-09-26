@@ -15,6 +15,7 @@ To get the local development environment running
 * [update env files](README.md#edit-personalenv) as appropriate
 * [run deployenv.sh](README.md#run-deployenvsh)
 * [run start-dc-containers.sh](README.md#start-the-application)
+
 Of course there is more to it than that, hence the rest of the documentation...
 
 ## High level flow for a brand new installation:
