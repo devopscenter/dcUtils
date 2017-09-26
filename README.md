@@ -1,4 +1,4 @@
-# Devops.Center: dcUtils
+# devops.center: dcUtils
 
 The devops.center framework for creating applications is an easy way to minimize
 the effort necessary to deploy the application while freeing up the developer
