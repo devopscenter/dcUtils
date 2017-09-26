@@ -113,10 +113,13 @@ The devops.center application framework is manipulated by the scripts that are
 found in the devopscenter/dcUtils repository on github.com. This repository is
 cloned during the initial install script:
 
-    RUN-ME-FIRST.sh.
+    RUN-ME-FIRST.sh
 
-This script will be placed into a shared directory and you will execute it from
-there.  It will ask a series of questions, what is your application name, what
+This script is found in the devops.center [dcBootstrap](https://github.com/devopscenter/dcBootstrap) repository and will normally
+be placed into a shared directory and you will execute it from
+there.  However, you can cloning that repo and take a look at the [README](https://github.com/devopscenter/dcBootstrap#README.md)
+for more information about the script.
+It will ask a series of questions, what is your application name, what
 do you want for your username to be in the cloud environment, what directory do
 you want dcUtils cloned to, what directory do you want for your application
 development, etc.   The last step to RUN-ME-FIRST.sh is that a line will need to
