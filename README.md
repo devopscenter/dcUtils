@@ -345,28 +345,6 @@ current default workspace name is along with any other workspaces you have defin
 If you want to go back to the default unnamed workspace, enter the word "default" as the new name.
 
 
-#### Additional information on the internals of dcUtils
-- process_dc_env.py
-This script will take the key/value pairs from the environment files and
-make them available to the running script's environment.  The process that is
-used to get those key/value pairs into the environment may have an impact on
-values that have spaces in them.  In order to selectively isolate the items for
-the value with spaces, the value is quoted.  So, there is a possibility that
-the downstream use/access to these values may need to be aware of these quotes
-and strip them if necessary.  This is intended to be used by either shell
-scripts of python scripts.  See the test scripts in ${dcUTILS}/tests for
-examples of each type of script and the usage.
-
-
-TODO ... need more
-
-- appName/.dcMapDir
-
-- appName/environments/.generatedEnvFiles
-
-- unique stack name
-
-
 ## Contributing
 
 Please read [CONTRIBUTING.md](https://gist.github.com/PurpleBooth/b24679402957c63ec426) for details on our code of conduct, and the process for submitting pull requests to us.
