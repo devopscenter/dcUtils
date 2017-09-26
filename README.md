@@ -10,11 +10,11 @@ one of the packages is dcUtils.  dcUtils is described here.
 
 ## TL&DR
 To get the local development environment running
-    [RUN-ME-FIRST.sh](README.md#installing)
-    [run manageApp.py](README.md#new-applications-create-the-application) to join or create an application
-    [update env files](README.md#edit-personalenv) as appropriate
-    [run deployenv.sh](README.md#run-deployenvsh)
-    [run start-dc-containers.sh](README.md#start-the-application)
+*[RUN-ME-FIRST.sh](README.md#installing)
+*[run manageApp.py](README.md#new-applications-create-the-application) to join or create an application
+*[update env files](README.md#edit-personalenv) as appropriate
+*[run deployenv.sh](README.md#run-deployenvsh)
+*[run start-dc-containers.sh](README.md#start-the-application)
 Of course there is more to it than that, hence the rest of the documentation...
 
 ## High level flow for a brand new installation:
