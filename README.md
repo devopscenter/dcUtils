@@ -90,31 +90,13 @@ your application.  The appName-utils contains the configurations that are used
 by the devops.center scripts and is the one that you will need to update with
 some initial information.  So, change into the appName-utils directory.
 
-The first file to address is the environments/local.env and ensure the
-SYSLOG_SERVER, SYSLOG_PORT and SYSLOG_PROTO keys have appropriate values for your
-environment.  By default all the output from the instances/containers channel all
-their output to syslog and we have setup a single instance/container to handle
-that syslog output.  This will utilize these key/value pairs to deposit the output
-in a central location (we use papertrail).  If you use a different logging system
-contact devops.center personnel for assistance.
-
-There is a environmental file that holds key/value pairs that would be personal
-to your local development environment that would be different from anyone else's
-environment. The file is environments/personal.env.   This file will overwrite
-any of the same key/value pairs that might be defined in one of the other env
-files.  Also, this file will not be stored within the git repository so it won't
-be used or overwritten by anyone else.
-
-And add the PGPOOL_CONFIG_FILE as well.
 
 Once the environment key/value pairs are set up they need to be combined into one
 file that the other devops.center scripts will use.  This unified environment
 file is created by running the devops.center script: [deployenv.sh](README.md#run-deployenvsh).
 
 Once completed and the application code is at a point to run, you can start up
-the local environment (using docker containers) by running the command:
-
-    [start-dc-containers.sh](README.md#start-the-application)
+the local environment (using docker containers) by running the command: [start-dc-containers.sh](README.md#start-the-application)
 
 ### Prerequisites
 
@@ -231,6 +213,23 @@ devops.center framework and probably will not be overwritten or changed.  Then t
 is a environment specific file that is located in the appName/appName-utils/environments
 directory. This environment specific file allows you to define settings that are
 associated with that environment (possibly being different between environments).
+
+The first file to address is the environments/local.env and ensure the
+SYSLOG_SERVER, SYSLOG_PORT and SYSLOG_PROTO keys have appropriate values for your
+environment.  By default all the output from the instances/containers channel all
+their output to syslog and we have setup a single instance/container to handle
+that syslog output.  This will utilize these key/value pairs to deposit the output
+in a central location (we use papertrail).  If you use a different logging system
+contact devops.center personnel for assistance.
+
+There is a environmental file that holds key/value pairs that would be personal
+to your local development environment that would be different from anyone else's
+environment. The file is environments/personal.env.   This file will overwrite
+any of the same key/value pairs that might be defined in one of the other env
+files.  Also, this file will not be stored within the git repository so it won't
+be used or overwritten by anyone else.
+
+And add the PGPOOL_CONFIG_FILE as well.
 
 And then there is the personal.env file.  This is where you can put the settings that
 you would like to be specific to your development and meant to be different from others
