@@ -74,7 +74,7 @@ Once the code is ready it can be pushed to a git repository. This will put it in
 a state that other developers can join in development on the code as explained in
 the Joining Development section.
 
-#### Application joining
+#### [Application joining](README.md#existing-applications-join-the-development)
 If the application has already been created and stored in a a git repository, and
 there is need to have other developers utilize the work that has been done, then
 they can do this by using the join command to manageApp.py.  This will clone
