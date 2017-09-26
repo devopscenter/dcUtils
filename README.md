@@ -98,6 +98,8 @@ file is created by running the devops.center script: [deployenv.sh](README.md#ru
 Once completed and the application code is at a point to run, you can start up
 the local environment (using docker containers) by running the command: [start-dc-containers.sh](README.md#start-the-application)
 
+## More detailed documentation
+
 ### Prerequisites
 
 What things you need to install the software and how to install them
