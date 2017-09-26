@@ -21,7 +21,7 @@ Of course there is more to it than that, hence the rest of the documentation...
 
 ## High level flow for a brand new installation:
 
-#### execute RUN-ME-FIRST.sh
+#### [execute RUN-ME-FIRST.sh](README.md#installing)
 This script will step through a series of questions
 that, with your answers, will set some initial defaults and create the necessary
 user information within the cloud system.  
