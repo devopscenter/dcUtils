@@ -18,13 +18,16 @@ To get the local development environment running
 
 Of course there is more to it than that, hence the rest of the documentation...
 
-#### Pre-requisites
-You will need to have:
+### Prerequisites
+
+What things you need to install the software and how to install them
+
 '''
 bash version 4 or greater
 awscli
 jq
 docker and docker-compose
+'''
 
 Getting these installed will be dependent on how you install softare on your development machine.
 
@@ -36,29 +39,9 @@ This script will step through a series of questions
 that, with your answers, will set some initial defaults and create the necessary
 user information within the cloud system.  
 
-This will clone the devops.center dcUtils which has the scripts that you will
+It will clone the devops.center dcUtils which has the scripts that you will
 utilize to interact with the devops.center framework and the cloud instances
 for your application.
-
-One of the questions will ask where you will want to put your applications that
-you will be building with the devops.center tools.  This will be the base directory
-for the applications directory structure that will be created by manageApp.py
-
-If you choose an existing directory then note that you will have to provide the name of the
-application with each dcUtils command. By default the dcUtils scripts will search the base
-directory for the application and it if finds other files or directories, then it
-won't know what to do with them.  The script will error out and request that additional
-arguments be passed to identify the application you want to work with.
-
-RUN-ME-FIRST.sh will also set up the dcUTILS environment variable and put the
-path to dcUtils in the $PATH environment variable. You will be prompted to put
-the command to 'source ~/.dcConfig/settings' into your shell rc file.  Which rc
-file you need to put it in will be dependent on which shell you execute on a normal
-basis, when interacting with a command line (ie, bashrc or bash-profile for bash
-or zshrc for zsh etc.).  Once this file is sourced, you can access any of the
-scripts in dcUtils from anywhere on your local machine.  NOTE: it will also
-add to the environment variable $PYTHONPATH, so if you utilize this variable you should
-check it after the source command has been executed and adjust it if it needs it.
 
 #### [Application creation](README.md#new-applications-create-the-application)
 Create the application by using manageApp.py with the create command and
@@ -66,20 +49,6 @@ an application name.  This will create a standardized directory structure utiliz
 the base directory identified from the RUN-ME-FIRST.sh script.  This directory
 structure houses configurations and keys for the different environments that
 the application will run in.  
-
-There will be two main directories one for the application and another
-for the utility configurations.  
-
-Application development will be done within the frontend directory structure and
-is free to use what ever file and directory structure that is required for your
-application.  For the most part, the devops.center tools won't need to restrict
-any of the contents of this directory.
-
-The other directory is used for configurations and will be utilized by the
-devops.center tools to set up and manage the application as it run in your different
-environments.  These tools allow different configuration and keys per environment.
-By keeping the configuration separate from the application code, the application
-can be developed with a focus on business requirements.
 
 Once the code is ready it can be pushed to a git repository. This will put it in
 a state that other developers can join in development on the code as explained in
@@ -101,7 +70,6 @@ your application.  The appName-utils contains the configurations that are used
 by the devops.center scripts and is the one that you will need to update with
 some initial information.  So, change into the appName-utils directory.
 
-
 Once the environment key/value pairs are set up they need to be combined into one
 file that the other devops.center scripts will use.  This unified environment
 file is created by running the devops.center script: [deployenv.sh](README.md#run-deployenvsh).
@@ -110,12 +78,6 @@ Once completed and the application code is at a point to run, you can start up
 the local environment (using docker containers) by running the command: [start-dc-containers.sh](README.md#start-the-application)
 
 ## More detailed documentation
-
-### Prerequisites
-
-What things you need to install the software and how to install them
-
-    awscli
 
 ### Installing
 
@@ -131,19 +93,27 @@ be placed into a shared directory and you will execute it from
 there.  It will ask a series of questions, what is your application name, what
 do you want for your username to be in the cloud environment, what directory do
 you want dcUtils cloned to, what directory do you want for your application
-development, etc.   The last step to RUN-ME-FIRST.sh is that a line will need to
-be added to your shell rc file, such that a couple of new environment variables
-may be introduced to your command line environment.  You will need to determine
-which rc file that you need to put this source command as it is dependent on
-which shell you use when interacting with the command line in a terminal window.
-The line to insert will be:
+development, etc.   
 
-    source $HOME/.dcConfig/settings
+One of the questions will ask where you will want to put your applications that
+you will be building with the devops.center tools.  This will be the base directory
+for the applications directory structure that will be created by manageApp.py
 
-It will add the dcUtils path to the $PATH variable, so that you can execute the
-dcUtils scripts from anywhere within your local machine. It will also update
-the PYTHONPATH variable, so if you use this variable, you will want to check it
-after it has been updated.
+If you choose an existing directory then note that you will have to provide the name of the
+application with each dcUtils command. By default the dcUtils scripts will search the base
+directory for the application and it if finds other files or directories, then it
+won't know what to do with them.  The script will error out and request that additional
+arguments be passed to identify the application you want to work with.
+
+RUN-ME-FIRST.sh will also set up the dcUTILS environment variable and put the
+path to dcUtils in the $PATH environment variable. You will be prompted to put
+the command to 'source ~/.dcConfig/settings' into your shell rc file.  Which rc
+file you need to put it in will be dependent on which shell you execute on a normal
+basis, when interacting with a command line (ie, bashrc or bash-profile for bash
+or zshrc for zsh etc.).  Once this file is sourced, you can access any of the
+scripts in dcUtils from anywhere on your local machine.  NOTE: it will also
+add to the environment variable $PYTHONPATH, so if you utilize this variable you should
+check it after the source command has been executed and adjust it if it needs it.
 
 #### *(new applications)* Create the application
 In order to create a new application the script manageApp.py needs to be run.  This
@@ -176,14 +146,23 @@ code, you will need to provide the full absolute path to that code at the prompt
 That location will be symbolically linked into this new directory structure.
 Or, if you want to accept the default just hit return.
 
+Application development will be done within the frontend directory structure and
+is free to use what ever file and directory structure that is required for your
+application.  For the most part, the devops.center tools won't need to restrict
+any of the contents of this directory.
+
 A last prompt will be to ask which devops.center unique stack name is to be used for
 the web (and worker) component of the application.  This is the ID of the stack number
 that contains the necessary code modules that you will need to use for your application.
 You can look at the repository of available stacks and choose the one that best suits
 your needs.
 
-After that the directory structure will be built with the appName-utils fully
-fleshed out with sane defaults.
+There will be a utilities directory added to this direcotry structure and 
+is used for configurations and will be utilized by the
+devops.center tools to set up and manage the application as it run in your different
+environments.  These tools allow different configuration and keys per environment.
+By keeping the configuration separate from the application code, the application
+can be developed with a focus on business requirements.
 
 
 #### *(existing applications)* Join the development
