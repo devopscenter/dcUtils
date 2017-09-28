@@ -18,6 +18,17 @@ To get the local development environment running
 
 Of course there is more to it than that, hence the rest of the documentation...
 
+#### Pre-requisites
+You will need to have:
+'''
+bash version 4 or greater
+awscli
+jq
+docker and docker-compose
+
+Getting these installed will be dependent on how you install softare on your development machine.
+
+
 ## High level flow for a brand new installation:
 
 #### [execute RUN-ME-FIRST.sh](README.md#installing)
