@@ -59,8 +59,9 @@ def main(argv):
     print "\nConnecting to: " + containerToUse
     print
     dockerCmdToRun = "docker exec -it " + containerToUse +  \
-        "  /bin/bash -c 'export TERM=xterm; exec bash'"
-    subprocess.check_call(dockerCmdToRun, shell=True)
+        "  /bin/bash -c 'export TERM=xterm \
+        COLUMNS=$(tput cols) LINES=$(tput lines); exec bash'"
+    subprocess.call(dockerCmdToRun, shell=True)
 
 
 if __name__ == "__main__":

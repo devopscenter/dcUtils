@@ -46,6 +46,199 @@ function usage
     exit 1
 }
 
+#---  FUNCTION  ----------------------------------------------------------------
+#          NAME:  setupNetwork
+#   DESCRIPTION:  ensures the user defined network for this container is set up
+#    PARAMETERS:
+#       RETURNS:
+#-------------------------------------------------------------------------------
+setupNetwork()
+{
+    # get the subnet definition from the customers utils/config/local directory
+    DOCKER_SUBNET_FILE="${BASE_CUSTOMER_DIR}/${dcDEFAULT_APP_NAME}/${CUSTOMER_APP_UTILS}/config/${CUSTOMER_APP_ENV}/docker-subnet.conf"
+
+
+    if [[ -f ${DOCKER_SUBNET_FILE} ]]; then
+        # need to get the docker-subnet.conf from the app-utils/config/local
+        aLine=$(grep DOCKER_SUBNET_TO_USE ${DOCKER_SUBNET_FILE})
+        export DOCKER_SUBNET_TO_USE=${aLine/*=}
+        SUBNET_TO_USE=${DOCKER_SUBNET_TO_USE%\.*}
+    else
+        # choose a default subnet 
+        SUBNET_TO_USE=${DEFAULT_SUBNET}
+    fi
+
+    # first th estatic IP for the services
+    export DOCKER_SYSLOG_IP="${SUBNET_TO_USE}.2"
+    export DOCKER_REDIS_IP="${SUBNET_TO_USE}.3"
+    export DOCKER_PGMASTER_IP="${SUBNET_TO_USE}.4"
+    export DOCKER_WEB_1_IP="${SUBNET_TO_USE}.10"
+#    export DOCKER_WEB_2_IP="${SUBNET_TO_USE}.11"     # if needed
+    export DOCKER_WORKER_1_IP="${SUBNET_TO_USE}.20"
+#    export DOCKER_WORKER_2_IP="${SUBNET_TO_USE}.21"  # if needed
+
+    # need to set up the exposed port differently between OSX and Linux.  With OSX the syntax is IP:PORT:PORT where as with
+    # linux the only thing needed is just the port number
+    if [[ ${OSNAME} == "Darwin" ]]; then
+        # container web 1
+        export DOCKER_WEB_1_PORT_80="${DOCKER_WEB_1_IP}:80:80"
+        export DOCKER_WEB_1_PORT_8000="${DOCKER_WEB_1_IP}:8000:8000"
+        export DOCKER_WEB_1_PORT_443="${DOCKER_WEB_1_IP}:443:443"
+#        # container web 2
+#        export DOCKER_WEB_2_PORT_80="${DOCKER_WEB_2_IP}:80:80"
+#        export DOCKER_WEB_2_PORT_8000="${DOCKER_WEB_2_IP}:8000:8000"
+#        export DOCKER_WEB_2_PORT_443="${DOCKER_WEB_2_IP}:443:443"
+
+        # worker 1
+        export DOCKER_WORKER_1_PORT_5555="${DOCKER_WEB_1_IP}:5555:5555"
+#        # worker 2
+#        export DOCKER_WORKER_2_PORT_5555="${DOCKER_WEB_2_IP}:5555:5555"
+
+        # postgres
+        export DOCKER_PGMASTER_PORT_5432="${DOCKER_PGMASTER_IP}:5432:5432"
+
+        # redis
+        export DOCKER_REDIS_PORT_6379="${DOCKER_REDIS_IP}:6379:6379"
+
+    else
+        # its linux so define the variables with just the port
+        # web
+        export DOCKER_WEB_1_PORT_80="80"
+        export DOCKER_WEB_1_PORT_8000="8000"
+        export DOCKER_WEB_1_PORT_443="443"
+
+#        # web 2
+#        export DOCKER_WEB_2_PORT_80="80"
+#        export DOCKER_WEB_2_PORT_8000="8000"
+#        export DOCKER_WEB_2_PORT_443="443"
+
+        # worker
+        export DOCKER_WORKER_1_PORT_5555="5555"
+
+#        # worker 2
+#        export DOCKER_WORKER_2_PORT_5555="5555"
+
+        # postgres
+        export DOCKER_PGMASTER_PORT_5432="5432"
+
+        # redis
+        export DOCKER_REDIS_PORT_6379="6379"
+    fi
+
+}
+
+#---  FUNCTION  ----------------------------------------------------------------
+#          NAME:  tearDownNetwork
+#   DESCRIPTION:  removes any network configs that need to be removed/taken down
+#    PARAMETERS:
+#       RETURNS:
+#-------------------------------------------------------------------------------
+tearDownNetwork()
+{
+    # get the subnet definition from the customers utils/config/local directory
+    DOCKER_SUBNET_FILE="${BASE_CUSTOMER_DIR}/${dcDEFAULT_APP_NAME}/${CUSTOMER_APP_UTILS}/config/${CUSTOMER_APP_ENV}/docker-subnet.conf"
+
+
+    if [[ -f ${DOCKER_SUBNET_FILE} ]]; then
+        # need to get the docker-subnet.conf from the app-utils/config/local
+        aLine=$(grep DOCKER_SUBNET_TO_USE ${DOCKER_SUBNET_FILE})
+        export DOCKER_SUBNET_TO_USE=${aLine/*=}
+        SUBNET_TO_USE=${DOCKER_SUBNET_TO_USE%\.*}
+    else
+        # choose a default subnet 
+        SUBNET_TO_USE=${DEFAULT_SUBNET}
+    fi
+
+    # first th estatic IP for the services
+    export DOCKER_SYSLOG_IP="${SUBNET_TO_USE}.2"
+    export DOCKER_REDIS_IP="${SUBNET_TO_USE}.3"
+    export DOCKER_PGMASTER_IP="${SUBNET_TO_USE}.4"
+    export DOCKER_WEB_1_IP="${SUBNET_TO_USE}.10"
+#    export DOCKER_WEB_2_IP="${SUBNET_TO_USE}.11"     # if needed
+    export DOCKER_WORKER_1_IP="${SUBNET_TO_USE}.20"
+#    export DOCKER_WORKER_2_IP="${SUBNET_TO_USE}.21"  # if needed
+
+    # need to set up the exposed port differently between OSX and Linux.  With OSX the syntax is IP:PORT:PORT where as with
+    # linux the only thing needed is just the port number
+    if [[ ${OSNAME} == "Darwin" ]]; then
+        # container web 1
+        export DOCKER_WEB_1_PORT_80="${DOCKER_WEB_1_IP}:80:80"
+        export DOCKER_WEB_1_PORT_8000="${DOCKER_WEB_1_IP}:8000:8000"
+        export DOCKER_WEB_1_PORT_443="${DOCKER_WEB_1_IP}:443:443"
+#        # container web 2
+#        export DOCKER_WEB_2_PORT_80="${DOCKER_WEB_2_IP}:80:80"
+#        export DOCKER_WEB_2_PORT_8000="${DOCKER_WEB_2_IP}:8000:8000"
+#        export DOCKER_WEB_2_PORT_443="${DOCKER_WEB_2_IP}:443:443"
+
+        # worker 1
+        export DOCKER_WORKER_1_PORT_5555="${DOCKER_WEB_1_IP}:5555:5555"
+#        # worker 2
+#        export DOCKER_WORKER_2_PORT_5555="${DOCKER_WEB_2_IP}:5555:5555"
+
+        # postgres
+        export DOCKER_PGMASTER_PORT_5432="${DOCKER_PGMASTER_IP}:5432:5432"
+
+        # redis
+        export DOCKER_REDIS_PORT_6379="${DOCKER_REDIS_IP}:6379:6379"
+
+        # since this operating system is OSX then we have to set up an alias on lo0 (the interface
+        # that docker talks on) to set up a connection to the container
+        # in linux the bridge is created with an interface that the host can access
+        interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_SYSLOG_IP}")
+        if [[ ${interfaceOutput} ]]; then
+            sudo ifconfig lo0 -alias "${DOCKER_SYSLOG_IP}"
+        fi
+        interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_REDIS_IP}")
+        if [[ ${interfaceOutput} ]]; then
+            sudo ifconfig lo0 -alias "${DOCKER_REDIS_IP}"
+        fi
+        interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_PGMASTER_IP}")
+        if [[ ${interfaceOutput} ]]; then
+            sudo ifconfig lo0 -alias "${DOCKER_PGMASTER_IP}"
+        fi
+        interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_WEB_1_IP}")
+        if [[ ${interfaceOutput} ]]; then
+            sudo ifconfig lo0 -alias "${DOCKER_WEB_1_IP}"
+        fi
+#        interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_WEB_2_IP}")
+#        if [[ ${interfaceOutput} ]]; then
+#            sudo ifconfig lo0 -alias "${DOCKER_WEB_2_IP}"
+#        fi
+        interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_WORKER_1_IP}")
+        if [[ ${interfaceOutput} ]]; then
+            sudo ifconfig lo0 -alias "${DOCKER_WORKER_1_IP}"
+        fi
+#        interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_WORKER_2_IP}")
+#        if [[ -z ${interfaceOutput} ]]; then
+#            sudo ifconfig lo0 alias "${DOCKER_WORKER_2_IP}"
+#        fi
+
+    else
+        # its linux so define the variables with just the port
+        # web
+        export DOCKER_WEB_1_PORT_80="80"
+        export DOCKER_WEB_1_PORT_8000="8000"
+        export DOCKER_WEB_1_PORT_443="443"
+
+#        # web 2
+#        export DOCKER_WEB_2_PORT_80="80"
+#        export DOCKER_WEB_2_PORT_8000="8000"
+#        export DOCKER_WEB_2_PORT_443="443"
+
+        # worker
+        export DOCKER_WORKER_1_PORT_5555="5555"
+
+#        # worker 2
+#        export DOCKER_WORKER_2_PORT_5555="5555"
+
+        # postgres
+        export DOCKER_PGMASTER_PORT_5432="5432"
+
+        # redis
+        export DOCKER_REDIS_PORT_6379="6379"
+    fi
+
+}
 
 #-------------------------------------------------------------------------------
 # Loop through the argument(s) and assign input args with the appropriate variables
@@ -71,6 +264,9 @@ while [[ $# -gt 0 ]]; do
     case $1 in
         --debug|-d )
             DEBUG=1
+            ;;
+        --service|-s ) shift;
+            SERVICE_TO_STOP=$1
             ;;
     esac
     shift
@@ -107,16 +303,19 @@ if [[ ! -f ${DOCKER_COMPOSE_FILE} ]]; then
     exit 1
 fi
 
+# set up the exported variables and anything else that needs to be cleaned up that we created in start-dc-containers.sh
+OSNAME=$(uname -s)
+setupNetwork
 
-#-------------------------------------------------------------------------------
-# get the number of applications running by the name of the specialized network
-# bridge created.
-#-------------------------------------------------------------------------------
-NUM_NETWORKS=$(docker network ls | grep -c "_dcnet" )
-export NET_NUMBER=$((20+$NUM_NETWORKS-1))
-
-CMDTORUN="docker-compose -f ${DOCKER_COMPOSE_FILE} -p ${dcDEFAULT_APP_NAME} stop"
-#dcLog  ${CMDTORUN}
+if [[ ${SERVICE_TO_STOP} ]]; then
+    CMDTORUN="docker-compose -f ${DOCKER_COMPOSE_FILE} -p ${dcDEFAULT_APP_NAME} stop ${SERVICE_TO_STOP}"
+else
+    CMDTORUN="docker-compose -f ${DOCKER_COMPOSE_FILE} -p ${dcDEFAULT_APP_NAME} stop"
+fi
+# and bring it all down
+dcLog  "${CMDTORUN}"
 ${CMDTORUN}
+
+tearDownNetwork
 
 dcEndLog "Finished..."

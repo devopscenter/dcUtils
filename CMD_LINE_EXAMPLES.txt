@@ -2,6 +2,9 @@ manageApp.py
 # basic create that sets up a workspacename
 manageApp.py -w WOW -a WOW-App -c create
 
+# and to join an already existing application development
+manageApp.py -w WOW -a WOW-App -c joinA --appName git@git.assembla:YourApp.git --utilsPath https://aLogin@bitbucket.org/team/appUtils.git
+
 # to add a new environment name for those that don't use the basic dev, staging, prod
 # to create an environment called devprod:
 manageApp.py -a WOW-App -c update -o "newEnv=devprod"
@@ -12,7 +15,10 @@ manageApp.py -a WOW-App -c update -o "newEnv=devprod"
 deployenv.sh
 # basic start that takes the default workspace and default application and default environment
 # which is local (ie, docker)
-deployeenv.sh
+deployenv.sh
+
+# otherwise if you want to build the default application for a specific environment (ie, dev)
+deployenv.sh -e dev
 
 
 switchWorkspace.sh
@@ -27,11 +33,23 @@ start-dc-containers.sh
 # basic start that takes the default workspace and default application
 start-dc-containers.sh
 
-stop.sh
+# start the web container only, for the application Quasar
+start-dc-containers.sh -a Quasar -s web
+
+NOTE: if you change the environemnt (ie, environment variables) than you will
+      not be able to start a specific service with the -s option as it will
+      not re-create the container which re-reads the environment. So you will
+      need to leave of the -s and allow docker-compose to do the correct action.
+
+
+stop-dc-contianers.sh
 # basic start that takes the default workspace and default application
 stop-dc-containers.sh
+
+# stop the web container only, for the application Quasar
+stop-dc-containers.sh -a Quasar -s web
 
 
 enter-container.py
 # no arguments are necessary, the script will go out and search for the containers you have
-# and give a list for you to pick from
+# running and give a list for you to pick from

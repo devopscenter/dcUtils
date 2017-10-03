@@ -696,6 +696,10 @@ class ManageAppName:
         shutil.copyfile(self.dcUtils + "/templates/docker-compose-debug.yml",
                         composeDebugFile)
 
+        composeSubnetFile = baseConfig + "/docker-subnet.conf"
+        shutil.copyfile(self.dcUtils + "/templates/docker-subnet.conf",
+                        composeSubnetFile)
+
         # need to change the env file name and path to represent what is
         # created with this script
         for line in fileinput.input(composeFile, inplace=1):
@@ -1067,7 +1071,7 @@ def checkArgs():
         './manageApp.py --baseDirectory ~/someDir/YourAppDir\n'
         '            --appName YourApp\n'
         '            --command update\n'
-        '            --option "newEnv = UAT"\n',
+        '            --option "newEnv=UAT"\n',
 
         formatter_class=RawDescriptionHelpFormatter)
     parser.add_argument('-d', '--baseDirectory', help='The base directory '

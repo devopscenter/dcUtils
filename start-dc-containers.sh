@@ -50,7 +50,6 @@ function usage
 }
 
 
-
 #---  FUNCTION  ----------------------------------------------------------------
 #          NAME:  setupNetwork
 #   DESCRIPTION:  ensures the user defined network for this container is set up
@@ -59,7 +58,6 @@ function usage
 #-------------------------------------------------------------------------------
 setupNetwork()
 {
-
     # get the subnet definition from the customers utils/config/local directory
     DOCKER_SUBNET_FILE="${BASE_CUSTOMER_DIR}/${dcDEFAULT_APP_NAME}/${CUSTOMER_APP_UTILS}/config/${CUSTOMER_APP_ENV}/docker-subnet.conf"
 
@@ -74,30 +72,95 @@ setupNetwork()
         SUBNET_TO_USE=${DEFAULT_SUBNET}
     fi
 
-    SERVICES=($(docker-compose -f ${DOCKER_COMPOSE_FILE} config --services 2>&1 > /dev/null))
-    NUM_SERVICES=${#SERVICES[@]}
-    count=0
-    
-    for number in {2..9}
-    do
-        if [[ ${count} -ge ${NUM_SERVICES} ]]; then
-            break
-        fi
+    # first th estatic IP for the services
+    export DOCKER_SYSLOG_IP="${SUBNET_TO_USE}.2"
+    export DOCKER_REDIS_IP="${SUBNET_TO_USE}.3"
+    export DOCKER_PGMASTER_IP="${SUBNET_TO_USE}.4"
+    export DOCKER_WEB_1_IP="${SUBNET_TO_USE}.10"
+#    export DOCKER_WEB_2_IP="${SUBNET_TO_USE}.11"     # if needed
+    export DOCKER_WORKER_1_IP="${SUBNET_TO_USE}.20"
+#    export DOCKER_WORKER_2_IP="${SUBNET_TO_USE}.21"  # if needed
 
-        # set up the statis ip
-        export DOCKER_STATIC_IP_$((${number}-1))="${SUBNET_TO_USE}.${number}"
-        count=$((${count}+1))
+    # need to set up the exposed port differently between OSX and Linux.  With OSX the syntax is IP:PORT:PORT where as with
+    # linux the only thing needed is just the port number
+    if [[ ${OSNAME} == "Darwin" ]]; then
+        # container web 1
+        export DOCKER_WEB_1_PORT_80="${DOCKER_WEB_1_IP}:80:80"
+        export DOCKER_WEB_1_PORT_8000="${DOCKER_WEB_1_IP}:8000:8000"
+        export DOCKER_WEB_1_PORT_443="${DOCKER_WEB_1_IP}:443:443"
+#        # container web 2
+#        export DOCKER_WEB_2_PORT_80="${DOCKER_WEB_2_IP}:80:80"
+#        export DOCKER_WEB_2_PORT_8000="${DOCKER_WEB_2_IP}:8000:8000"
+#        export DOCKER_WEB_2_PORT_443="${DOCKER_WEB_2_IP}:443:443"
 
-        # if the os is OSX then we have to set up an alias on lo0 (the interface
+        # worker 1
+        export DOCKER_WORKER_1_PORT_5555="${DOCKER_WEB_1_IP}:5555:5555"
+#        # worker 2
+#        export DOCKER_WORKER_2_PORT_5555="${DOCKER_WEB_2_IP}:5555:5555"
+
+        # postgres
+        export DOCKER_PGMASTER_PORT_5432="${DOCKER_PGMASTER_IP}:5432:5432"
+
+        # redis
+        export DOCKER_REDIS_PORT_6379="${DOCKER_REDIS_IP}:6379:6379"
+
+        # since this operating system is OSX then we have to set up an alias on lo0 (the interface
         # that docker talks on) to set up a connection to the container
         # in linux the bridge is created with an interface that the host can access
-        if [[ ${OSNAME} == "Darwin" ]]; then
-            interfaceOutput=$(ifconfig lo0 | grep "${SUBNET_TO_USE}.${number}")
-            if [[ -z ${interfaceOutput} ]]; then
-                sudo ifconfig lo0 alias "${SUBNET_TO_USE}.${number}"
-            fi
+        interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_SYSLOG_IP}")
+        if [[ -z ${interfaceOutput} ]]; then
+            sudo ifconfig lo0 alias "${DOCKER_SYSLOG_IP}"
         fi
-    done
+        interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_REDIS_IP}")
+        if [[ -z ${interfaceOutput} ]]; then
+            sudo ifconfig lo0 alias "${DOCKER_REDIS_IP}"
+        fi
+        interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_PGMASTER_IP}")
+        if [[ -z ${interfaceOutput} ]]; then
+            sudo ifconfig lo0 alias "${DOCKER_PGMASTER_IP}"
+        fi
+        interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_WEB_1_IP}")
+        if [[ -z ${interfaceOutput} ]]; then
+            sudo ifconfig lo0 alias "${DOCKER_WEB_1_IP}"
+        fi
+#        interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_WEB_2_IP}")
+#        if [[ -z ${interfaceOutput} ]]; then
+#            sudo ifconfig lo0 alias "${DOCKER_WEB_2_IP}"
+#        fi
+        interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_WORKER_1_IP}")
+        if [[ -z ${interfaceOutput} ]]; then
+            sudo ifconfig lo0 alias "${DOCKER_WORKER_1_IP}"
+        fi
+#        interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_WORKER_2_IP}")
+#        if [[ -z ${interfaceOutput} ]]; then
+#            sudo ifconfig lo0 alias "${DOCKER_WORKER_2_IP}"
+#        fi
+
+    else
+        # its linux so define the variables with just the port
+        # web
+        export DOCKER_WEB_1_PORT_80="80"
+        export DOCKER_WEB_1_PORT_8000="8000"
+        export DOCKER_WEB_1_PORT_443="443"
+
+#        # web 2
+#        export DOCKER_WEB_2_PORT_80="80"
+#        export DOCKER_WEB_2_PORT_8000="8000"
+#        export DOCKER_WEB_2_PORT_443="443"
+
+        # worker
+        export DOCKER_WORKER_1_PORT_5555="5555"
+
+#        # worker 2
+#        export DOCKER_WORKER_2_PORT_5555="5555"
+
+        # postgres
+        export DOCKER_PGMASTER_PORT_5432="5432"
+
+        # redis
+        export DOCKER_REDIS_PORT_6379="6379"
+    fi
+
 }
 
 
@@ -138,7 +201,6 @@ findContainerName()
         fi
         c=$(($c + 1))
     done
-    set +x
 }
 
 
@@ -167,6 +229,9 @@ while [[ $# -gt 0 ]]; do
         --debug|-d )
             DEBUG=1
             ;;
+        --service|-s ) shift;
+            SERVICE_TO_START=$1
+            ;;
     esac
     shift
 done
@@ -180,14 +245,16 @@ dcStartLog "Docker containers for application: ${dcDEFAULT_APP_NAME} env: ${ENV}
 # at the same time.  The ports will collide and the db container will not start.
 #-------------------------------------------------------------------------------
 
-postgres=$(ps -ef|grep postgres | grep -v grep)
-set -e
-if [ -n "$postgres" ]; then
-    dcLog "*** courtesy warning ***"
-    dcLog "postgres running, please exit postgres and try starting again."
-    return 1 2> /dev/null || exit 1
+if [[ -z $SERVICE_TO_START} ]]; then
+    postgres=$(ps -ef|grep postgres | grep -v grep)
+    set -e
+    if [ -n "$postgres" ]; then
+        dcLog "*** courtesy warning ***"
+        dcLog "postgres running, please exit postgres and try starting again."
+        return 1 2> /dev/null || exit 1
+    fi
+    set +e
 fi
-set +e
 
 #-------------------------------------------------------------------------------
 # We have all the information for this so lets run the docker-compose up with
@@ -218,31 +285,50 @@ fi
 OSNAME=$(uname -s)
 setupNetwork
 
-CMDTORUN="docker-compose -f ${DOCKER_COMPOSE_FILE} -p ${dcDEFAULT_APP_NAME} up -d"
-dcLog  ${CMDTORUN}
+
+if [[ ${SERVICE_TO_START} ]]; then
+    CMDTORUN="docker-compose -f ${DOCKER_COMPOSE_FILE} -p ${dcDEFAULT_APP_NAME} start ${SERVICE_TO_START}"
+else
+    CMDTORUN="docker-compose -f ${DOCKER_COMPOSE_FILE} -p ${dcDEFAULT_APP_NAME} up -d"
+fi
+
+dcLog  "${CMDTORUN}"
 ${CMDTORUN}
 
+echo "The IPs for each container will be put in /etc/hosts which requires sudo access."
+echo "So, you may be asked to enter your password to write these entries."
+
+# allow multiple docker containers networks to talk to each other, but needs to do it after the containers are up
+sudo iptables --flush DOCKER-ISOLATION
+
+dockerSeparator="################## docker containers"
+separator=$(grep "${dockerSeparator}" /etc/hosts)
+if [[ -z ${separator} ]]; then
+    echo | sudo tee -a /etc/hosts > /dev/null
+    echo | sudo tee -a /etc/hosts > /dev/null
+    echo "${dockerSeparator}" | sudo tee -a /etc/hosts > /dev/null
+fi
 
 SERVICES=($(docker-compose -f ${DOCKER_COMPOSE_FILE} config --services))
 for service in ${SERVICES[@]}
 do
     CONTAINER_NAME=$(findContainerName $service)
-        set -x
     serviceIP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${CONTAINER_NAME})
     hostEntry=$(grep ${CONTAINER_NAME} /etc/hosts)
 
+    echo "${CONTAINER_NAME} => ${serviceIP}"
     if [[ ${hostEntry} ]]; then
         # it was there so we need to see if the IP is different
         tmpArray=(${hostEntry})
         if [[ ${tmpArray[0]} != ${serviceIP} ]]; then
             # the entry was there but the IP is different
-            #sudo sed -i.bak "/$CONTAINER_NAME/ s/.*/${tmpIP}    $CONTAINER_NAME/" /etc/hosts
             sudo sed -i.bak "/$CONTAINER_NAME/ s/.*/${serviceIP}    $CONTAINER_NAME/" /etc/hosts
-            #sudo sed -i.bak "s/.*${CONTAINER_NAME}/${tmpIP}    $CONTAINER_NAME/" /etc/hosts
         fi
     else
         # it wasn't there so append it
-        echo "${serviceIP}    ${CONTAINER_NAME} " | sudo tee -a /etc/hosts > /dev/null
+        if [[ ${serviceIP} ]]; then 
+            echo "${serviceIP}    ${CONTAINER_NAME} " | sudo tee -a /etc/hosts > /dev/null
+        fi
     fi
         set +x
 done
