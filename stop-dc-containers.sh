@@ -30,18 +30,19 @@
 #-------------------------------------------------------------------------------
 function usage
 {
-    echo -e "Usage: stop.sh [--appName appName] [--env theEnv]"
+    echo -e "Usage: stop.sh [--appName appName] [--env theEnv] --cleanup"
     echo
     echo -e "This script will stop the docker containers found running that are"
     echo -e "specific to the application and no others.  The containers will be "
     echo -e "stopped so the state will not be lost when they are started again"
     echo 
     echo -e "--appName is the name of the application that you want to"
-    echo -e "      run as the default app for the current session. This is "
+    echo -e "      stop as the default app for the current session. This is "
     echo -e "      optional if you only have one application defined."
     echo -e "--env theEnv is one of local, dev, staging, prod. This is optional"
     echo -e "      unless you have defined an environment other than local."
-    echo -e "--debug will start the web-debug container rather than the web one"
+    echo -e "--cleanup  will remove networks items that were setup when the"
+    echo -e "      start-dc-containers.sh was executed."
     echo
     exit 1
 }
@@ -248,6 +249,9 @@ if [[ $1 == '-h' ]]; then
     exit 1
 fi
 
+# defaults
+CLEAN_UP_NETWORK=0
+
 NEW=${@}
 
 envToSource="$(${dcUTILS}/scripts/process_dc_env.py ${NEW})"
@@ -267,6 +271,9 @@ while [[ $# -gt 0 ]]; do
             ;;
         --service|-s ) shift;
             SERVICE_TO_STOP=$1
+            ;;
+        --cleanup|-c )
+            CLEAN_UP_NETWORK=1
             ;;
     esac
     shift
@@ -316,6 +323,8 @@ fi
 dcLog  "${CMDTORUN}"
 ${CMDTORUN}
 
-tearDownNetwork
+if [[ ${CLEAN_UP_NETWORK} -eq 1 ]]; then
+    tearDownNetwork
+fi
 
 dcEndLog "Finished..."
