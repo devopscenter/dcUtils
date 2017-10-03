@@ -341,16 +341,17 @@ If you want to go back to the default unnamed workspace, enter the word "default
 Please read [CONTRIBUTING.md](https://gist.github.com/PurpleBooth/b24679402957c63ec426) for details on our code of conduct, and the process for submitting pull requests to us.
 
 ## Authors
+(note: this applies to both dcUtils and [dcStack](https://github.com/devopscenter/dcStack/))
 
-* **Bob Lozano** - *Initial work*
-* **Josh NAME** - *Initial work*
-* **Trey NAME** - *refinements for version 1*
-* **Gregg Jensen** - *refinements and extension for version2*
+* **Josh Joy** - *Initial work*
+* **Trey Dembski** - *refinements to version 1*
+* **Bob Lozano** - *Initial work, contributing to 2.0*
+* **Gregg Jensen** - *refinements and extension for version 2*
 
 
 ## License
 
-This project is licensed under the Apache 2.0 License - see the [LICENSE](LICENSE) file for details
+This project and [dcStack](https://github.com/devopscenter/dcStack/)) are licensed under the Apache 2.0 License - see the [LICENSE](LICENSE) file for details
 
 ## Acknowledgments
 
