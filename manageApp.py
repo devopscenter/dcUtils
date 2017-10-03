@@ -1057,19 +1057,16 @@ def checkArgs():
         'subsequent commands and utilities.\nSee below for how to use.\n\n'
 
         'Example command line to create an application:\n'
-        './manageApp.py --baseDirectory ~/someDir/YourAppDir\n'
-        '               --appName YourApp\n'
+        './manageApp.py --appName YourApp\n'
         '               --command create\n\n'
         'Example command line to join with an application:\n'
-        './manageApp.py --baseDirectory ~/someDir/YourAppDir\n'
-        '            --appName YourApp\n'
+        './manageApp.py --appName YourApp\n'
         '            --command join\n'
         '            --appPath git@git.assembla.com:website.git \n'
         '            --utilsPath https://zsoqe@bitbucket.org/team/appUtils.git'
         '\n\n'
         'Example cmd line to update an application with a new environment:\n'
-        './manageApp.py --baseDirectory ~/someDir/YourAppDir\n'
-        '            --appName YourApp\n'
+        './manageApp.py --appName YourApp\n'
         '            --command update\n'
         '            --option "newEnv=UAT"\n',
 
