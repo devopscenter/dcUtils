@@ -356,5 +356,3 @@ This project and [dcStack](https://github.com/devopscenter/dcStack/)) are licens
 ## Acknowledgments
 
 * Hat tip to anyone who's code was used
-* Inspiration
-* etc
