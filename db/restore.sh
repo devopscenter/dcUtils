@@ -131,7 +131,30 @@ done
 sudo sed -i "s/^\barchive_mode\b[[:blank:]]\+=[[:blank:]]\+\bon\b/archive_mode = off/g" /media/data/postgres/db/pgdata/postgresql.conf
 sleep 2
 sudo supervisorctl restart postgres
-sleep 5
+
+# now lets ensure that the database is up before continuing
+IS_READY=1
+for tryAttempt in {1..3}
+do
+    pg_isready -q
+    if [ $? -gt 0 ]
+    then 
+        if [[ ${tryAttempt} -eq 3 ]]; then
+            echo "Will try one last time in 5 seconds."
+        else
+            echo "postgresql does not appear to be up and ready, will try again in 5 seconds "
+        fi
+        sleep 5
+    else
+        IS_READY=0
+        break
+    fi
+done
+
+if [[ ${IS_READY} -eq 1 ]]; then
+    echo "postgres didn't come up in the time allowed, exitting.  Try this again in a minute or two."
+    exit 1
+fi
 
 # if no backup file is provided, look for the most recent pgdump file in the backup dir
 if [[ -z "$LOCAL_BACKUP_FILE" ]]; then
