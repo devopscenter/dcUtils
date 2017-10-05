@@ -368,14 +368,18 @@ Then run the server with the following command from the command line:
 Then from the host browser you can access this by giving the IP or container name and provide a port
 at the end of the URL.
 
-#### Reload the site *(web continer only)
+#### Reload the site *(web continer only)*
 In order to reload the site [Log into the web container](README.md#logging-into-a-container) and execute 
 the following command:
 
     supervisorctl restart nginx
     supervisorctl restart uwsgi
 
-#### Reload django-rq async tasks *(default web and workder container only)
+#### Reload django-rq async tasks *(default web and workder container only)*
+You will need to restart the container.  There is an option to stop-dc-containers.sh and 
+start-dc-containers.sh that you can use that will do this.  The -s will specify a specific container,
+however, you will need to use the name that is found for that service in the docker-compose.yml.
+If you don't change them, the are: *web, worker, pgmaster-1, syslog, redismaster*
     stop-dc-containers.sh -s web
     stop-dc-containers.sh -s worker
     start-dc-containers.sh -s web
