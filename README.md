@@ -15,8 +15,11 @@ To get the local development environment running
 * [update env files](README.md#edit-personalenv) as appropriate
 * [run deployenv.sh](README.md#run-deployenvsh)
 * [run start-dc-containers.sh](README.md#start-the-application)
+* [load database](README.md#load-database)
+* [migrate or deploy web site ](README.md#migrate-or-deploy-web-stie)
+* [access your web site](@README.md#access-your-web-site)
 
-Of course there is more to it than that, hence the rest of the documentation...
+And the rest of it is in the details, hence the rest of the documentation...
 
 ### Prerequisites
 
@@ -304,6 +307,66 @@ And then to stop the application (from within dcUtils):
 
 NOTE: if you have multiple applications in your base directory you will need to add
 the --appName option to signify which one you are stopping
+
+#### Logging into a container
+If you would like to perform any actions from within a container, there is a tool that
+will help you get into it without having to know docker commands.  The tool is:
+
+    enter-container.py
+
+Executing this script will present you with a enumerated list of running containers. Just
+select the number of the container you want to get into and hit return
+
+#### Load database
+To load a database into the database container you first need to [log into the container](README.md#logging-into-a-continer)
+and then change directory to:
+
+     /media/data/db_restore
+
+In this directory are two scripts, one to download a database backup from S3 and then restore 
+it after it has been downloaded to the container.  This assumes there is a database backup
+already out there in S3 associated with your account and application.
+
+From there, in order to download you would execute the download.sh script similar to:
+
+    ./download.sh --list app-env-postgres-backup dbName
+
+NOTE: you would replace the app-env with your app name and the environment of the database
+backup you wish to download.  Also, if all you want is the latest one, then you can omit the
+--list option. Using the --list option would allow you to download an earlier backup, for
+example.
+
+The time to download is dependent on the size of the database.  Once the download completed
+you can use that backup to be restored into your database in the container by running the 
+script:
+    
+    ./restore.sh dbName
+
+Use the same dbName as you used for the download.sh command line and it will set up the 
+database, removing one that may have been there before.
+
+#### Migrate or deploy web site 
+To set up your django web site, [log into the container](README.md#logging-into-a-container)
+and you will be placed in a directory that holds your web application.  So, all that
+needs to be done is run:
+
+    python manage.py migrate
+
+and this will prepare the site with the current database schema.
+
+#### Access your web site
+At this point, your web site is running and can be accessed by your host computer's browser.
+Give the IP or container name and the web site should come up.
+
+If you are running with the web-debug container rather then the normal web container, then
+you will need to start the server manually within the web-debug container. [Log into the web container](README.md#logging-into-a-container) 
+which in this case will be running the web-debug stack and you will be placed in the web directory.
+Then run the server with the following command from the command line:
+
+    python manage.py runsslserver 0.0.0.0.8000
+
+Then from the host browser you can access this by giving the IP or container name and provide a port
+at the end of the URL.
 
 ### Multiple base directories - Work Spaces
 By default the idea of working with the devops.center environment is that there is
