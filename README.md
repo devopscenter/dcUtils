@@ -16,7 +16,7 @@ To get the local development environment running
 * [run deployenv.sh](README.md#run-deployenvsh)
 * [run start-dc-containers.sh](README.md#start-the-application)
 * [load database](README.md#load-database)
-* [migrate or deploy web site ](README.md#migrate-or-deploy-web-stie)
+* [migrate or deploy web site ](README.md#migrate-or-deploy-web-site)
 * [access your web site](@README.md#access-your-web-site)
 
 And the rest of it is in the details, hence the rest of the documentation...
