@@ -25,12 +25,10 @@ And the rest of it is in the details, hence the rest of the documentation...
 
 What things you need to install the software and how to install them
 
-'''
-bash version 4 or greater
-awscli
-jq
-docker and docker-compose
-'''
+    - bash version 4 or greater
+    - awscli
+    - jq
+    - docker and docker-compose
 
 Getting these installed will be dependent on how you install softare on your development machine.
 
