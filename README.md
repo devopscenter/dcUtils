@@ -368,6 +368,52 @@ Then run the server with the following command from the command line:
 Then from the host browser you can access this by giving the IP or container name and provide a port
 at the end of the URL.
 
+#### Reload the site *(web continer only)
+In order to reload the site [Log into the web container](README.md#logging-into-a-container) and execute 
+the following command:
+
+    supervisorctl restart nginx
+    supervisorctl restart uwsgi
+
+#### Reload django-rq async tasks *(default web and workder container only)
+    stop-dc-containers.sh -s web
+    stop-dc-containers.sh -s worker
+    start-dc-containers.sh -s web
+    start-dc-containers.sh -s worker
+
+#### Examine logs
+All logging in each container goes to syslog, and that in turn is funneled to the syslog container.
+During initial setup there were configuration values defined for the centralized logging service
+you subscribe to.  All logs will show up there.
+
+#### Some help docker commands
+
+    # examing running processes
+    docker ps
+
+    # examine local volumes
+    docker volume ls
+
+    # clear all containers (they must be stopped)
+    docker rm $(docker rm -aq)
+
+    # clear all locally cached images (all containers must first have been deleted)
+    docker rmi $(docker images -q)
+
+    # delete all volumes that are not currenntly in use
+    docker volume rm $(docker volume ls -qf dangling=true)
+
+    # delete all volumes
+    docker volume rm $(docker volume ls -q)
+
+    # start an interactive bash shell in a running container (in this case the postgres master)
+    docker exec -it pgmaster-1 /bin/bash
+
+#### A note about DB handling
+The db itself ordinarily persists across starting and stopping the containers. 
+Therefore, once you’ve loaded the db it will ordinarily stay as-is until you explicitly 
+delete or change it.
+
 ### Multiple base directories - Work Spaces
 By default the idea of working with the devops.center environment is that there is
 one default workspace named: default.  This default workspace has a directory
