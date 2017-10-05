@@ -121,6 +121,35 @@ function fixUpFile
     fi
 }
 
+#---  FUNCTION  ----------------------------------------------------------------
+#          NAME:  collectEnvFiles
+#   DESCRIPTION:  This will collect all the instance-###.env files found in 
+#                 $HOME/.dcConfig and combine them into one instance.env file.
+#    PARAMETERS:  
+#       RETURNS:  
+#-------------------------------------------------------------------------------
+collectEnvFiles()
+{
+    OUTFILE="${HOME}/.dcConfig/instance.env"
+
+    # first remove an old one if it's there
+    if [[ -f ${OUTFILE} ]]; then
+        rm  ${OUTFILE}
+    fi
+
+    # now loop through all the files named instance-*.env and put them into 
+    # the one instance.env
+    cd $HOME/.dcConfig
+
+    for file in instance-*.env
+    do
+        while IFS= read -r aLine
+        do
+            echo ${aLine} >> $OUTFILE
+        done < ${file}
+    done
+}
+
 #-------------------------------------------------------------------------------
 # Loop through the arguments and assign input args with the appropriate variables
 #-------------------------------------------------------------------------------
@@ -209,6 +238,7 @@ if [[ $TYPE == "instance" ]]; then
     dcLog "... instance.env into global environment file if available"
     # instance.env has the tags for this instance that will be made to be environment variables
     if [[ -e ${HOME}/.dcConfig/instance.env ]]; then
+        collectEnvFiles
         cat ${HOME}/.dcConfig/instance.env | sudo tee -a /etc/environment
     fi
 
