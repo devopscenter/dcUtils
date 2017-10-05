@@ -236,6 +236,10 @@ if [[ $TYPE == "instance" ]]; then
         sed -e 's/^/export /'  ${dcUTILS}/environments/common.env | sudo tee -a /etc/default/supervisor
     fi
 
+    if [[ -e ${HOME}/.dcConfig/instance.env ]]; then
+        sed -e 's/^/export /' ${HOME}/.dcConfig/instance.env | sudo tee -a /etc/default/supervisor
+    fi
+
     if [[ -e ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/common.env ]]; then
         sed -e 's/^/export /' ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/common.env | sudo tee -a /etc/default/supervisor
     fi
