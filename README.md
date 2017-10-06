@@ -15,19 +15,20 @@ To get the local development environment running
 * [update env files](README.md#edit-personalenv) as appropriate
 * [run deployenv.sh](README.md#run-deployenvsh)
 * [run start-dc-containers.sh](README.md#start-the-application)
+* [load database](README.md#load-database)
+* [migrate or deploy web site ](README.md#migrate-or-deploy-web-site)
+* [access your web site](README.md#access-your-web-site)
 
-Of course there is more to it than that, hence the rest of the documentation...
+And the rest of it is in the details, hence the rest of the documentation...
 
 ### Prerequisites
 
 What things you need to install the software and how to install them
 
-'''
-bash version 4 or greater
-awscli
-jq
-docker and docker-compose
-'''
+    - bash version 4 or greater
+    - awscli
+    - jq
+    - docker and docker-compose
 
 Getting these installed will be dependent on how you install softare on your development machine.
 
@@ -304,6 +305,116 @@ And then to stop the application (from within dcUtils):
 
 NOTE: if you have multiple applications in your base directory you will need to add
 the --appName option to signify which one you are stopping
+
+#### Logging into a container
+If you would like to perform any actions from within a container, there is a tool that
+will help you get into it without having to know docker commands.  The tool is:
+
+    enter-container.py
+
+Executing this script will present you with a enumerated list of running containers. Just
+select the number of the container you want to get into and hit return
+
+#### Load database
+To load a database into the database container you first need to [log into the container](README.md#logging-into-a-continer)
+and then change directory to:
+
+     /media/data/db_restore
+
+In this directory are two scripts, one to download a database backup from S3 and then restore 
+it after it has been downloaded to the container.  This assumes there is a database backup
+already out there in S3 associated with your account and application.
+
+From there, in order to download you would execute the download.sh script similar to:
+
+    ./download.sh --list app-env-postgres-backup dbName
+
+NOTE: you would replace the app-env with your app name and the environment of the database
+backup you wish to download.  Also, if all you want is the latest one, then you can omit the
+--list option. Using the --list option would allow you to download an earlier backup, for
+example.
+
+The time to download is dependent on the size of the database.  Once the download completed
+you can use that backup to be restored into your database in the container by running the 
+script:
+    
+    ./restore.sh dbName
+
+Use the same dbName as you used for the download.sh command line and it will set up the 
+database, removing one that may have been there before.
+
+#### Migrate or deploy web site 
+To set up your django web site, [log into the container](README.md#logging-into-a-container)
+and you will be placed in a directory that holds your web application.  So, all that
+needs to be done is run:
+
+    python manage.py migrate
+
+and this will prepare the site with the current database schema.
+
+#### Access your web site
+At this point, your web site is running and can be accessed by your host computer's browser.
+Give the IP or container name and the web site should come up.
+
+If you are running with the web-debug container rather then the normal web container, then
+you will need to start the server manually within the web-debug container. [Log into the web container](README.md#logging-into-a-container) 
+which in this case will be running the web-debug stack and you will be placed in the web directory.
+Then run the server with the following command from the command line:
+
+    python manage.py runsslserver 0.0.0.0.8000
+
+Then from the host browser you can access this by giving the IP or container name and provide a port
+at the end of the URL.
+
+#### Reload the site *(web continer only)*
+In order to reload the site [Log into the web container](README.md#logging-into-a-container) and execute 
+the following command:
+
+    supervisorctl restart nginx
+    supervisorctl restart uwsgi
+
+#### Reload django-rq async tasks *(default web and workder container only)*
+You will need to restart the container.  There is an option to stop-dc-containers.sh and 
+start-dc-containers.sh that you can use that will do this.  The -s will specify a specific container,
+however, you will need to use the name that is found for that service in the docker-compose.yml.
+If you don't change them, the are: *web, worker, pgmaster-1, syslog, redismaster*
+    stop-dc-containers.sh -s web
+    stop-dc-containers.sh -s worker
+    start-dc-containers.sh -s web
+    start-dc-containers.sh -s worker
+
+#### Examine logs
+All logging in each container goes to syslog, and that in turn is funneled to the syslog container.
+During initial setup there were configuration values defined for the centralized logging service
+you subscribe to.  All logs will show up there.
+
+#### Some help docker commands
+
+    # examing running processes
+    docker ps
+
+    # examine local volumes
+    docker volume ls
+
+    # clear all containers (they must be stopped)
+    docker rm $(docker rm -aq)
+
+    # clear all locally cached images (all containers must first have been deleted)
+    docker rmi $(docker images -q)
+
+    # delete all volumes that are not currenntly in use
+    docker volume rm $(docker volume ls -qf dangling=true)
+
+    # delete all volumes
+    docker volume rm $(docker volume ls -q)
+
+    # start an interactive bash shell in a running container (in this case the postgres master)
+    docker exec -it pgmaster-1 /bin/bash
+
+#### A note about DB handling
+The db itself ordinarily persists across starting and stopping the containers. 
+Therefore, once you’ve loaded the db it will ordinarily stay as-is until you explicitly 
+delete or change it.
 
 ### Multiple base directories - Work Spaces
 By default the idea of working with the devops.center environment is that there is
