@@ -206,14 +206,14 @@ class ManageAppName:
         # change to the baseDirectory
         os.chdir(self.baseDir + "/" + self.appName)
 
-        if re.match("http", self.appPath) or re.match("git", self.appPath):
+        if re.match("http", self.appPath) or re.search(".git$", self.appPath):
             # they have entered a git repo for the existing front end directory
             self.joinWithGit(basePath, "web", self.appPath)
         else:
             # they have entered a path to an existing front end directory
             self.joinWithPath(basePath, "web", self.appPath)
 
-        if re.match("http", self.utilsPath) or re.match("git", self.utilsPath):
+        if re.match("http", self.utilsPath) or re.search(".git$", self.utilsPath):
             # they have entered a git repo for the existing utilities directory
             self.joinWithGit(basePath, "utils", self.utilsPath)
         else:
