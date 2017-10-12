@@ -37,6 +37,9 @@ services:
             - "${GENERATED_ENV_FILE}"
         volumes:
             - pg-db:/media/data/postgres/
+            - pg-db-pgdata:/media/data/postgres/db/pgdata/
+            - pg-db-backup:/media/data/postgres/backup/
+            - pg-db-xlog:/media/data/postgres/xlog/
             - "${dcUTILS}:/root/dcUtils"
             - "${APP_UTILS_CONFIG}:/app-utils/conf"
             - "${APP_UTILS_KEYS}:/app-utils/keys"
@@ -79,3 +82,7 @@ networks:
 # Must include all named volumes in V2 compose file format.
 volumes:
     pg-db:
+    pg-db-pgdata:
+    pg-db-backup:
+    pg-db-xlog:
+
