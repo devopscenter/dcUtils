@@ -297,12 +297,12 @@ ${CMDTORUN}
 
 # allow multiple docker containers networks to talk to each other, but needs to do it after the containers are up
 if [[ ${OSNAME} != "Darwin" ]]; then
-    if [[ ${MULTI_DOCKER_STACK_COMMUNICATION} == "yes" ]]; then
+#    if [[ ${MULTI_DOCKER_STACK_COMMUNICATION} == "yes" ]]; then
         echo 
         echo "We need to update the local iptables so that the multiple stacks can talk to each other"
         echo "So, you may be asked to enter your password to do this"
         sudo iptables --flush DOCKER-ISOLATION
-    fi
+#    fi
 fi
 
 echo 
