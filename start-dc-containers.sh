@@ -295,11 +295,19 @@ fi
 dcLog  "${CMDTORUN}"
 ${CMDTORUN}
 
-echo "The IPs for each container will be put in /etc/hosts which requires sudo access."
-echo "So, you may be asked to enter your password to write these entries."
-
 # allow multiple docker containers networks to talk to each other, but needs to do it after the containers are up
-sudo iptables --flush DOCKER-ISOLATION
+if [[ ${OSNAME} != "Darwin" ]]; then
+    if [[ ${MULTI_DOCKER_STACK_COMMUNICATION} == "yes" ]]; then
+        echo 
+        echo "We need to update the local iptables so that the multiple stacks can talk to each other"
+        echo "So, you may be asked to enter your password to do this"
+        sudo iptables --flush DOCKER-ISOLATION
+    fi
+fi
+
+echo 
+echo "The IPs for each container will be put in /etc/hosts which requires sudo access."
+echo "So, you may be asked to enter your password to write these entries, if they do not already exist."
 
 dockerSeparator="################## docker containers"
 separator=$(grep "${dockerSeparator}" /etc/hosts)
