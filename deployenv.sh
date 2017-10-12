@@ -321,9 +321,6 @@ else
     TEMP_FILE="${dcUTILS}/.tmp-local.env"
     cp ${dcUTILS}/environments/common.env ${TEMP_FILE}
 
-    dcUTILS=~/dcUtils
-    echo "dcUTILS=~/dcUtils" >> ${TEMP_FILE}
-
     # get the Customer specific utils and web dir and put it in the file
     echo "BASE_CUSTOMER_DIR=${BASE_CUSTOMER_DIR}"  >> ${TEMP_FILE}
     echo "CUSTOMER_APP_UTILS=${CUSTOMER_APP_UTILS}"  >> ${TEMP_FILE}
