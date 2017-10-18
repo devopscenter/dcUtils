@@ -71,12 +71,16 @@ setupNetwork()
 
     # first th estatic IP for the services
     export DOCKER_SYSLOG_IP="${SUBNET_TO_USE}.2"
-    export DOCKER_REDIS_IP="${SUBNET_TO_USE}.3"
     export DOCKER_PGMASTER_IP="${SUBNET_TO_USE}.4"
     export DOCKER_WEB_1_IP="${SUBNET_TO_USE}.10"
-#    export DOCKER_WEB_2_IP="${SUBNET_TO_USE}.11"     # if needed
+    export DOCKER_WEB_2_IP="${SUBNET_TO_USE}.11"
     export DOCKER_WORKER_1_IP="${SUBNET_TO_USE}.20"
-#    export DOCKER_WORKER_2_IP="${SUBNET_TO_USE}.21"  # if needed
+    export DOCKER_WORKER_2_IP="${SUBNET_TO_USE}.21"
+    export DOCKER_REDIS_IP="${SUBNET_TO_USE}.30"  # reserved for redismaster
+    export DOCKER_REDIS_USER_1_IP="${SUBNET_TO_USE}.31"
+    export DOCKER_REDIS_USER_2_IP="${SUBNET_TO_USE}.32"
+    export DOCKER_REDIS_USER_3_IP="${SUBNET_TO_USE}.33"
+    export DOCKER_REDIS_USER_4_IP="${SUBNET_TO_USE}.34"
 
     # need to set up the exposed port differently between OSX and Linux.  With OSX the syntax is IP:PORT:PORT where as with
     # linux the only thing needed is just the port number
@@ -85,15 +89,15 @@ setupNetwork()
         export DOCKER_WEB_1_PORT_80="${DOCKER_WEB_1_IP}:80:80"
         export DOCKER_WEB_1_PORT_8000="${DOCKER_WEB_1_IP}:8000:8000"
         export DOCKER_WEB_1_PORT_443="${DOCKER_WEB_1_IP}:443:443"
-#        # container web 2
-#        export DOCKER_WEB_2_PORT_80="${DOCKER_WEB_2_IP}:80:80"
-#        export DOCKER_WEB_2_PORT_8000="${DOCKER_WEB_2_IP}:8000:8000"
-#        export DOCKER_WEB_2_PORT_443="${DOCKER_WEB_2_IP}:443:443"
+        # container web 2
+        export DOCKER_WEB_2_PORT_80="${DOCKER_WEB_2_IP}:80:80"
+        export DOCKER_WEB_2_PORT_8000="${DOCKER_WEB_2_IP}:8000:8000"
+        export DOCKER_WEB_2_PORT_443="${DOCKER_WEB_2_IP}:443:443"
 
         # worker 1
         export DOCKER_WORKER_1_PORT_5555="${DOCKER_WEB_1_IP}:5555:5555"
-#        # worker 2
-#        export DOCKER_WORKER_2_PORT_5555="${DOCKER_WEB_2_IP}:5555:5555"
+        # worker 2
+        export DOCKER_WORKER_2_PORT_5555="${DOCKER_WEB_2_IP}:5555:5555"
 
         # postgres
         export DOCKER_PGMASTER_PORT_5432="${DOCKER_PGMASTER_IP}:5432:5432"
@@ -108,16 +112,16 @@ setupNetwork()
         export DOCKER_WEB_1_PORT_8000="8000"
         export DOCKER_WEB_1_PORT_443="443"
 
-#        # web 2
-#        export DOCKER_WEB_2_PORT_80="80"
-#        export DOCKER_WEB_2_PORT_8000="8000"
-#        export DOCKER_WEB_2_PORT_443="443"
+        # web 2
+        export DOCKER_WEB_2_PORT_80="80"
+        export DOCKER_WEB_2_PORT_8000="8000"
+        export DOCKER_WEB_2_PORT_443="443"
 
         # worker
         export DOCKER_WORKER_1_PORT_5555="5555"
 
-#        # worker 2
-#        export DOCKER_WORKER_2_PORT_5555="5555"
+        # worker 2
+        export DOCKER_WORKER_2_PORT_5555="5555"
 
         # postgres
         export DOCKER_PGMASTER_PORT_5432="5432"
