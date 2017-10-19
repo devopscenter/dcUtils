@@ -200,11 +200,10 @@ tearDownNetwork()
 #            sudo ifconfig lo0 alias "${DOCKER_WORKER_2_IP}"
 #        fi
 
-set +x
     else
         # TODO need to remove the network element also
         # docker network rm NETWORK_BRIDGE_NAME
-        echo ""
+        docker network prune
     fi
 
 }
