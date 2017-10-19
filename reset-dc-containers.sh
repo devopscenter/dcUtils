@@ -132,8 +132,8 @@ if [[ ${REMOVE_ALL} -eq 1 ]]; then
         dcLog "Removing images"
         echo $dcSTACK_VERSION
         docker rmi $(docker images -q devopscenter/*:${dcSTACK_VERSION})
-        #dcLog "Removing volumes"
-        #docker volume rm $(docker volume ls -q)
+        dcLog "Removing volumes"
+        docker volume prune
     else
         echo "not removed."
         exit 2
