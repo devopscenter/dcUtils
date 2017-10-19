@@ -96,7 +96,7 @@ dcStartLog "Removing and reseting docker containers for application: ${dcDEFAULT
 
 dcLog "Stopping the running containers for the app"
 
-CMD_TO_RUN="stop-dc-containers.sh -a ${dcDEFAULT_APP_NAME} "
+CMD_TO_RUN="stop-dc-containers.sh -a ${dcDEFAULT_APP_NAME} --cleanup "
 
 if [[ ${DEBUG} -eq 1 ]]; then
     CMD_TO_RUN="${CMD_TO_RUN} --debug "
