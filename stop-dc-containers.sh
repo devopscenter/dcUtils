@@ -41,6 +41,7 @@ function usage
     echo -e "      optional if you only have one application defined."
     echo -e "--env theEnv is one of local, dev, staging, prod. This is optional"
     echo -e "      unless you have defined an environment other than local."
+    echo -e "--debug will use the web-debug configuration rather than the normal web one"
     echo -e "--cleanup  will remove networks items that were setup when the"
     echo -e "      start-dc-containers.sh was executed."
     echo
@@ -166,26 +167,7 @@ tearDownNetwork()
     # need to set up the exposed port differently between OSX and Linux.  With OSX the syntax is IP:PORT:PORT where as with
     # linux the only thing needed is just the port number
     if [[ ${OSNAME} == "Darwin" ]]; then
-        # container web 1
-        export DOCKER_WEB_1_PORT_80="${DOCKER_WEB_1_IP}:80:80"
-        export DOCKER_WEB_1_PORT_8000="${DOCKER_WEB_1_IP}:8000:8000"
-        export DOCKER_WEB_1_PORT_443="${DOCKER_WEB_1_IP}:443:443"
-#        # container web 2
-#        export DOCKER_WEB_2_PORT_80="${DOCKER_WEB_2_IP}:80:80"
-#        export DOCKER_WEB_2_PORT_8000="${DOCKER_WEB_2_IP}:8000:8000"
-#        export DOCKER_WEB_2_PORT_443="${DOCKER_WEB_2_IP}:443:443"
-
-        # worker 1
-        export DOCKER_WORKER_1_PORT_5555="${DOCKER_WEB_1_IP}:5555:5555"
-#        # worker 2
-#        export DOCKER_WORKER_2_PORT_5555="${DOCKER_WEB_2_IP}:5555:5555"
-
-        # postgres
-        export DOCKER_PGMASTER_PORT_5432="${DOCKER_PGMASTER_IP}:5432:5432"
-
-        # redis
-        export DOCKER_REDIS_PORT_6379="${DOCKER_REDIS_IP}:6379:6379"
-
+    set -x
         # since this operating system is OSX then we have to set up an alias on lo0 (the interface
         # that docker talks on) to set up a connection to the container
         # in linux the bridge is created with an interface that the host can access
@@ -218,29 +200,11 @@ tearDownNetwork()
 #            sudo ifconfig lo0 alias "${DOCKER_WORKER_2_IP}"
 #        fi
 
+set +x
     else
-        # its linux so define the variables with just the port
-        # web
-        export DOCKER_WEB_1_PORT_80="80"
-        export DOCKER_WEB_1_PORT_8000="8000"
-        export DOCKER_WEB_1_PORT_443="443"
-
-#        # web 2
-#        export DOCKER_WEB_2_PORT_80="80"
-#        export DOCKER_WEB_2_PORT_8000="8000"
-#        export DOCKER_WEB_2_PORT_443="443"
-
-        # worker
-        export DOCKER_WORKER_1_PORT_5555="5555"
-
-#        # worker 2
-#        export DOCKER_WORKER_2_PORT_5555="5555"
-
-        # postgres
-        export DOCKER_PGMASTER_PORT_5432="5432"
-
-        # redis
-        export DOCKER_REDIS_PORT_6379="6379"
+        # TODO need to remove the network element also
+        # docker network rm NETWORK_BRIDGE_NAME
+        echo ""
     fi
 
 }
