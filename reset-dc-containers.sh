@@ -33,7 +33,7 @@
 #-------------------------------------------------------------------------------
 function usage
 {
-    echo -e "Usage: reset-dc-containers.sh --appName appName [--debug] [--removeAll] "
+    echo -e "Usage: reset-dc-containers.sh [--appName appName] [--debug] [--removeAll] "
     echo
     echo -e "This script will stop the docker containers found running that are"
     echo -e "specific to the application and no others.  The containers will be "
@@ -44,7 +44,7 @@ function usage
     echo 
     echo -e "--appName|-a is the name of the application that you want to"
     echo -e "      stop and clean up as the default app for the current session. This is "
-    echo -e "      NOT optional even if you only have one application defined."
+    echo -e "      optional if you only have one application defined."
     echo -e "--debug will use the web-debug configuration rather than the normal web one"
     echo -e "--removeAll - remove everything associated with the app (network, image and"
     echo -e "      volumes to give a clean slate to begin with. NOTE: when removing "

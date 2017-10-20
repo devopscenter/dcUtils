@@ -165,7 +165,6 @@ tearDownNetwork()
     # need to set up the exposed port differently between OSX and Linux.  With OSX the syntax is IP:PORT:PORT where as with
     # linux the only thing needed is just the port number
     if [[ ${OSNAME} == "Darwin" ]]; then
-    set -x
         # since this operating system is OSX then we have to set up an alias on lo0 (the interface
         # that docker talks on) to set up a connection to the container
         # in linux the bridge is created with an interface that the host can access
