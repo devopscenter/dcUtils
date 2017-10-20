@@ -1,9 +1,9 @@
 #!/bin/bash -
 #===============================================================================
 #
-#          FILE: start.sh
+#          FILE: start-dc-containers.sh
 #
-#         USAGE: ./start.sh
+#         USAGE: ./start-dc-containers.sh
 #
 #   DESCRIPTION: This script will start the docker containers for the default
 #                application name (found in the personal.env or set when
@@ -34,17 +34,20 @@ DEFAULT_SUBNET="172.36.4.0/24"
 #-------------------------------------------------------------------------------
 function usage
 {
-    echo -e "Usage: start.sh [--appName appName] [--env theEnv] [-d]"
+    echo -e "Usage: start-dc-containers.sh [--appName appName] [--debug] [--service nameOfService]"
     echo
     echo -e "This script will start the docker containers for the application"
     echo -e "to be able to set up a local devlopment environment."
     echo 
-    echo -e "--appName is the name of the application that you want to"
+    echo -e "--appName|-a  is the name of the application that you want to"
     echo -e "      run as the default app for the current session. This is "
     echo -e "      optional if you only have one application defined."
-    echo -e "--env theEnv is one of local, dev, staging, prod. This is optional"
-    echo -e "      unless you have defined an environment other than local."
-    echo -e "--debug will start the web-debug configuration rather than the web one"
+    echo -e "--debug|-d    will start the web-debug configuration rather than the web one"
+    echo -e "--service|-s  takes the name of the service to start.  The name of the service"
+    echo -e "      can be found inside the docker-compose.yml file that is used to start"
+    echo -e "      all of the services.  The service name is the defining name of a service"
+    echo -e "      section and is not the name of the container as seen by docker ps -a."
+    echo -e "      This may be something like: web, worker, pgmaster-1 etc."
     echo
     exit 1
 }
@@ -227,7 +230,7 @@ findContainerName()
 #-------------------------------------------------------------------------------
 # Loop through the argument(s) and assign input args with the appropriate variables
 #-------------------------------------------------------------------------------
-if [[ $1 == '-h' ]]; then
+if [[ $1 == '-h' ]] || [[ $1 == '--help' ]]; then
     usage
     exit 1
 fi

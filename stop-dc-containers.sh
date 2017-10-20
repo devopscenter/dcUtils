@@ -30,7 +30,7 @@
 #-------------------------------------------------------------------------------
 function usage
 {
-    echo -e "Usage: stop.sh [--appName appName] [--env theEnv] --cleanup"
+    echo -e "Usage: stop.sh [--appName appName] [--debug]--cleanup"
     echo
     echo -e "This script will stop the docker containers found running that are"
     echo -e "specific to the application and no others.  The containers will be "
@@ -39,8 +39,6 @@ function usage
     echo -e "--appName is the name of the application that you want to"
     echo -e "      stop as the default app for the current session. This is "
     echo -e "      optional if you only have one application defined."
-    echo -e "--env theEnv is one of local, dev, staging, prod. This is optional"
-    echo -e "      unless you have defined an environment other than local."
     echo -e "--debug will use the web-debug configuration rather than the normal web one"
     echo -e "--cleanup  will remove networks items that were setup when the"
     echo -e "      start-dc-containers.sh was executed."
@@ -211,7 +209,7 @@ tearDownNetwork()
 #-------------------------------------------------------------------------------
 # Loop through the argument(s) and assign input args with the appropriate variables
 #-------------------------------------------------------------------------------
-if [[ $1 == '-h' ]]; then
+if [[ $1 == '-h' ]] || [[ $1 == '--help' ]]; then
     usage
     exit 1
 fi

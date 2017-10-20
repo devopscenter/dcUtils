@@ -37,16 +37,23 @@ function usage
     echo
     echo -e "This script will stop the docker containers found running that are"
     echo -e "specific to the application and no others.  The containers will be "
-    echo -e "stopped and the containers removed. A pull of dcUtils will be done"
+    echo -e "stopped and then removed. A pull of dcUtils will also be done"
     echo -e "to ensure things are up to date.  Also, if the --removeAll is given"
-    echo -e "then it will also remove the images and volumes"
+    echo -e "then it will also remove the images and volumes that are associated"
+    echo -e "with the application name given with the --appName option."
     echo 
     echo -e "--appName|-a is the name of the application that you want to"
-    echo -e "      stop as the default app for the current session. This is "
-    echo -e "      optional if you only have one application defined."
+    echo -e "      stop and clean up as the default app for the current session. This is "
+    echo -e "      NOT optional even if you only have one application defined."
     echo -e "--debug will use the web-debug configuration rather than the normal web one"
-    echo -e "--removeAll - remove everything associated with the app to give"
-    echo -e "      a clean slate to begin with."
+    echo -e "--removeAll - remove everything associated with the app (network, image and"
+    echo -e "      volumes to give a clean slate to begin with. NOTE: when removing "
+    echo -e "      and of the network, images or volumes there will be other prompts to"
+    echo -e "      make sure you want to continue with that action.  And, there may be"
+    echo -e "      extra output from those commands, some of which may be notices that"
+    echo -e "      there are other references from other containers that are currently"
+    echo -e "      still being used.  These won't be removed until these other"
+    echo -e "      references are removed."
     echo
     exit 1
 }
@@ -126,7 +133,7 @@ docker rm $(docker ps -aqf "name=${dcDEFAULT_APP_NAME}-local-")
 
 if [[ ${REMOVE_ALL} -eq 1 ]]; then
     echo "You are about to remove the image and the volumes which will remove all data (ie, database will be gone)"
-    read -i "n" -p "Are you sure you want to do do this: (y or n) " -e wantToRemoveAll
+    read -i "n" -p "Are you sure you want to do do this: (y/N) " -e wantToRemoveAll
     if [[ ${wantToRemoveAll} == "y" ]]; then
         echo "When removing everything, if there are still references from other containers then an error message will be dispayed and you would have to manually clear them before the images and volumes can be removed."
         dcLog "Removing images"
