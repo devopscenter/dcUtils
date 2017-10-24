@@ -1,4 +1,4 @@
-#!/bin/bash -
+#!/usr/bin/env bash
 #===============================================================================
 #
 #          FILE: deployenv.sh
@@ -10,20 +10,20 @@
 #                  TYPE = { instance | docker }
 #                  ENV = { local | dev | staging | prod | ... }
 #
-#                Assumes that PWD = devops.center utils home directory
+#         Assumes that PWD = devops.center utils home directory
 #
-#                Creates ENV settings in this order:
-#                  environments/common.env                 <- common for all deployments
-#                  $BASE_CUSTOMER_DIR/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_UTILS}/environments/$ENV.env       <- per-stage
-#                  $BASE_CUSTOMER_DIR/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_UTILS}/environments/personal.env   <- local overrides
+#         Creates ENV settings in this order:
+#           environments/common.env                 <- common for all deployments
+#           $BASE_CUSTOMER_DIR/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_UTILS}/environments/$ENV.env       <- per-stage
+#           $BASE_CUSTOMER_DIR/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_UTILS}/environments/personal.env   <- local overrides
 #
-#                For instance deployments, two results:
-#                  - appends to the instance-wide /etc/environments
-#                  - appends to /etc/default/supervisor, for everything run via supervisor
+#           For instance deployments, two results:
+#             - appends to the instance-wide /etc/environments
+#             - appends to /etc/default/supervisor, for everything run via supervisor
 #
-#                For docker deployments, two results:
-#                  - creates a docker-appName-env.env, for use by all containers
-#                  - creates a docker-appName-env.sh, to be sourced by the scripts
+#           For docker deployments, two results:
+#             - creates a docker-appName-env.env, for use by all containers
+#             - creates a docker-appName-env.sh, to be sourced by the scripts
 #
 #       OPTIONS:
 #                  TYPE = { instance | docker }
@@ -34,14 +34,31 @@
 #          BUGS: ---
 #         NOTES: ---
 #        AUTHOR: Gregg Jensen (), gjensen@devops.center
+#                Bob Lozano (), bob@devops.center
 #  ORGANIZATION: devops.center
 #       CREATED: 11/15/2016 12:45:11
 #      REVISION:  ---
+#
+# Copyright 2014-2017 devops.center llc
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 #===============================================================================
 
 #set -o nounset     # Treat unset variables as an error
 #set -o errexit      # exit immediately if command exits with a non-zero status
 #set -x             # essentially debug mode
+
 
 #---  FUNCTION  ----------------------------------------------------------------
 #          NAME:  usage
