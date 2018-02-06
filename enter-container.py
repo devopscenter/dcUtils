@@ -94,8 +94,8 @@ def main(argv):
     # and now do it log into a container
     print "\nConnecting to: " + containerToUse
     print
-    dockerCmdToRun = "docker exec -it " + containerToUse +  \
-        "  /bin/bash -c 'export TERM=xterm ; exec bash'"
+    dockerCmdToRun = "docker exec -it -e COLUMNS=`tput cols` " \
+        "-e LINES=`tput lines` " + containerToUse +  " /bin/bash -l -i"
     subprocess.call(dockerCmdToRun, shell=True)
 
 
