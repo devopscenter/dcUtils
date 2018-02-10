@@ -191,7 +191,7 @@ if [[ -f "$LOCAL_BACKUP_FILE" ]] && ! [[ -z "$NO_OVERWRITE" ]]; then
 else
     echo "Getting the backup file: ${S3_BACKUP_FILE} from the s3bucket: ${S3_BUCKET}"
     aws s3 cp "s3://${S3_BUCKET}/${S3_BACKUP_FILE}" "$LOCAL_BACKUP_FILE"
-    if [[ $USER == "ubuntu"]]; then
+    if [[ $USER == "ubuntu" ]]; then
         sudo chown postgres:postgres "$LOCAL_BACKUP_FILE"
     fi
 fi
