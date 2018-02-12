@@ -243,7 +243,7 @@ if [[ $TYPE == "instance" ]]; then
 
     dcLog "combining common.env"
     # Add common env vars to instance environment file
-    cat environments/common.env | sudo tee -a  /etc/environment
+    cat ${dcUTILS}/environments/common.env | sudo tee -a  /etc/environment
 
     # TODO determine if this is required and/or would it need to be put in some other file
     # get the Customer specific utils and web dir and put it in the file
