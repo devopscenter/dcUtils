@@ -391,6 +391,7 @@ else
             else
                 dcLog "NOTE: Looking for ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/personal_${RUN_AS}.env "
                 dcLog " and it does NOT exist!! Exiting."
+                rm ${TEMP_FILE}
                 exit 1
             fi
         fi
