@@ -389,8 +389,8 @@ else
             if [[ -e ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/personal_${RUN_AS}.env ]]; then
                 cat ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/personal_${RUN_AS}.env >> ${TEMP_FILE}
             else
-                dcLog "NOTE: the ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/personal_${RUN_AS}.env "
-                ecLog "does NOT exist!! So, it can not be used. "h
+                dcLog "NOTE: Looking for ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/personal_${RUN_AS}.env "
+                dcLog " and it does NOT exist!! Exiting."
                 exit 1
             fi
         fi
