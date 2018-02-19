@@ -70,7 +70,7 @@
 function usage
 {
     echo -e "Usage: deployenv.sh --type TYPE --env ENV --appName CUSTOMER_APP_NAME "
-    echo -e "                    [--workspaceName WORKSPACENAME]"
+    echo -e "                    [--workspaceName WORKSPACENAME] [--run-as alternateName]"
     echo
     echo -e "This script will set up the environment with the appropriate paths and names"
     echo -e "that will be used by other utilities and scripts within the devops.center"
@@ -95,6 +95,15 @@ function usage
     echo
     echo -e "--workspaceName is the optional workspace name that can be used if"
     echo -e "your environment uses alternate workspaces for applications"
+    echo 
+    echo    "--run-as this option allows the user to run the local containers with variables that "
+    echo    "         the user wants to alter to make the environment appear different "
+    echo    "         (ie, run it with staging variables rather then dev to see how it would run"
+    echo    "         when it is defiined to run as the staging environment.)"
+    echo    "         This will look for a personal environment file that has the form:"
+    echo    "         personal_alternanteName.env"
+    echo    "         and is in the same app-utils/environments/ directory as the personal.env file."
+    echo 
 }
 
 
@@ -193,6 +202,9 @@ while [[ $# -gt 0 ]]; do
                   ;;
       --env|-e )        shift
                         ENV=$1
+                  ;;
+      --run-as )         shift
+                        RUN_AS=$1 
                   ;;
     esac
     shift
@@ -360,8 +372,27 @@ else
         dcLog "... personal.env into a single file"
         # only bring in the personal.env if one exists for the environment and if not there
         # check the base environments directory as a last resort (in case they have only one)
-        if [[ -e ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/personal.env ]]; then
-            cat ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/personal.env >> ${TEMP_FILE}
+        #
+        # An add on here is the ability to run the local containers with environment variables
+        # that you want to be different then the default local enviornment.  This will allow
+        # the user to test out variables like they may be set as in different environments.
+        # This is specific to the personal.env file in that whatever string the person provides
+        # for the option of runAs will be in the structure: personal_FLOOBAR.env (ie an underscore
+        # in front followed by the standard .env at the end)
+        if [[ -z ${RUN_AS} ]]; then
+            # it is run as normal
+            if [[ -e ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/personal.env ]]; then
+                cat ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/personal.env >> ${TEMP_FILE}
+            fi
+        else
+            # it is run with the extra tag they provided so use that file
+            if [[ -e ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/personal_${RUN_AS}.env ]]; then
+                cat ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/personal_${RUN_AS}.env >> ${TEMP_FILE}
+            else
+                dcLog "NOTE: the ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/personal_${RUN_AS}.env "
+                ecLog "does NOT exist!! So, it can not be used. "h
+                exit 1
+            fi
         fi
     else
         dcLog "... ${ENV}.env into a single file"
