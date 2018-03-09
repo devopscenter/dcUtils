@@ -54,44 +54,6 @@ The user provides:
 
 4. The last piece of information the user has to provide is the instance(s) they will be accessing
 
-The security administator does:
-1. Copy the users public key over to the authentication server and place it in 
-   the directory ~dcauthor/user-keys.  The suggested process for this would be:
-
-   `pawscp -p profile -r region dcauthor-IAMUSER_NAME-key.pub dcAuthorization-dev-service1:/tmp`
-
-    - profile is the company name in your aws config files 
-    - region is the region name the dcAuthorization server is in.
-    - IAMUSER_NAME is the user's IAM user name they gave
-
-2. Next log onto the dcAuthoriztion server
-
-   `paws -p profile [- r region] -c dcAuthorization-dev-service1`
-
-    - profile is the company name in your aws config files 
-    - region is the region name the dcAuthorization server is in.
-    - dcAuthorization-dev-service1 is the name of a dcAuthorization server, you will need to use the
-    dcAuthorization server name that was created for you by the devops.center team
-
-3. And then make sure the dcauthor user has access to the key and is actually the owner of the file
-
-   `sudo mv /tmp/dcauthor-IAMUSER_NAME-key.pub ~dcauthor/user-keys`
-
-   `sudo chown dcauthor:dcauthor ~dcauthor/user-keys/dcauthor-IAMUSER_NAME-key.pub`
-
-4. Then you need to register the user using the dcRegister.sh script
-
-   `sudo su - dcauthor`
-
-   `dcRegisterUser.sh -u IAMUSER_NAME -d UserDevice -t "Instance(*)" -p 22`
-
-    - IAMUSER_NAME is the user's IAM user name they gave
-    - UserDevice is the users device they are coming from and is one of the pieces of information they provided
-    - Instance is the name of the destination instance they want to hit.  If there is more then one a wild card
-      can be used to allow them access to a group of instances: 
-       - Example: dc*   would get all instances that begin with a lowercase dc and using wildcards you will probably 
-         have to put quotes around the string to pass the character(s) through to the script.
-
 ### Access to the instance
 
 The user wants to access an instance
