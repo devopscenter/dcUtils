@@ -16,7 +16,7 @@ As a new customer, one person will be identified as the main security administra
 responsible for registering the users at their company by having a specific login on the authentication server.
 To register, a user will provide certain pieces of information which include:
 - the users IAM user name
-- the dcauthor public key (created when they run the RUN-ME-FIRST.sh to set up the devops.center framwork on their machine)
+- the dcauthor public key (created when they run the RUN-ME-FIRST.sh to set up the devops.center framework on their machine)
 - the device name where they will be coming from
 - the destination instance name(s)
 
