@@ -37,7 +37,7 @@ the instance.
 The user provides:
 1. Each user needs to run RUN-ME-FIRST.sh so that they are set up for running the devops.center 
    framework, but also because it sets up a pair of security keys that are to be used with the authorization process.
-   The keys have a specific name and is placed in the ~/.ssh/devops.center directory.  The key names will have the
+   The keys have a specific name and are placed in the ~/.ssh/devops.center directory.  The key names will have the
    structure: 
     - dcauthor-IAMUSER_NAME-key.pub
     - dcauthor-IAMUSER_NAME-key.pem
