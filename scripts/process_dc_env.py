@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 """This is a generic environment reader."""
 # =============================================================================
 #
@@ -61,6 +62,7 @@ class Process_dc_Env:
 
     def __init__(self, envList, generateEnvFiles=0, forCustomer=None):
         """Constructor for process_dc_env class."""
+
         self.envList = envList
         self.baseDir = ""
         self.baseAppName = ""
@@ -281,6 +283,7 @@ class Process_dc_Env:
                     else:
                         retBaseAppUtils = self.baseDir + "/" + \
                             self.baseAppName + "/" + value
+
         else:
             print("Can not read the " + subDirMapFile + " file in the base" +
                   " application directory, have you run manageApp.py yet? ")

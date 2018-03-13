@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 """Merge two files together getting rid of duplicate entries."""
+
 # ==============================================================================
 #
 #          FILE: fixUpEnvFile.py

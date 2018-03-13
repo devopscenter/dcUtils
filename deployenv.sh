@@ -203,6 +203,7 @@ while [[ $# -gt 0 ]]; do
       --env|-e )        shift
                         ENV=$1
                   ;;
+
       --forCustomer )        shift # this is used when app is dcAuthorization 
                         FOR_CUSTOMER=$1
                   ;;
@@ -267,6 +268,7 @@ if [[ $TYPE == "instance" ]]; then
     #dcLog "CUSTOMER_APP_UTILS=${CUSTOMER_APP_UTILS}"  >> ${TEMP_FILE}
     #dcLog "CUSTOMER_APP_WEB=${CUSTOMER_APP_WEB}" >> ${TEMP_FILE}
 
+
     if [[ ${FOR_CUSTOMER} ]]; then
         BASE_CUSTOMER_APP_UTILS_DIR="${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_UTILS}/${FOR_CUSTOMER}"
     else
@@ -310,6 +312,7 @@ if [[ $TYPE == "instance" ]]; then
 
     if [[ -e ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/common.env ]]; then
         sed -e 's/^/export /' ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/common.env | sudo tee -a /etc/default/supervisor
+
     fi
 
     if [[ -e ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/${ENV}.env ]]; then
