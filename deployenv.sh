@@ -1,4 +1,4 @@
-#!/bin/bash -
+#!/usr/bin/env bash
 #===============================================================================
 #
 #          FILE: deployenv.sh
@@ -10,20 +10,20 @@
 #                  TYPE = { instance | docker }
 #                  ENV = { local | dev | staging | prod | ... }
 #
-#                Assumes that PWD = devops.center utils home directory
+#         Assumes that PWD = devops.center utils home directory
 #
-#                Creates ENV settings in this order:
-#                  environments/common.env                 <- common for all deployments
-#                  $BASE_CUSTOMER_DIR/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_UTILS}/environments/$ENV.env       <- per-stage
-#                  $BASE_CUSTOMER_DIR/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_UTILS}/environments/personal.env   <- local overrides
+#         Creates ENV settings in this order:
+#           environments/common.env                 <- common for all deployments
+#           $BASE_CUSTOMER_DIR/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_UTILS}/environments/$ENV.env       <- per-stage
+#           $BASE_CUSTOMER_DIR/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_UTILS}/environments/personal.env   <- local overrides
 #
-#                For instance deployments, two results:
-#                  - appends to the instance-wide /etc/environments
-#                  - appends to /etc/default/supervisor, for everything run via supervisor
+#           For instance deployments, two results:
+#             - appends to the instance-wide /etc/environments
+#             - appends to /etc/default/supervisor, for everything run via supervisor
 #
-#                For docker deployments, two results:
-#                  - creates a docker-appName-env.env, for use by all containers
-#                  - creates a docker-appName-env.sh, to be sourced by the scripts
+#           For docker deployments, two results:
+#             - creates a docker-appName-env.env, for use by all containers
+#             - creates a docker-appName-env.sh, to be sourced by the scripts
 #
 #       OPTIONS:
 #                  TYPE = { instance | docker }
@@ -34,14 +34,31 @@
 #          BUGS: ---
 #         NOTES: ---
 #        AUTHOR: Gregg Jensen (), gjensen@devops.center
+#                Bob Lozano (), bob@devops.center
 #  ORGANIZATION: devops.center
 #       CREATED: 11/15/2016 12:45:11
 #      REVISION:  ---
+#
+# Copyright 2014-2017 devops.center llc
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 #===============================================================================
 
 #set -o nounset     # Treat unset variables as an error
 #set -o errexit      # exit immediately if command exits with a non-zero status
 #set -x             # essentially debug mode
+
 
 #---  FUNCTION  ----------------------------------------------------------------
 #          NAME:  usage
@@ -53,7 +70,7 @@
 function usage
 {
     echo -e "Usage: deployenv.sh --type TYPE --env ENV --appName CUSTOMER_APP_NAME "
-    echo -e "                    [--workspaceName WORKSPACENAME]"
+    echo -e "                    [--workspaceName WORKSPACENAME] [--run-as alternateName]"
     echo
     echo -e "This script will set up the environment with the appropriate paths and names"
     echo -e "that will be used by other utilities and scripts within the devops.center"
@@ -78,6 +95,15 @@ function usage
     echo
     echo -e "--workspaceName is the optional workspace name that can be used if"
     echo -e "your environment uses alternate workspaces for applications"
+    echo 
+    echo    "--run-as this option allows the user to run the local containers with variables that "
+    echo    "         the user wants to alter to make the environment appear different "
+    echo    "         (ie, run it with staging variables rather then dev to see how it would run"
+    echo    "         when it is defiined to run as the staging environment.)"
+    echo    "         This will look for a personal environment file that has the form:"
+    echo    "         personal_alternanteName.env"
+    echo    "         and is in the same app-utils/environments/ directory as the personal.env file."
+    echo 
 }
 
 
@@ -121,6 +147,35 @@ function fixUpFile
     fi
 }
 
+#---  FUNCTION  ----------------------------------------------------------------
+#          NAME:  collectEnvFiles
+#   DESCRIPTION:  This will collect all the instance-###.env files found in 
+#                 $HOME/.dcConfig and combine them into one instance.env file.
+#    PARAMETERS:  
+#       RETURNS:  
+#-------------------------------------------------------------------------------
+collectEnvFiles()
+{
+    OUTFILE="${HOME}/.dcConfig/instance.env"
+
+    # first remove an old one if it's there
+    if [[ -f ${OUTFILE} ]]; then
+        rm  ${OUTFILE}
+    fi
+
+    # now loop through all the files named instance-*.env and put them into 
+    # the one instance.env
+    cd $HOME/.dcConfig
+
+    for file in instance-*.env
+    do
+        while IFS= read -r aLine
+        do
+            echo ${aLine} >> $OUTFILE
+        done < ${file}
+    done
+}
+
 #-------------------------------------------------------------------------------
 # Loop through the arguments and assign input args with the appropriate variables
 #-------------------------------------------------------------------------------
@@ -147,6 +202,12 @@ while [[ $# -gt 0 ]]; do
                   ;;
       --env|-e )        shift
                         ENV=$1
+                  ;;
+      --forCustomer )        shift # this is used when app is dcAuthorization 
+                        FOR_CUSTOMER=$1
+                  ;;
+      --run-as )         shift
+                        RUN_AS=$1 
                   ;;
     esac
     shift
@@ -178,6 +239,7 @@ if [[ $TYPE == "instance" ]]; then
     # duplicate key/value pairs.  See if this would benefit from the same kind of
     # processing that the docker (ie, the else of the TYPE if check) section has.
 
+
     # backup the /etc/environment so that we don't keep duplicating items past the very first time
     # that we run deployenv.sh on an instance.  That is, the very first time we run this on a 
     # newly created instance it will take whatever is in file and save it, so that can be the
@@ -190,9 +252,13 @@ if [[ $TYPE == "instance" ]]; then
     sudo rm /etc/environment
     cat /etc/environment.ORIG | sudo tee -a  /etc/environment
 
+    # first thing is to put the dcUTILS variable/path into the /etc/environment before we continue
+    dcUTILS=~/dcUtils
+    echo "dcUTILS=~/dcUtils" | sudo tee -a /etc/environment
+
     dcLog "combining common.env"
     # Add common env vars to instance environment file
-    cat environments/common.env | sudo tee -a  /etc/environment
+    cat ${dcUTILS}/environments/common.env | sudo tee -a  /etc/environment
 
     # TODO determine if this is required and/or would it need to be put in some other file
     # get the Customer specific utils and web dir and put it in the file
@@ -201,17 +267,30 @@ if [[ $TYPE == "instance" ]]; then
     #dcLog "CUSTOMER_APP_UTILS=${CUSTOMER_APP_UTILS}"  >> ${TEMP_FILE}
     #dcLog "CUSTOMER_APP_WEB=${CUSTOMER_APP_WEB}" >> ${TEMP_FILE}
 
+    if [[ ${FOR_CUSTOMER} ]]; then
+        BASE_CUSTOMER_APP_UTILS_DIR="${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_UTILS}/${FOR_CUSTOMER}"
+    else
+        BASE_CUSTOMER_APP_UTILS_DIR="${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_UTILS}"
+    fi
+
+    dcLog "... instance.env into global environment file if available"
+    # instance.env has the tags for this instance that will be made to be environment variables
+    if [[ -e ${HOME}/.dcConfig/instance.env ]]; then
+        collectEnvFiles
+        cat ${HOME}/.dcConfig/instance.env | sudo tee -a /etc/environment
+    fi
+
     dcLog "... common.env into global environment file"
     # only bring in the common.env if one exists for the environment and if not there
     # check the base environments directory as a last resort (in case they have only one)
-    if [[ -e ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/common.env ]]; then
-        cat ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/common.env | sudo tee -a /etc/environment
+    if [[ -e ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/common.env ]]; then
+        cat ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/common.env | sudo tee -a /etc/environment
     fi
 
     dcLog "... ${ENV}.env"
     # Add env vars for this environment, if it exists
-    if [[ -e ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/${ENV}.env ]]; then
-        cat ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/${ENV}.env | sudo tee -a /etc/environment
+    if [[ -e ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/${ENV}.env ]]; then
+        cat ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/${ENV}.env | sudo tee -a /etc/environment
     fi
 
     dcLog "... and configuring supervisor config file"
@@ -225,12 +304,16 @@ if [[ $TYPE == "instance" ]]; then
         sed -e 's/^/export /'  ${dcUTILS}/environments/common.env | sudo tee -a /etc/default/supervisor
     fi
 
-    if [[ -e ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/common.env ]]; then
-        sed -e 's/^/export /' ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/common.env | sudo tee -a /etc/default/supervisor
+    if [[ -e ${HOME}/.dcConfig/instance.env ]]; then
+        sed -e 's/^/export /' ${HOME}/.dcConfig/instance.env | sudo tee -a /etc/default/supervisor
     fi
 
-    if [[ -e ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/${ENV}.env ]]; then
-        sed -e 's/^/export /' ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/${ENV}.env | sudo tee -a /etc/default/supervisor
+    if [[ -e ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/common.env ]]; then
+        sed -e 's/^/export /' ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/common.env | sudo tee -a /etc/default/supervisor
+    fi
+
+    if [[ -e ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/${ENV}.env ]]; then
+        sed -e 's/^/export /' ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/${ENV}.env | sudo tee -a /etc/default/supervisor
     fi
 
     # put the /etc/environment in the current env for this session...normally would have to log out and log in to get it.
@@ -261,14 +344,20 @@ else
     # The docker-current.env file will be used by the docker-compose up script and any
     # devops.center script will read in the docker-current.sh
     #-------------------------------------------------------------------------------
-    BASE_CUSTOMER_APP_UTILS_DIR="${BASE_CUSTOMER_DIR}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_UTILS}"
+    if [[ ${FOR_CUSTOMER} ]]; then
+        BASE_CUSTOMER_APP_UTILS_DIR="${BASE_CUSTOMER_DIR}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_UTILS}/${FOR_CUSTOMER}"
+    else
+        BASE_CUSTOMER_APP_UTILS_DIR="${BASE_CUSTOMER_DIR}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_UTILS}"
+    fi
 
     #-------------------------------------------------------------------------------
     # copy the health_checks template to the appropriate place for the  application
     # if it doesn't already exist
     #-------------------------------------------------------------------------------
-    if [[ ! -f ${BASE_CUSTOMER_APP_UTILS_DIR}/config/health_checks ]]; then
-        cp ${dcUTILS}/templates/health_checks ${BASE_CUSTOMER_APP_UTILS_DIR}/config/health_checks
+    if [[ ${CUSTOMER_APP_NAME} != "dcAuthorization" ]]; then
+        if [[ ! -f ${BASE_CUSTOMER_APP_UTILS_DIR}/config/health_checks ]]; then
+            cp ${dcUTILS}/templates/health_checks ${BASE_CUSTOMER_APP_UTILS_DIR}/config/health_checks
+        fi
     fi
 
     # next set up the devops.center common env.
@@ -298,8 +387,28 @@ else
         dcLog "... personal.env into a single file"
         # only bring in the personal.env if one exists for the environment and if not there
         # check the base environments directory as a last resort (in case they have only one)
-        if [[ -e ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/personal.env ]]; then
-            cat ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/personal.env >> ${TEMP_FILE}
+        #
+        # An add on here is the ability to run the local containers with environment variables
+        # that you want to be different then the default local enviornment.  This will allow
+        # the user to test out variables like they may be set as in different environments.
+        # This is specific to the personal.env file in that whatever string the person provides
+        # for the option of runAs will be in the structure: personal_FLOOBAR.env (ie an underscore
+        # in front followed by the standard .env at the end)
+        if [[ -z ${RUN_AS} ]]; then
+            # it is run as normal
+            if [[ -e ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/personal.env ]]; then
+                cat ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/personal.env >> ${TEMP_FILE}
+            fi
+        else
+            # it is run with the extra tag they provided so use that file
+            if [[ -e ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/personal_${RUN_AS}.env ]]; then
+                cat ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/personal_${RUN_AS}.env >> ${TEMP_FILE}
+            else
+                dcLog "NOTE: Looking for ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/personal_${RUN_AS}.env "
+                dcLog " and it does NOT exist!! Exiting."
+                rm ${TEMP_FILE}
+                exit 1
+            fi
         fi
     else
         dcLog "... ${ENV}.env into a single file"

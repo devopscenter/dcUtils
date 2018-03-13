@@ -1,4 +1,39 @@
 #!/usr/bin/env python
+# ==============================================================================
+#
+#          FILE: manageApp.py
+#
+#         USAGE: manageApp.py
+#
+#   DESCRIPTION: create and manage an application to be used within the
+#                devops.center framework.
+#
+#       OPTIONS: ---
+#  REQUIREMENTS: ---
+#          BUGS: ---
+#         NOTES: ---
+#        AUTHOR: Gregg Jensen (), gjensen@devops.center
+#                Bob Lozano (), bob@devops.center
+#  ORGANIZATION: devops.center
+#       CREATED: 11/21/2016 15:13:37
+#      REVISION:  ---
+#
+# Copyright 2014-2017 devops.center llc
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# ==============================================================================
+
 # flake8: noqa
 import os
 from os.path import expanduser
@@ -206,14 +241,14 @@ class ManageAppName:
         # change to the baseDirectory
         os.chdir(self.baseDir + "/" + self.appName)
 
-        if re.match("http", self.appPath) or re.match("git", self.appPath):
+        if re.match("http", self.appPath) or re.search(".git$", self.appPath):
             # they have entered a git repo for the existing front end directory
             self.joinWithGit(basePath, "web", self.appPath)
         else:
             # they have entered a path to an existing front end directory
             self.joinWithPath(basePath, "web", self.appPath)
 
-        if re.match("http", self.utilsPath) or re.match("git", self.utilsPath):
+        if re.match("http", self.utilsPath) or re.search(".git$", self.utilsPath):
             # they have entered a git repo for the existing utilities directory
             self.joinWithGit(basePath, "utils", self.utilsPath)
         else:
@@ -467,7 +502,7 @@ class ManageAppName:
         userResponse = raw_input(
             "\n\nEnter the name of the unique stack repository that has been "
             "set up for this app\nand it will be used in the "
-            "docker-compoase.yml files\n"
+            "docker-compose.yml files\n"
             "for the web and worker images:\n")
         if userResponse:
             # take the userResponse and use it to edit the docker-compose.yml
@@ -695,6 +730,10 @@ class ManageAppName:
         composeDebugFile = baseConfig + "/docker-compose-debug.yml"
         shutil.copyfile(self.dcUtils + "/templates/docker-compose-debug.yml",
                         composeDebugFile)
+
+        composeSubnetFile = baseConfig + "/docker-subnet.conf"
+        shutil.copyfile(self.dcUtils + "/templates/docker-subnet.conf",
+                        composeSubnetFile)
 
         # need to change the env file name and path to represent what is
         # created with this script
@@ -1053,21 +1092,18 @@ def checkArgs():
         'subsequent commands and utilities.\nSee below for how to use.\n\n'
 
         'Example command line to create an application:\n'
-        './manageApp.py --baseDirectory ~/someDir/YourAppDir\n'
-        '               --appName YourApp\n'
+        './manageApp.py --appName YourApp\n'
         '               --command create\n\n'
         'Example command line to join with an application:\n'
-        './manageApp.py --baseDirectory ~/someDir/YourAppDir\n'
-        '            --appName YourApp\n'
+        './manageApp.py --appName YourApp\n'
         '            --command join\n'
         '            --appPath git@git.assembla.com:website.git \n'
         '            --utilsPath https://zsoqe@bitbucket.org/team/appUtils.git'
         '\n\n'
         'Example cmd line to update an application with a new environment:\n'
-        './manageApp.py --baseDirectory ~/someDir/YourAppDir\n'
-        '            --appName YourApp\n'
+        './manageApp.py --appName YourApp\n'
         '            --command update\n'
-        '            --option "newEnv = UAT"\n',
+        '            --option "newEnv=UAT"\n',
 
         formatter_class=RawDescriptionHelpFormatter)
     parser.add_argument('-d', '--baseDirectory', help='The base directory '

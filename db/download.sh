@@ -20,13 +20,30 @@
 #          BUGS: ---
 #         NOTES: ---
 #        AUTHOR: Gregg Jensen (), gjensen@devops.center
+#                Bob Lozano (), bob@devops.center
 #  ORGANIZATION: devops.center
 #       CREATED: 04/20/2017 11:33:18
 #      REVISION:  ---
+#
+# Copyright 2014-2017 devops.center llc
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 #===============================================================================
 
-#set -o nounset       # Treat unset variables as an error
-#set -x               # essentially debug mode
+#set -o nounset     # Treat unset variables as an error
+#set -o errexit      # exit immediately if command exits with a non-zero status
+#set -x             # essentially debug mode
 
 
 BACKUP_DIR='.'
@@ -173,7 +190,10 @@ if [[ -f "$LOCAL_BACKUP_FILE" ]] && ! [[ -z "$NO_OVERWRITE" ]]; then
     echo -e "\nFile $LOCAL_BACKUP_FILE already exists and -n option was given. Skipping."
 else
     echo "Getting the backup file: ${S3_BACKUP_FILE} from the s3bucket: ${S3_BUCKET}"
-    sudo -u postgres aws s3 cp "s3://${S3_BUCKET}/${S3_BACKUP_FILE}" "$LOCAL_BACKUP_FILE"
+    aws s3 cp "s3://${S3_BUCKET}/${S3_BACKUP_FILE}" "$LOCAL_BACKUP_FILE"
+    if [[ $USER == "ubuntu" ]]; then
+        sudo chown postgres:postgres "$LOCAL_BACKUP_FILE"
+    fi
 fi
 export LOCAL_BACKUP_FILE
 

@@ -1,4 +1,41 @@
 #!/usr/bin/env python
+"""This is a generic environment reader."""
+# =============================================================================
+#
+#          FILE: process_dc_env.py
+#
+#         USAGE: process_dc_env.py
+#
+#   DESCRIPTION: customer appName specific that will drop the indexes
+#                identified by the CREATE INDEX lines in the customer
+#                appname .sql file
+#
+#       OPTIONS: ---
+#  REQUIREMENTS: ---
+#          BUGS: ---
+#         NOTES: ---
+#        AUTHOR: Gregg Jensen (), gjensen@devops.center
+#                Bob Lozano (), bob@devops.center
+#  ORGANIZATION: devops.center
+#       CREATED: 11/21/2016 15:13:37
+#      REVISION:  ---
+#
+# Copyright 2014-2017 devops.center llc
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# =============================================================================
+
 import sys
 import logging
 import os
@@ -20,27 +57,31 @@ __status__ = "Development"
 
 
 class Process_dc_Env:
-    def __init__(self, envList, generateEnvFiles=0):
-        """ Process_dc_Env constructor """
+    """Process reading in the environment file."""
+
+    def __init__(self, envList, generateEnvFiles=0, forCustomer=None):
+        """Constructor for process_dc_env class."""
         self.envList = envList
         self.baseDir = ""
         self.baseAppName = ""
         self.dcBaseConfig = ""
         self.baseAppUtilsDir = ""
+        self.forCustomer = forCustomer
         if generateEnvFiles:
             self.generateEnvFiles = True
         else:
             self.generateEnvFiles = False
 
     def getdcUtilsDirectory(self):
+        """Read the utils directory."""
         # read the ~/.dcConfig/settings
         baseSettingsDir = expanduser("~") + "/.dcConfig"
         if not os.path.exists(baseSettingsDir):
-            print ("You seem to be missing the $HOME/.dcConfig directory,"
-                   "you will need to run the RUN-ME-FIRST.sh script that "
-                   "established that directory and the settings file that"
-                   "contains the initial base directory for you application"
-                   "development and where dcUtils is installed.")
+            print("You seem to be missing the $HOME/.dcConfig directory,"
+                  "you will need to run the RUN-ME-FIRST.sh script that "
+                  "established that directory and the settings file that"
+                  "contains the initial base directory for you application"
+                  "development and where dcUtils is installed.")
             sys.exit(1)
 
         if os.path.isfile(baseSettingsDir + "/settings"):
@@ -59,7 +100,7 @@ class Process_dc_Env:
         return(os.getcwd())
 
     def process_dc_env(self):
-
+        """Process the environment files."""
         # ---------------------------------------------------------------------
         # lets check to see if dcUtils has been set already if not then we are
         #  probably the first time through and it hasn't been set in the
@@ -110,7 +151,8 @@ class Process_dc_Env:
             # __DEFAULT__ one.
             # -----------------------------------------------------------------
             # if self.envList["dcDEFAULT_APP_NAME"] == "__DEFAULT__":
-            #    print ("The dcDEFAULT_APP_NAME environment variable has not " +
+            #    print ("The dcDEFAULT_APP_NAME environment variable has not "
+            #            +
             #           "been set and has not been made available. This " +
             #           "should be identified when running deployenv.sh by " +
             #           "utilizing the option: --appName appname")
@@ -119,6 +161,7 @@ class Process_dc_Env:
         return self.envList
 
     def getBaseDir(self):
+        """Get the base directory."""
         if os.path.exists(self.dcBaseConfig):
             if "WORKSPACE_NAME" in self.envList:
                 # open the dcConfig/baseDirectory and read it in directly
@@ -138,11 +181,11 @@ class Process_dc_Env:
                         break
 
                 if not flagFound:
-                    print ("Could not find a directory for the given " +
-                           "--workspaceName value in the " +
-                           "$HOME/.dcConfig/baseDirectory. \nHave you run " +
-                           "manageApp.py with the --workspaceName to create " +
-                           "an alternate base directory?")
+                    print("Could not find a directory for the given " +
+                          "--workspaceName value in the " +
+                          "$HOME/.dcConfig/baseDirectory. \nHave you run " +
+                          "manageApp.py with the --workspaceName to create " +
+                          "an alternate base directory?")
                     sys.exit(1)
             else:
                 with open(self.dcBaseConfig) as f:
@@ -160,29 +203,30 @@ class Process_dc_Env:
                         self.envList["BASE_CUSTOMER_DIR"] = self.baseDir
                         return
         else:
-            print ("ERROR: can not determine the base directory as it "
-                   "does not appear that you have run manageApp.py to "
-                   "set up your application.  This must be done before "
-                   "you can run this script.")
+            print("ERROR: can not determine the base directory as it "
+                  "does not appear that you have run manageApp.py to "
+                  "set up your application.  This must be done before "
+                  "you can run this script.")
             sys.exit(1)
 
     def getBaseAppName(self):
+        """Get the base name for the application."""
         subDirs = next(os.walk(self.baseDir))[1]
 
         if len(subDirs) == 0:
-            print ("The base directory defined in " +
-                   "$HOME/.dcConfig/basedirectory " +
-                   "does not have any directories in it.  There is " +
-                   "configuration issue in that file  you may need to run " +
-                   "manageApp.py again.")
+            print("The base directory defined in "
+                  "$HOME/.dcConfig/basedirectory "
+                  "does not have any directories in it.  There is "
+                  "configuration issue in that file  you may need to run "
+                  "manageApp.py again.")
             sys.exit(1)
 
         elif len(subDirs) == 1:
             if "CUSTOMER_APP_NAME" in self.envList:
                 if subDirs[0] != self.envList["CUSTOMER_APP_NAME"]:
-                    print ("The appName you provided: " +
-                           self.envList["CUSTOMER_APP_NAME"] + " was not " +
-                           "found in the base directory: " + self.baseDir)
+                    print("The appName you provided: " +
+                          self.envList["CUSTOMER_APP_NAME"] + " was not " +
+                          "found in the base directory: " + self.baseDir)
                     sys.exit(1)
                 else:
                     self.baseAppName = self.envList["CUSTOMER_APP_NAME"]
@@ -194,6 +238,7 @@ class Process_dc_Env:
             # print "baseAppName= " + baseAppName
 
     def handleMultipleDirectories(self, subDirs):
+        """Handle the situation when there are multiple apps."""
         if "CUSTOMER_APP_NAME" in self.envList:
             foundFlag = 0
             for dir in subDirs:
@@ -203,21 +248,22 @@ class Process_dc_Env:
                     break
 
             if not foundFlag:
-                print ("The appName you provided: " +
-                       self.envList["CUSTOMER_APP_NAME"] + " was not found " +
-                       "in the base directory: " + self.baseDir)
+                print("The appName you provided: " +
+                      self.envList["CUSTOMER_APP_NAME"] + " was not found " +
+                      "in the base directory: " + self.baseDir)
                 sys.exit(1)
         else:
             print("Found multiple applications so you will need to provide " +
                   "the appropriate option (usually --appName) for " +
                   "this script to be able to pass the application name.")
-            print "The applications found are:\n"
+            print("The applications found are:\n")
             for filename in subDirs:
-                print filename
-            print "\n"
+                print(filename)
+            print("\n")
             sys.exit(1)
 
     def getBaseAppUtils(self):
+        """Get the appliation utils."""
         appDir = self.baseDir + "/" + self.baseAppName
         subDirMapFile = appDir + "/" + ".dcDirMap.cnf"
         if os.path.exists(subDirMapFile):
@@ -228,16 +274,22 @@ class Process_dc_Env:
                 key, value = line.split('=', 1)
                 self.envList[key] = value
                 if key == "CUSTOMER_APP_UTILS":
-                    retBaseAppUtils = self.baseDir + "/" + \
-                                      self.baseAppName + "/" + value
+                    if self.forCustomer:
+                        retBaseAppUtils = self.baseDir + "/" + \
+                            self.baseAppName + "/" + value + "/" + \
+                            self.forCustomer
+                    else:
+                        retBaseAppUtils = self.baseDir + "/" + \
+                            self.baseAppName + "/" + value
         else:
-            print ("Can not read the " + subDirMapFile + " file in the base" +
-                   " application directory, have you run manageApp.py yet? ")
+            print("Can not read the " + subDirMapFile + " file in the base" +
+                  " application directory, have you run manageApp.py yet? ")
             sys.exit(1)
 
         return retBaseAppUtils
 
     def getEnvFile(self):
+        """Get the Environment file."""
         # check for a dcEnv-${CUSTOMER_APP_NAME}-*.sh file
         envDirToFind = self.baseAppUtilsDir + \
             "/environments/.generatedEnvFiles"
@@ -247,10 +299,10 @@ class Process_dc_Env:
         # app name and try this again and then exit
         # if len(envFiles) == 0 or "dcEnv" not in envFiles[0]:
         if len(envFiles) == 0:
-            print ("There does not appear to be any env files available " +
-                   "for the given appName: " + self.baseAppName + ". " +
-                   "You will need to create one by executing the " +
-                   "deployenv.sh with the appName")
+            print("There does not appear to be any env files available " +
+                  "for the given appName: " + self.baseAppName + ". " +
+                  "You will need to create one by executing the " +
+                  "deployenv.sh with the appName")
             sys.exit(1)
 
         # there is at least a pair there, so now go through the list and
@@ -273,17 +325,17 @@ class Process_dc_Env:
         if not flagFound:
             # if there is more than one file (ie, different ENVs) then display
             # the list and ask for the user to select one.
-            print ("There are multiple sets of environment files with that " +
-                   "appName. The difference \nbetween the files is the " +
-                   "environment portion. This is one of local, dev, " +
-                   "staging \nor prod.  Look at the list below and you will " +
-                   "need to know the environment that \nyou want to run in." +
-                   " Re-run this script and give the appropriate option to " +
-                   "\ndesiginate the env (usually --env) and provide the " +
-                   "environment string. \nThe env files found are:")
+            print("There are multiple sets of environment files with that " +
+                  "appName. The difference \nbetween the files is the " +
+                  "environment portion. This is one of local, dev, " +
+                  "staging \nor prod.  Look at the list below and you will " +
+                  "need to know the environment that \nyou want to run in." +
+                  " Re-run this script and give the appropriate option to " +
+                  "\ndesiginate the env (usually --env) and provide the " +
+                  "environment string. \nThe env files found are:")
             for filename in envFiles:
                 if "dcEnv-" in filename:
-                    print filename
+                    print(filename)
 
             sys.exit(1)
         else:
@@ -324,25 +376,36 @@ class Process_dc_Env:
                                   fileToSource)
 
 
-def pythonGetEnv(initialCreate=False):
+def pythonGetEnv(initialCreate=False, forCustomer=None):
+    """Process env when called from a python script."""
     envList = dcEnvCheckArgs()
+
+    if forCustomer is None:
+        if "FOR_CUSTOMER" in envList:
+            forCustomer = envList["FOR_CUSTOMER"]
 
     if initialCreate:
         returnEnvList = envList
     else:
-        anEnv = Process_dc_Env(envList)
+        anEnv = Process_dc_Env(envList, forCustomer=forCustomer)
         returnEnvList = anEnv.process_dc_env()
 
     return returnEnvList
 
 
 def shellGetEnv():
+    """Process env when called via a shell script."""
     (envList, initialCreate, generateEnvFiles) = dcEnvCheckArgs(type=1)
+
+    customerNameToSpecialize = None
+    if "FOR_CUSTOMER" in envList:
+        customerNameToSpecialize = envList["FOR_CUSTOMER"]
 
     if initialCreate:
         returnEnvList = envList
     else:
-        anEnv = Process_dc_Env(envList, generateEnvFiles)
+        anEnv = Process_dc_Env(envList, generateEnvFiles,
+                               forCustomer=customerNameToSpecialize)
         returnEnvList = anEnv.process_dc_env()
 
     returnStr = "export"
@@ -354,16 +417,17 @@ def shellGetEnv():
         data = includeFile.read()
 
     returnStr += " ; {}".format(data)
-    print returnStr
+    print(returnStr)
 
 
 def dcEnvCheckArgs(type=0):
+    """Check the arguments passed into this script."""
     parser = argparse.ArgumentParser(
         description='The core argument processing is handled by a separate '
         'process (process_dc_env.py) and is called by this script.  This core '
-        'process will ensure that there is an environment file that is set and '
-        'can be utilized for the running of this session.  The intent of this '
-        'script is that it would be put at the top of any devops.center '
+        'process will ensure that there is an environment file that is set '
+        'and can be utilized for the running of this session.  The intent of '
+        'this script is that it would be put at the top of any devops.center '
         'scripts that will need the full application environment to ensure '
         'that the environment variables that are needed will be available to '
         'the script.  This is done to help avoid polluting the users '
@@ -411,6 +475,11 @@ def dcEnvCheckArgs(type=0):
                         action="store_true",
                         help=argparse.SUPPRESS,
                         required=False)
+    parser.add_argument('--forCustomer',
+                        # help='This is used only'
+                        # 'when creating a dcAuthorization instance.',
+                        help=argparse.SUPPRESS,
+                        required=False)
 
     # args, unknown = parser.parse_known_args()
     try:
@@ -429,6 +498,8 @@ def dcEnvCheckArgs(type=0):
     if args.workspaceName:
         returnList["WORKSPACE_NAME"] = args.workspaceName.upper()
 
+    if args.forCustomer:
+        returnList["FOR_CUSTOMER"] = args.forCustomer
     # if we get here then the return the necessary arguments
     if type:
         return (returnList, args.initialCreate, args.generateEnvFiles)
@@ -437,6 +508,7 @@ def dcEnvCheckArgs(type=0):
 
 
 def main(argv):
+    """Execute this script."""
     shellGetEnv()
 
 

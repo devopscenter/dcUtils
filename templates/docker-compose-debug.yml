@@ -1,25 +1,21 @@
 version: '2'
-# docker-compose for web-debug container. This uses
-# cling for static files, django sslserver (started with 'python manage.py runsslserver'), and no async service
-#
-# Assumes docker for mac.
-#
+
 services:
     web:
         container_name: "${dcDEFAULT_APP_NAME}_${CUSTOMER_APP_ENV}_web-1"
         hostname: "${dcDEFAULT_APP_NAME}_${CUSTOMER_APP_ENV}_web-1"
         image: "devopscenter/DC_UNIQUE_ID.web-debug:${dcSTACK_VERSION}"
         ports:
-            - "80:80"
-            - "8000:8000"
-            - "443:443"
+            - "${DOCKER_WEB_1_PORT_80}"
+            - "${DOCKER_WEB_1_PORT_8000}"
+            - "${DOCKER_WEB_1_PORT_443}"
         links:
             - "pgmaster-1"
         volumes:
             - "${dcAPP}:/data/deploy/current"
             - "/wheelhouse"
             - "${dcDATA}:/dataload"
-            - "${dcUTILS}:/utils"
+            - "${dcUTILS}:/root/dcUtils"
             - "${APP_UTILS_CONFIG}:/app-utils/conf"
             - "${APP_UTILS_KEYS}:/app-utils/keys"
         working_dir: "/data/deploy/current"
@@ -27,23 +23,32 @@ services:
             - "${GENERATED_ENV_FILE}"
         volumes_from:
             - syslog
+        networks:
+            local_network:
+                ipv4_address: "${DOCKER_WEB_1_IP}"
 
     pgmaster-1:
         container_name: "${dcDEFAULT_APP_NAME}_${CUSTOMER_APP_ENV}_pgmaster-1"
         hostname: "${dcDEFAULT_APP_NAME}_${CUSTOMER_APP_ENV}_pgmaster-1"
         image: "devopscenter/db_postgres:${dcSTACK_VERSION}"
         ports:
-            - "5432:5432"
+            - "${DOCKER_PGMASTER_PORT_5432}"
         env_file:
             - "${GENERATED_ENV_FILE}"
         volumes:
             - pg-db:/media/data/postgres/
-            - "${dcUTILS}:/utils"
+            - pg-db-pgdata:/media/data/postgres/db/pgdata/
+            - pg-db-backup:/media/data/postgres/backup/
+            - pg-db-xlog:/media/data/postgres/xlog/
+            - "${dcUTILS}:/root/dcUtils"
             - "${APP_UTILS_CONFIG}:/app-utils/conf"
             - "${APP_UTILS_KEYS}:/app-utils/keys"
         working_dir: "/data/deploy/current"
         volumes_from:
             - syslog
+        networks:
+            local_network:
+                ipv4_address: "${DOCKER_PGMASTER_IP}"
 
 
     syslog:
@@ -61,7 +66,23 @@ services:
                 syslog-facility: local0
                 env: LOG_NAME
                 tag: "{{ (.ExtraAttributes nil).LOG_NAME}} {{.Name}}"
+        networks:
+            local_network:
+                ipv4_address: "${DOCKER_SYSLOG_IP}"
+
+# user defined network
+networks:
+      local_network:
+          driver: bridge
+          ipam:
+              driver: default
+              config:
+                -  subnet: "${DOCKER_SUBNET_TO_USE}"
 
 # Must include all named volumes in V2 compose file format.
 volumes:
     pg-db:
+    pg-db-pgdata:
+    pg-db-backup:
+    pg-db-xlog:
+

@@ -21,10 +21,30 @@
 #         NOTES: ---
 #        AUTHOR: Original author unknown
 #       AUTHOR2: Gregg Jensen (), gjensen@devops.center
+#                Bob Lozano (), bob@devops.center
 #  ORGANIZATION: devops.center
 #       CREATED: 09/20/2016 12:48:37
 #      REVISION:  ---
+#
+# Copyright 2014-2017 devops.center llc
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 #===============================================================================
+
+#set -o nounset     # Treat unset variables as an error
+#set -o errexit      # exit immediately if command exits with a non-zero status
+#set -x             # essentially debug mode
 
 BACKUP_DIR='.'
 
@@ -131,7 +151,30 @@ done
 sudo sed -i "s/^\barchive_mode\b[[:blank:]]\+=[[:blank:]]\+\bon\b/archive_mode = off/g" /media/data/postgres/db/pgdata/postgresql.conf
 sleep 2
 sudo supervisorctl restart postgres
-sleep 5
+
+# now lets ensure that the database is up before continuing
+IS_READY=1
+for tryAttempt in {1..3}
+do
+    pg_isready -q
+    if [ $? -gt 0 ]
+    then 
+        if [[ ${tryAttempt} -eq 3 ]]; then
+            echo "Will try one last time in 5 seconds."
+        else
+            echo "postgresql does not appear to be up and ready, will try again in 5 seconds "
+        fi
+        sleep 5
+    else
+        IS_READY=0
+        break
+    fi
+done
+
+if [[ ${IS_READY} -eq 1 ]]; then
+    echo "postgres didn't come up in the time allowed, exitting.  Try this again in a minute or two."
+    exit 1
+fi
 
 # if no backup file is provided, look for the most recent pgdump file in the backup dir
 if [[ -z "$LOCAL_BACKUP_FILE" ]]; then
