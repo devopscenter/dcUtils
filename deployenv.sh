@@ -203,6 +203,10 @@ while [[ $# -gt 0 ]]; do
       --env|-e )        shift
                         ENV=$1
                   ;;
+
+      --forCustomer )        shift # this is used when app is dcAuthorization 
+                        FOR_CUSTOMER=$1
+                  ;;
       --run-as )         shift
                         RUN_AS=$1 
                   ;;
@@ -264,6 +268,13 @@ if [[ $TYPE == "instance" ]]; then
     #dcLog "CUSTOMER_APP_UTILS=${CUSTOMER_APP_UTILS}"  >> ${TEMP_FILE}
     #dcLog "CUSTOMER_APP_WEB=${CUSTOMER_APP_WEB}" >> ${TEMP_FILE}
 
+
+    if [[ ${FOR_CUSTOMER} ]]; then
+        BASE_CUSTOMER_APP_UTILS_DIR="${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_UTILS}/${FOR_CUSTOMER}"
+    else
+        BASE_CUSTOMER_APP_UTILS_DIR="${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_UTILS}"
+    fi
+
     dcLog "... instance.env into global environment file if available"
     # instance.env has the tags for this instance that will be made to be environment variables
     if [[ -e ${HOME}/.dcConfig/instance.env ]]; then
@@ -274,14 +285,14 @@ if [[ $TYPE == "instance" ]]; then
     dcLog "... common.env into global environment file"
     # only bring in the common.env if one exists for the environment and if not there
     # check the base environments directory as a last resort (in case they have only one)
-    if [[ -e ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/common.env ]]; then
-        cat ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/common.env | sudo tee -a /etc/environment
+    if [[ -e ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/common.env ]]; then
+        cat ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/common.env | sudo tee -a /etc/environment
     fi
 
     dcLog "... ${ENV}.env"
     # Add env vars for this environment, if it exists
-    if [[ -e ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/${ENV}.env ]]; then
-        cat ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/${ENV}.env | sudo tee -a /etc/environment
+    if [[ -e ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/${ENV}.env ]]; then
+        cat ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/${ENV}.env | sudo tee -a /etc/environment
     fi
 
     dcLog "... and configuring supervisor config file"
@@ -299,12 +310,13 @@ if [[ $TYPE == "instance" ]]; then
         sed -e 's/^/export /' ${HOME}/.dcConfig/instance.env | sudo tee -a /etc/default/supervisor
     fi
 
-    if [[ -e ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/common.env ]]; then
-        sed -e 's/^/export /' ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/common.env | sudo tee -a /etc/default/supervisor
+    if [[ -e ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/common.env ]]; then
+        sed -e 's/^/export /' ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/common.env | sudo tee -a /etc/default/supervisor
+
     fi
 
-    if [[ -e ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/${ENV}.env ]]; then
-        sed -e 's/^/export /' ${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_NAME}-utils/environments/${ENV}.env | sudo tee -a /etc/default/supervisor
+    if [[ -e ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/${ENV}.env ]]; then
+        sed -e 's/^/export /' ${BASE_CUSTOMER_APP_UTILS_DIR}/environments/${ENV}.env | sudo tee -a /etc/default/supervisor
     fi
 
     # put the /etc/environment in the current env for this session...normally would have to log out and log in to get it.
@@ -335,14 +347,20 @@ else
     # The docker-current.env file will be used by the docker-compose up script and any
     # devops.center script will read in the docker-current.sh
     #-------------------------------------------------------------------------------
-    BASE_CUSTOMER_APP_UTILS_DIR="${BASE_CUSTOMER_DIR}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_UTILS}"
+    if [[ ${FOR_CUSTOMER} ]]; then
+        BASE_CUSTOMER_APP_UTILS_DIR="${BASE_CUSTOMER_DIR}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_UTILS}/${FOR_CUSTOMER}"
+    else
+        BASE_CUSTOMER_APP_UTILS_DIR="${BASE_CUSTOMER_DIR}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_UTILS}"
+    fi
 
     #-------------------------------------------------------------------------------
     # copy the health_checks template to the appropriate place for the  application
     # if it doesn't already exist
     #-------------------------------------------------------------------------------
-    if [[ ! -f ${BASE_CUSTOMER_APP_UTILS_DIR}/config/health_checks ]]; then
-        cp ${dcUTILS}/templates/health_checks ${BASE_CUSTOMER_APP_UTILS_DIR}/config/health_checks
+    if [[ ${CUSTOMER_APP_NAME} != "dcAuthorization" ]]; then
+        if [[ ! -f ${BASE_CUSTOMER_APP_UTILS_DIR}/config/health_checks ]]; then
+            cp ${dcUTILS}/templates/health_checks ${BASE_CUSTOMER_APP_UTILS_DIR}/config/health_checks
+        fi
     fi
 
     # next set up the devops.center common env.

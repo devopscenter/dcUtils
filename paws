@@ -514,6 +514,7 @@ else
     #-------------------------------------------------------------------------------
     if [[ ${DO_NOT_RUN} == 'false' ]]; then
         # go ahead and run it
+
         PDSH_OUTPUT=$(PDSH_SSH_ARGS_APPEND=$(echo -F "$TMP_CONFIG") pdsh -u 30 -w "$HOSTS" "$PDSH_CMD" 2>&1)
         IFS=$'\n'; PDSH_OUTPUT_LIST=(${PDSH_OUTPUT}); unset IFS
         for aLine in "${PDSH_OUTPUT_LIST[@]}"; do
@@ -524,6 +525,7 @@ else
                 echo "${aLine}"
             fi
         done
+
     else
         # they just want to see what would happen
         echo 

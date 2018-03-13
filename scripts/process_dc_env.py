@@ -1,13 +1,15 @@
 #!/usr/bin/env python
-# ==============================================================================
+
+"""This is a generic environment reader."""
+# =============================================================================
 #
 #          FILE: process_dc_env.py
 #
 #         USAGE: process_dc_env.py
 #
 #   DESCRIPTION: customer appName specific that will drop the indexes
-#                identified
-#                by the CREATE INDEX lines in the customer appname .sql file
+#                identified by the CREATE INDEX lines in the customer
+#                appname .sql file
 #
 #       OPTIONS: ---
 #  REQUIREMENTS: ---
@@ -33,7 +35,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# ==============================================================================
+# =============================================================================
 
 import sys
 import logging
@@ -56,20 +58,24 @@ __status__ = "Development"
 
 
 class Process_dc_Env:
+    """Process reading in the environment file."""
 
-    def __init__(self, envList, generateEnvFiles=0):
-        """Process_dc_Env constructor."""
+    def __init__(self, envList, generateEnvFiles=0, forCustomer=None):
+        """Constructor for process_dc_env class."""
+
         self.envList = envList
         self.baseDir = ""
         self.baseAppName = ""
         self.dcBaseConfig = ""
         self.baseAppUtilsDir = ""
+        self.forCustomer = forCustomer
         if generateEnvFiles:
             self.generateEnvFiles = True
         else:
             self.generateEnvFiles = False
 
     def getdcUtilsDirectory(self):
+        """Read the utils directory."""
         # read the ~/.dcConfig/settings
         baseSettingsDir = expanduser("~") + "/.dcConfig"
         if not os.path.exists(baseSettingsDir):
@@ -96,7 +102,7 @@ class Process_dc_Env:
         return(os.getcwd())
 
     def process_dc_env(self):
-
+        """Process the environment files."""
         # ---------------------------------------------------------------------
         # lets check to see if dcUtils has been set already if not then we are
         #  probably the first time through and it hasn't been set in the
@@ -157,6 +163,7 @@ class Process_dc_Env:
         return self.envList
 
     def getBaseDir(self):
+        """Get the base directory."""
         if os.path.exists(self.dcBaseConfig):
             if "WORKSPACE_NAME" in self.envList:
                 # open the dcConfig/baseDirectory and read it in directly
@@ -205,13 +212,14 @@ class Process_dc_Env:
             sys.exit(1)
 
     def getBaseAppName(self):
+        """Get the base name for the application."""
         subDirs = next(os.walk(self.baseDir))[1]
 
         if len(subDirs) == 0:
-            print("The base directory defined in " +
-                  "$HOME/.dcConfig/basedirectory " +
-                  "does not have any directories in it.  There is " +
-                  "configuration issue in that file  you may need to run " +
+            print("The base directory defined in "
+                  "$HOME/.dcConfig/basedirectory "
+                  "does not have any directories in it.  There is "
+                  "configuration issue in that file  you may need to run "
                   "manageApp.py again.")
             sys.exit(1)
 
@@ -232,6 +240,7 @@ class Process_dc_Env:
             # print "baseAppName= " + baseAppName
 
     def handleMultipleDirectories(self, subDirs):
+        """Handle the situation when there are multiple apps."""
         if "CUSTOMER_APP_NAME" in self.envList:
             foundFlag = 0
             for dir in subDirs:
@@ -256,6 +265,7 @@ class Process_dc_Env:
             sys.exit(1)
 
     def getBaseAppUtils(self):
+        """Get the appliation utils."""
         appDir = self.baseDir + "/" + self.baseAppName
         subDirMapFile = appDir + "/" + ".dcDirMap.cnf"
         if os.path.exists(subDirMapFile):
@@ -266,8 +276,14 @@ class Process_dc_Env:
                 key, value = line.split('=', 1)
                 self.envList[key] = value
                 if key == "CUSTOMER_APP_UTILS":
-                    retBaseAppUtils = self.baseDir + "/" + \
-                        self.baseAppName + "/" + value
+                    if self.forCustomer:
+                        retBaseAppUtils = self.baseDir + "/" + \
+                            self.baseAppName + "/" + value + "/" + \
+                            self.forCustomer
+                    else:
+                        retBaseAppUtils = self.baseDir + "/" + \
+                            self.baseAppName + "/" + value
+
         else:
             print("Can not read the " + subDirMapFile + " file in the base" +
                   " application directory, have you run manageApp.py yet? ")
@@ -276,6 +292,7 @@ class Process_dc_Env:
         return retBaseAppUtils
 
     def getEnvFile(self):
+        """Get the Environment file."""
         # check for a dcEnv-${CUSTOMER_APP_NAME}-*.sh file
         envDirToFind = self.baseAppUtilsDir + \
             "/environments/.generatedEnvFiles"
@@ -362,25 +379,36 @@ class Process_dc_Env:
                                   fileToSource)
 
 
-def pythonGetEnv(initialCreate=False):
+def pythonGetEnv(initialCreate=False, forCustomer=None):
+    """Process env when called from a python script."""
     envList = dcEnvCheckArgs()
+
+    if forCustomer is None:
+        if "FOR_CUSTOMER" in envList:
+            forCustomer = envList["FOR_CUSTOMER"]
 
     if initialCreate:
         returnEnvList = envList
     else:
-        anEnv = Process_dc_Env(envList)
+        anEnv = Process_dc_Env(envList, forCustomer=forCustomer)
         returnEnvList = anEnv.process_dc_env()
 
     return returnEnvList
 
 
 def shellGetEnv():
+    """Process env when called via a shell script."""
     (envList, initialCreate, generateEnvFiles) = dcEnvCheckArgs(type=1)
+
+    customerNameToSpecialize = None
+    if "FOR_CUSTOMER" in envList:
+        customerNameToSpecialize = envList["FOR_CUSTOMER"]
 
     if initialCreate:
         returnEnvList = envList
     else:
-        anEnv = Process_dc_Env(envList, generateEnvFiles)
+        anEnv = Process_dc_Env(envList, generateEnvFiles,
+                               forCustomer=customerNameToSpecialize)
         returnEnvList = anEnv.process_dc_env()
 
     returnStr = "export"
@@ -396,13 +424,13 @@ def shellGetEnv():
 
 
 def dcEnvCheckArgs(type=0):
+    """Check the arguments passed into this script."""
     parser = argparse.ArgumentParser(
         description='The core argument processing is handled by a separate '
         'process (process_dc_env.py) and is called by this script.  This core '
         'process will ensure that there is an environment file that is set '
-        'and '
-        'can be utilized for the running of this session.  The intent of this '
-        'script is that it would be put at the top of any devops.center '
+        'and can be utilized for the running of this session.  The intent of '
+        'this script is that it would be put at the top of any devops.center '
         'scripts that will need the full application environment to ensure '
         'that the environment variables that are needed will be available to '
         'the script.  This is done to help avoid polluting the users '
@@ -450,6 +478,11 @@ def dcEnvCheckArgs(type=0):
                         action="store_true",
                         help=argparse.SUPPRESS,
                         required=False)
+    parser.add_argument('--forCustomer',
+                        # help='This is used only'
+                        # 'when creating a dcAuthorization instance.',
+                        help=argparse.SUPPRESS,
+                        required=False)
 
     # args, unknown = parser.parse_known_args()
     try:
@@ -468,6 +501,8 @@ def dcEnvCheckArgs(type=0):
     if args.workspaceName:
         returnList["WORKSPACE_NAME"] = args.workspaceName.upper()
 
+    if args.forCustomer:
+        returnList["FOR_CUSTOMER"] = args.forCustomer
     # if we get here then the return the necessary arguments
     if type:
         return (returnList, args.initialCreate, args.generateEnvFiles)
@@ -476,6 +511,7 @@ def dcEnvCheckArgs(type=0):
 
 
 def main(argv):
+    """Execute this script."""
     shellGetEnv()
 
 

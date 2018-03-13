@@ -502,7 +502,7 @@ class ManageAppName:
         userResponse = raw_input(
             "\n\nEnter the name of the unique stack repository that has been "
             "set up for this app\nand it will be used in the "
-            "docker-compoase.yml files\n"
+            "docker-compose.yml files\n"
             "for the web and worker images:\n")
         if userResponse:
             # take the userResponse and use it to edit the docker-compose.yml

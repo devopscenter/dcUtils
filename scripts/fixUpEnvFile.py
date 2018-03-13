@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+"""Merge two files together getting rid of duplicate entries."""
+
 # ==============================================================================
 #
 #          FILE: fixUpEnvFile.py
@@ -52,6 +54,7 @@ __status__ = "Development"
 
 
 def checkArgs():
+    """Check the arguments passed in."""
     parser = argparse.ArgumentParser(
         description='Script that removes duplicates out of a file that only' +
                     ' as key=value pairs on each line')
@@ -73,8 +76,7 @@ def checkArgs():
         tmpFileHandle.close()
 
     except IOError:
-        print 'Unable to access the input file: \n' + \
-            retInputFile
+        print('Unable to access the input file: \n' + retInputFile)
         sys.exit(1)
 
     # if we get here then the
@@ -82,6 +84,7 @@ def checkArgs():
 
 
 def main(argv):
+    """Execute the script."""
     (inputFile, outputFile) = checkArgs()
 
     envDict = OrderedDict()
