@@ -403,7 +403,7 @@ def getSettings(anEnvList):
         if "USER_NAME=" in aLine:
             anEnvList["USER_NAME"] = aLine.split("=")[1]
         if "dcCOMMON_SHARED_DIR=" in aLine:
-            anEnvList["dcCOMMON_SHARED_IDR"] = aLine.split("=")[1]
+            anEnvList["dcCOMMON_SHARED_DIR"] = aLine.split("=")[1]
 
 
 def pythonGetEnv(initialCreate=False, forCustomer=None):
