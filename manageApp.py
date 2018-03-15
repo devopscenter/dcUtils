@@ -209,6 +209,9 @@ class ManageAppName:
         elif command == "getUniqueID":
             print(self.getUniqueStackID())
 
+        if self.sharedUtilsFlag:
+            self.writeToSharedSettings()
+
     def parseOptions(self, options):
         """options is string of comma separate key=value pairs. If there is
         only one then it won't have a comma.  And it could be blank"""
@@ -1026,6 +1029,39 @@ class ManageAppName:
                 print("NOTE: There is a file that needs to be created: \n"
                       "./.mapAppStack and could not be written. \n"
                       "Please report this issue to the devops.center admins.")
+
+    def writeToSharedSettings(self):
+        sharedSettingsPath = self.envList["dcCOMMON_SHARED_DIR"] + "/" + \
+            self.envList["CUSTOMER_NAME"] + "/shared"
+        if not os.path.exists(sharedSettingsPath):
+            try:
+                os.makedirs(sharedSettingsPath, 0755)
+            except OSError:
+                print('Error creating the shared directory: '
+                      + sharedSettingsPath +
+                      '\nSo the information about this app utilizing the shared'
+                      'app utils will not be saved. ')
+                return
+
+        # if we get here then the shared drive and directory are set up so append
+        # this app-utils information that it is shared
+        sharedSettingsFile = sharedSettingsPath + "/dcSharedSettings"
+        if os.path.isfile(sharedSettingsFile):
+            # it exists so just append this information
+            fileHandle = open(sharedSettingsFile, 'a')
+            strToWrite = (self.appName + "-utils=shared\n")
+            fileHandle.write(strToWrite)
+            fileHandle.close()
+        else:
+            # it doesn't exist so we need to create it and add the shared repo
+            # URL and then the app-utils and that it is shared
+            fileHandle = open(sharedSettingsFile, 'w')
+            strToWrite = ("SHARED_APP_REPO=git@github.com:" +
+                          self.envList["CUSTOMER_NAME"] +
+                          "/dcShared-utils.git\n")
+            strToWrite += (self.appName + "-utils=shared\n")
+            fileHandle.write(strToWrite)
+            fileHandle.close()
 
 
 def checkBaseDirectory(baseDirectory):
