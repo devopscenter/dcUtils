@@ -62,7 +62,6 @@ class Process_dc_Env:
 
     def __init__(self, envList, generateEnvFiles=0, forCustomer=None):
         """Constructor for process_dc_env class."""
-
         self.envList = envList
         self.baseDir = ""
         self.baseAppName = ""
@@ -135,6 +134,12 @@ class Process_dc_Env:
         #  .dcDirMap.cnf
         # ---------------------------------------------------------------------
         self.baseAppUtilsDir = self.getBaseAppUtils()
+
+        # ---------------------------------------------------------------------
+        # go read the ~/.dcConfig/settings file for any variables we need from
+        # there.  Like the customer name
+        # ---------------------------------------------------------------------
+        getSettings(self.envList)
 
         # ---------------------------------------------------------------------
         # Need to find what dcEnv files that are in the directory.  We need to
@@ -280,6 +285,9 @@ class Process_dc_Env:
                         retBaseAppUtils = self.baseDir + "/" + \
                             self.baseAppName + "/" + value + "/" + \
                             self.forCustomer
+                    elif value == "dcShared-utils":
+                        retBaseAppUtils = self.baseDir + "/" + \
+                            self.baseAppName + "/" + value
                     else:
                         retBaseAppUtils = self.baseDir + "/" + \
                             self.baseAppName + "/" + value
@@ -379,6 +387,25 @@ class Process_dc_Env:
                                   fileToSource)
 
 
+def getSettings(anEnvList):
+    """Read the ~/.dcConfig/settings file."""
+    baseSettingsFile = expanduser("~") + "/.dcConfig/settings"
+    with open(baseSettingsFile, 'r') as f:
+        lines = [line.rstrip('\n') for line in f]
+
+    for aLine in lines:
+        if "CUSTOMER_NAME=" in aLine:
+            anEnvList["CUSTOMER_NAME"] = aLine.split("=")[1]
+        if "PROFILE=" in aLine:
+            anEnvList["PROFILE"] = aLine.split("=")[1]
+        if "REGION=" in aLine:
+            anEnvList["REGION"] = aLine.split("=")[1]
+        if "USER_NAME=" in aLine:
+            anEnvList["USER_NAME"] = aLine.split("=")[1]
+        if "dcCOMMON_SHARED_DIR=" in aLine:
+            anEnvList["dcCOMMON_SHARED_IDR"] = aLine.split("=")[1]
+
+
 def pythonGetEnv(initialCreate=False, forCustomer=None):
     """Process env when called from a python script."""
     envList = dcEnvCheckArgs()
@@ -388,6 +415,7 @@ def pythonGetEnv(initialCreate=False, forCustomer=None):
             forCustomer = envList["FOR_CUSTOMER"]
 
     if initialCreate:
+        getSettings(envList)
         returnEnvList = envList
     else:
         anEnv = Process_dc_Env(envList, forCustomer=forCustomer)
