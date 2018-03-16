@@ -229,11 +229,6 @@ else
     source /usr/local/bin/dcEnv.sh
 fi
 
-# check to see if the app utils is a shared directory
-if [[ ${CUSTOMER_APP_UTILS} == "dcShared-utils" ]]; then
-    CUSTOMER_APP_UTILS="${CUSTOMER_APP_NAME}-utils"
-fi
-
 dcStartLog "Deploying for application: ${CUSTOMER_APP_NAME} env: ${ENV}"
 #-------------------------------------------------------------------------------
 # handle the case where the type is an instance
