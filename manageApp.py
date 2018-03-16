@@ -382,10 +382,7 @@ class ManageAppName:
             fileToWrite = basePath + "/.dcDirMap.cnf"
         try:
             fileHandle = open(fileToWrite, 'a')
-            if self.sharedUtilsFlag:
-                strToWrite = "CUSTOMER_APP_UTILS=" + self.sharedUtilsName + "\n"
-            else:
-                strToWrite = "CUSTOMER_APP_UTILS=" + self.appName + "-utils\n"
+            strToWrite = "CUSTOMER_APP_UTILS=" + self.appName + "-utils\n"
             fileHandle.write(strToWrite)
             fileHandle.close()
         except IOError:
