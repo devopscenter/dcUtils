@@ -76,13 +76,13 @@ class ManageAppName:
         self.envList = envList
         self.sharedUtilsFlag = sharedUtilsFlag
 
-        # set up the defaults for the shared info and check to see if
-        # we are using a shared enviornment for this app
-        self.sharedUtilsName = "dcShared-utils"
-        self.sharedSettingsPath = self.envList["dcCOMMON_SHARED_DIR"] + \
-            "/" + self.envList["CUSTOMER_NAME"] + "/shared"
-        self.sharedSettingsFile = self.sharedSettingsPath + "/dcSharedSettings"
-        self.checkSharedSettings()
+        if self.sharedUtilsFlag:
+            # set up the defaults for the shared info and check to see if
+            # we are using a shared enviornment for this app
+            self.sharedUtilsName = "dcShared-utils"
+            self.sharedSettingsPath = self.envList["dcCOMMON_SHARED_DIR"] + \
+                "/" + self.envList["CUSTOMER_NAME"] + "/shared"
+            self.sharedSettingsFile = self.sharedSettingsPath + "/dcSharedSettings"
 
         # put the baseDirectory path in the users $HOME/.dcConfig/baseDirectory
         # file so that subsequent scripts can use it as a base to work
@@ -1113,12 +1113,6 @@ class ManageAppName:
             fileHandle.write(strToWrite)
             fileHandle.close()
 
-    def checkSharedSettings(self):
-        """Read the shared settings file to check for this app"""
-        strToSearch = self.appName + "-utils=shared"
-        if strToSearch in open(self.sharedSettingsFile).read():
-            self.sharedUtilsFlag = True
-
 
 def checkBaseDirectory(baseDirectory):
     if(baseDirectory.endswith('/')):
@@ -1277,12 +1271,7 @@ def checkArgs():
                         default='',
                         required=False)
     parser.add_argument('-s', '--sharedUtils', help='Flag to determine that '
-                        'you want to to use a shared application utils. '
-                        'Meaning that when you add additional applications '
-                        'that utilize the devops.center framework, there will'
-                        'be one main directory/repository (dcApplictionUtils) '
-                        'that will house all of the applications utils '
-                        'directories.',
+                        'you do NOT want to to use a shared application utils. ',
                         action="store_true",
                         required=False)
 
@@ -1312,9 +1301,9 @@ def checkArgs():
     retAppURL = args.appPath
     retUtilsURL = args.utilsPath
 
-    retSharedUtils = False
+    retSharedUtils = True
     if args.sharedUtils:
-        retSharedUtils = True
+        retSharedUtils = False
 
     if "WORKSPACE_NAME" in retEnvList:
         retWorkspaceName = retEnvList["WORKSPACE_NAME"]
