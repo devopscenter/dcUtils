@@ -76,8 +76,13 @@ class ManageAppName:
         self.envList = envList
         self.sharedUtilsFlag = sharedUtilsFlag
 
-        if self.sharedUtilsFlag:
-            self.sharedUtilsName = "dcShared-utils"
+        # set up the defaults for the shared info and check to see if
+        # we are using a shared enviornment for this app
+        self.sharedUtilsName = "dcShared-utils"
+        self.sharedSettingsPath = self.envList["dcCOMMON_SHARED_DIR"] + \
+            "/" + self.envList["CUSTOMER_NAME"] + "/shared"
+        self.sharedSettingsFile = self.sharedSettingsPath + "/dcSharedSettings"
+        self.checkSharedSettings()
 
         # put the baseDirectory path in the users $HOME/.dcConfig/baseDirectory
         # file so that subsequent scripts can use it as a base to work
@@ -234,8 +239,8 @@ class ManageAppName:
         NOTE: the pound noqa after the method name will turn off the warning
         that the method is to complex."""
 
-        if (not self.appPath) or (not self.utilsPath):
-            print("ERROR: you must provide both --appPath and --utilsPath"
+        if (not self.appPath):
+            print("ERROR: you must provide both --appPath"
                   " to join and existing application.")
             sys.exit(1)
 
@@ -248,7 +253,7 @@ class ManageAppName:
             os.makedirs(dataLoadDir, 0755)
 
         # change to the baseDirectory
-        os.chdir(self.baseDir + "/" + self.appName)
+        os.chdir(basePath)
 
         if re.match("http", self.appPath) or re.search(".git$", self.appPath):
             # they have entered a git repo for the existing front end directory
@@ -257,12 +262,40 @@ class ManageAppName:
             # they have entered a path to an existing front end directory
             self.joinWithPath(basePath, "web", self.appPath)
 
-        if re.match("http", self.utilsPath) or re.search(".git$", self.utilsPath):
-            # they have entered a git repo for the existing utilities directory
-            self.joinWithGit(basePath, "utils", self.utilsPath)
+        if self.sharedUtilsFlag:
+            gitUtilsPath = None
+            with open(self.sharedSettingsFile) as fp:
+                for aLine in fp:
+                    strippedLine = aLine.strip()
+                    if "SHARED_APP_REPO" in strippedLine:
+                        gitUtilsPath = strippedLine.split("=")[1]
+                        break
+            if gitUtilsPath:
+                # since this is a shared repo for the app-utils it resides in a
+                # different place (peer to the app directories in the baseDir)
+                # hence we need to pass this path on to the next methods and they
+                # will do the right thing in the right place (ie they will clone
+                # if the directory doesn't exist, otherwise it will do a pull)
+                basePath = self.baseDir + self.sharedUtilsName
+                if re.match("http", gitUtilsPath) or re.search(".git$", gitUtilsPath):
+                    # they have entered a git repo for the existing utilities
+                    # directory
+                    self.joinWithGit(basePath, "utils", self.utilsPath)
+                else:
+                    # TODO need to remove the app-web that was pulled down if
+                    # we get to here.
+                    print('ERROR: the URL for the shared app-utils repository '
+                          ' is invalid or unsupported: ' + gitUtilsPath +
+                          '\n You will need retry this command after that is '
+                          'corrected.')
         else:
-            # they have entered a path to an existing utilies directory
-            self.joinWithPath(basePath, "utils", self.utilsPath)
+            if re.match("http", self.utilsPath) or re.search(".git$", self.utilsPath):
+                # they have entered a git repo for the existing utilities
+                # directory
+                self.joinWithGit(basePath, "utils", self.utilsPath)
+            else:
+                # they have entered a path to an existing utilies directory
+                self.joinWithPath(basePath, "utils", self.utilsPath)
 
         # and the environments directory
         envDir = basePath + "/" + self.utilsDirName + "/environments"
@@ -329,7 +362,7 @@ class ManageAppName:
         # create the dataload directory...this is a placeholder and can
         # be a link to somewhere else with more diskspace.  But that is
         # currently up to the user.
-        dataLoadDir = basePath + "/dataload"
+        dataLoadDir = self.baseDir + self.appName + "/dataload"
         if not os.path.exists(dataLoadDir):
             os.makedirs(dataLoadDir, 0755)
 
@@ -814,14 +847,34 @@ class ManageAppName:
             sys.exit(1)
 
     def joinWithGit(self, basePath, theType, theURL):
-        print("Cloning: " + theURL)
-        cmdToRun = "git clone " + theURL
+        cloneOrPull = " clone "
+        if self.sharedUtilsFlag and theType == "utils":
+            # the basePath includes the standard shared repo named
+            # directory
+            if os.path.exists(basePath):
+                print("Pulling: " + theURL)
+                cloneOrPull = " pull "
+            else:
+                print("Cloning: " + theURL)
+        else:
+            print("Cloning: " + theURL)
 
+        cmdToRun = "git" + cloneOrPull + theURL
         appOutput = ''
         try:
             appOutput = subprocess.check_output(cmdToRun,
                                                 stderr=subprocess.STDOUT,
                                                 shell=True)
+
+            # if using the shared repo then we need to make a symlink
+            # from the app-utils name under the dcShared-utils to the
+            # correct place in the app directory
+            if self.sharedUtilsFlag and theType == "utils":
+                sourceUtilsDir = "../" + self.sharedUtilsName + "/" + \
+                    self.appName + "-utils/"
+                targetUtilsDir = self.baseDir + "/" + self.appName + "/" + \
+                    self.appName + "-utils"
+                os.symlink(sourceUtilsDir, targetUtilsDir)
 
             # get the newly created directory and put it in the
             # appropriate ENV variable in the dcDirMap.cnf
@@ -843,7 +896,7 @@ class ManageAppName:
                     # joinExistingDevelopment method
                     fileWriteMode = 'a'
 
-                fileToWrite = basePath + "/.dcDirMap.cnf"
+                fileToWrite = self.baseDir + self.appName + "/.dcDirMap.cnf"
                 try:
                     fileHandle = open(fileToWrite, fileWriteMode)
                     strToWrite = theEnvVarToWrite + aName + "\n"
@@ -1028,40 +1081,43 @@ class ManageAppName:
                       "Please report this issue to the devops.center admins.")
 
     def writeToSharedSettings(self):
-        sharedSettingsPath = self.envList["dcCOMMON_SHARED_DIR"] + "/" + \
-            self.envList["CUSTOMER_NAME"] + "/shared"
-        if not os.path.exists(sharedSettingsPath):
+        if not os.path.exists(self.sharedSettingsPath):
             try:
-                os.makedirs(sharedSettingsPath, 0755)
+                os.makedirs(self.sharedSettingsPath, 0755)
             except OSError:
                 print('Error creating the shared directory: '
-                      + sharedSettingsPath +
+                      + self.sharedSettingsPath +
                       '\nSo the information about this app utilizing the shared'
                       'app utils will not be saved. ')
                 return
 
         # if we get here then the shared drive and directory are set up so append
         # this app-utils information that it is shared
-        sharedSettingsFile = sharedSettingsPath + "/dcSharedSettings"
-        if os.path.isfile(sharedSettingsFile):
+        if os.path.isfile(self.sharedSettingsFile):
             # it exists so check to see if the app has already been added
             strToSearch = self.appName + "-utils=shared"
-            if strToSearch not in open(sharedSettingsFile).read():
+            if strToSearch not in open(self.sharedSettingsFile).read():
                 # then append this information
-                fileHandle = open(sharedSettingsFile, 'a')
+                fileHandle = open(self.sharedSettingsFile, 'a')
                 strToWrite = (strToSearch + "\n")
                 fileHandle.write(strToWrite)
                 fileHandle.close()
         else:
             # it doesn't exist so we need to create it and add the shared repo
             # URL and then the app-utils and that it is shared
-            fileHandle = open(sharedSettingsFile, 'w')
+            fileHandle = open(self.sharedSettingsFile, 'w')
             strToWrite = ("SHARED_APP_REPO=git@github.com:" +
                           self.envList["CUSTOMER_NAME"] +
                           "/dcShared-utils.git\n")
             strToWrite += (self.appName + "-utils=shared\n")
             fileHandle.write(strToWrite)
             fileHandle.close()
+
+    def checkSharedSettings(self):
+        """Read the shared settings file to check for this app"""
+        strToSearch = self.appName + "-utils=shared"
+        if strToSearch in open(self.sharedSettingsFile).read():
+            self.sharedUtilsFlag = True
 
 
 def checkBaseDirectory(baseDirectory):
