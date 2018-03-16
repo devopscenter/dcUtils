@@ -80,7 +80,9 @@ class ManageAppName:
             # set up the defaults for the shared info and check to see if
             # we are using a shared enviornment for this app
             self.sharedUtilsName = "dcShared-utils"
-            self.sharedSettingsPath = self.envList["dcCOMMON_SHARED_DIR"] + \
+            commonSharedDir = self.envList[
+                "dcCOMMON_SHARED_DIR"].replace('"', '')
+            self.sharedSettingsPath = commonSharedDir + \
                 "/" + self.envList["CUSTOMER_NAME"] + "/shared"
             self.sharedSettingsFile = self.sharedSettingsPath + "/dcSharedSettings"
 
