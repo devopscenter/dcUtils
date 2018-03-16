@@ -1044,11 +1044,14 @@ class ManageAppName:
         # this app-utils information that it is shared
         sharedSettingsFile = sharedSettingsPath + "/dcSharedSettings"
         if os.path.isfile(sharedSettingsFile):
-            # it exists so just append this information
-            fileHandle = open(sharedSettingsFile, 'a')
-            strToWrite = (self.appName + "-utils=shared\n")
-            fileHandle.write(strToWrite)
-            fileHandle.close()
+            # it exists so check to see if the app has already been added
+            strToSearch = self.appName + "-utils=shared"
+            if strToSearch not in open(sharedSettingsFile).read():
+                # then append this information
+                fileHandle = open(sharedSettingsFile, 'a')
+                strToWrite = (strToSearch + "\n")
+                fileHandle.write(strToWrite)
+                fileHandle.close()
         else:
             # it doesn't exist so we need to create it and add the shared repo
             # URL and then the app-utils and that it is shared
