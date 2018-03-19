@@ -116,14 +116,6 @@ class ManageAppName:
                         adjustedBaseDir + "\n"
                 fileHandle.write(strToWrite)
 
-                # add the export directory vars here
-                strToWrite = "##### EXPORT DIRECTORY VARIABLES ######\n"
-                fileHandle.write(strToWrite)
-
-                strToWrite = "export " + self.altName + "=" + \
-                             adjustedBaseDir + "\n"
-                fileHandle.write(strToWrite)
-
                 strToWrite = "##### BASE DIR CONSTRUCTION NO TOUCH ######\n"
                 fileHandle.write(strToWrite)
 
@@ -266,30 +258,39 @@ class ManageAppName:
 
         if self.sharedUtilsFlag:
             gitUtilsPath = None
-            with open(self.sharedSettingsFile) as fp:
-                for aLine in fp:
-                    strippedLine = aLine.strip()
-                    if "SHARED_APP_REPO" in strippedLine:
-                        gitUtilsPath = strippedLine.split("=")[1]
-                        break
-            if gitUtilsPath:
-                # since this is a shared repo for the app-utils it resides in a
-                # different place (peer to the app directories in the baseDir)
-                # hence we need to pass this path on to the next methods and they
-                # will do the right thing in the right place (ie they will clone
-                # if the directory doesn't exist, otherwise it will do a pull)
-                basePath = self.baseDir + self.sharedUtilsName
-                if re.match("http", gitUtilsPath) or re.search(".git$", gitUtilsPath):
-                    # they have entered a git repo for the existing utilities
-                    # directory
-                    self.joinWithGit(basePath, "utils", self.utilsPath)
-                else:
-                    # TODO need to remove the app-web that was pulled down if
-                    # we get to here.
-                    print('ERROR: the URL for the shared app-utils repository '
-                          ' is invalid or unsupported: ' + gitUtilsPath +
-                          '\n You will need retry this command after that is '
-                          'corrected.')
+            try:
+                with open(self.sharedSettingsFile) as fp:
+                    for aLine in fp:
+                        strippedLine = aLine.strip()
+                        if "SHARED_APP_REPO" in strippedLine:
+                            gitUtilsPath = strippedLine.split("=")[1]
+                            break
+                if gitUtilsPath:
+                    # since this is a shared repo for the app-utils it resides in a
+                    # different place (peer to the app directories in the baseDir)
+                    # hence we need to pass this path on to the next methods and they
+                    # will do the right thing in the right place (ie they will clone
+                    # if the directory doesn't exist, otherwise it will do a
+                    # pull)
+                    basePath = self.baseDir + self.sharedUtilsName
+                    if re.match("http", gitUtilsPath) or re.search(".git$", gitUtilsPath):
+                        # they have entered a git repo for the existing utilities
+                        # directory
+                        self.joinWithGit(basePath, "utils", gitUtilsPath)
+                    else:
+                        # TODO need to remove the app-web that was pulled down if
+                        # we get to here.
+                        print('ERROR: the URL for the shared app-utils repository '
+                              ' is invalid or unsupported: ' + gitUtilsPath +
+                              '\n You will need retry this command after that is '
+                              'corrected.')
+            except IOError as error:
+                print('Error: trying to get the shared file that contains the '
+                      'respository that has this\napplications devops.center '
+                      'utilities could not be found. \nThis could either be '
+                      'because this application hasnt been created yet or you\n'
+                      'dont have acces to the share drive that contians the file.')
+                sys.exit(1)
         else:
             if re.match("http", self.utilsPath) or re.search(".git$", self.utilsPath):
                 # they have entered a git repo for the existing utilities
@@ -1093,6 +1094,20 @@ class ManageAppName:
                       'app utils will not be saved. ')
                 return
 
+        sharedRepoURL = ("git@github.com:" + self.envList["CUSTOMER_NAME"] +
+                         "/dcShared-utils.git\n")
+        print('\nGenerating a git repo and put it into a shared settings file:\n'
+              + sharedRepoURL)
+        # before we write out to the file check to see if the customer name has
+        # any characters that aren't alphanumeric and let them know that the
+        # generated git URL may not be correct
+        if re.findall('\w+', self.envList["CUSTOMER_NAME"]):
+            print('\nNOTE: this URL may not be correct as it has characters '
+                  'that are not letters or numbers.\nSo you may have to edit '
+                  'this file manually to reflect the actual git repo URL '
+                  'for the dcShared-utils.git.\n'
+                  'The path to the file is: ' + self.sharedSettingsFile + '\n\n')
+
         # if we get here then the shared drive and directory are set up so append
         # this app-utils information that it is shared
         try:
@@ -1122,7 +1137,7 @@ class ManageAppName:
                   "Please report this issue to the devops.center admins.")
 
 
-def checkBaseDirectory(baseDirectory):
+def checkBaseDirectory(baseDirectory, envList):
     if(baseDirectory.endswith('/')):
         if baseDirectory.startswith('~'):
             retBaseDir = baseDirectory.replace("~", expanduser("~"))
@@ -1139,18 +1154,26 @@ def checkBaseDirectory(baseDirectory):
         else:
             retBaseDir = tmpBaseDir
 
-    try:
-        # lets try to write to that directory
-        tmpFile = retBaseDir + '.removeme'
-        tmpFileHandle = open(tmpFile, 'w')
-        tmpFileHandle.close()
-        os.remove(tmpFile)
+    newBaseDir = retBaseDir
+    if "WORKSPACE_NAME" in envList:
+        newBaseDir = retBaseDir + envList["WORKSPACE_NAME_ORIGINAL"] + "/"
+        if not os.path.exists(newBaseDir):
+            print('Createing base directory associated with the workspace '
+                  'name:' + newBaseDir)
+            os.makedirs(newBaseDir, 0755)
+    else:
+        try:
+            # lets try to write to that directory
+            tmpFile = newBaseDir + '.removeme'
+            tmpFileHandle = open(tmpFile, 'w')
+            tmpFileHandle.close()
+            os.remove(tmpFile)
 
-    except IOError:
-        print('Unable to access base directory: ' + retBaseDir)
-        sys.exit(1)
+        except IOError:
+            print('Unable to access base directory: ' + newBaseDir)
+            sys.exit(1)
 
-    return retBaseDir
+    return newBaseDir
 
 
 def getBaseDirectory():
@@ -1244,8 +1267,7 @@ def checkArgs():
                         'to be used to access the appName. This needs to be '
                         'an absolute path unless the first part of the path '
                         'is a tilde or $HOME.   This option is not required '
-                        'but is needed when doing a create or when using the'
-                        ' workspaceName option.',
+                        'but is needed when using the workspaceName option.',
                         required=False)
     parser.add_argument('-c', '--command', help='Command to execute' +
                         'on the appName. Default [join]',
@@ -1278,7 +1300,7 @@ def checkArgs():
                         'command arg',
                         default='',
                         required=False)
-    parser.add_argument('-s', '--sharedUtils', help='Flag to determine that '
+    parser.add_argument('-s', '--separateUtils', help='Flag to determine that '
                         'you do NOT want to to use a shared application utils. ',
                         action="store_true",
                         required=False)
@@ -1289,18 +1311,18 @@ def checkArgs():
         pythonGetEnv()
         sys.exit(1)
 
+    retEnvList = pythonGetEnv(initialCreate=True)
+
     # before going further we need to check whether there is a slash at the
     # end of the value in destinationDir
     if args.baseDirectory:
-        retBaseDir = checkBaseDirectory(args.baseDirectory)
+        retBaseDir = checkBaseDirectory(args.baseDirectory, retEnvList)
     else:
         retBaseDir = getBaseDirectory()
         if not retBaseDir:
             print("Could not determine the baseDirectory, you will need to "
                   "re-run this script and provide the -d option.")
             sys.exit(1)
-
-    retEnvList = pythonGetEnv(initialCreate=True)
 
     if retEnvList["CUSTOMER_APP_NAME"]:
         retAppName = retEnvList["CUSTOMER_APP_NAME"]
@@ -1310,7 +1332,7 @@ def checkArgs():
     retUtilsURL = args.utilsPath
 
     retSharedUtils = True
-    if args.sharedUtils:
+    if args.separateUtils:
         retSharedUtils = False
 
     if "WORKSPACE_NAME" in retEnvList:
