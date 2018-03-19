@@ -527,6 +527,7 @@ def dcEnvCheckArgs(type=0):
         returnList["ENV"] = args.env
 
     if args.workspaceName:
+        returnList["WORKSPACE_NAME_ORIGINAL"] = args.workspaceName
         returnList["WORKSPACE_NAME"] = args.workspaceName.upper()
 
     if args.forCustomer:
