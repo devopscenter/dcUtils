@@ -61,7 +61,7 @@ usage ()
     CURRENT=$(grep "CURRENT_WORKSPACE=" ${HOME}/.dcConfig/baseDirectory)
     echo -e "Current workspace is: ${CURRENT#CURRENT_WORKSPACE=}"
     echo
-    echo -e "Possible workspaces (NOTE: will be lowercased):"
+    echo -e "Possible workspaces (NOTE: will be lowercased which may not exactly match the name):"
     grep "_BASE_CUSTOMER_DIR=" ~/.dcConfig/baseDirectory | while read line
     do
         # get the keyword on the left side of the equal sign
@@ -78,7 +78,7 @@ usage ()
 #-------------------------------------------------------------------------------
 # Make sure there are the exact number of arguments
 #-------------------------------------------------------------------------------
-if [[ $# -le 2 ]]; then
+if [[ $# -le 1 ]]; then
     usage
     exit 1
 fi
