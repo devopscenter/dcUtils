@@ -268,7 +268,7 @@ if [[ $TYPE == "instance" ]]; then
     #dcLog "CUSTOMER_APP_UTILS=${CUSTOMER_APP_UTILS}"  >> ${TEMP_FILE}
     #dcLog "CUSTOMER_APP_WEB=${CUSTOMER_APP_WEB}" >> ${TEMP_FILE}
 
-
+    CUSTOMER_APP_UTILS=${CUSTOMER_APP_NAME}-utils
     if [[ ${FOR_CUSTOMER} ]]; then
         BASE_CUSTOMER_APP_UTILS_DIR="${HOME}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_UTILS}/${FOR_CUSTOMER}"
     else
@@ -347,6 +347,7 @@ else
     # The docker-current.env file will be used by the docker-compose up script and any
     # devops.center script will read in the docker-current.sh
     #-------------------------------------------------------------------------------
+    CUSTOMER_APP_UTILS=${CUSTOMER_APP_NAME}-utils
     if [[ ${FOR_CUSTOMER} ]]; then
         BASE_CUSTOMER_APP_UTILS_DIR="${BASE_CUSTOMER_DIR}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_UTILS}/${FOR_CUSTOMER}"
     else
