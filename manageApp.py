@@ -63,8 +63,8 @@ __status__ = "Development"
 
 class ManageAppName:
 
-    def __init__(self, theAppName, baseDirectory, altName, appPath, sharedUtilsFlag,
-                 utilsPath, envList):
+    def __init__(self, theAppName, baseDirectory, altName, appPath,
+                 sharedUtilsFlag, utilsPath, envList):
         """ManageAppName constructor"""
         self.appName = theAppName
         self.dcAppName = ''
@@ -87,8 +87,8 @@ class ManageAppName:
             commonSharedDir = self.envList[
                 "dcCOMMON_SHARED_DIR"].replace('"', '')
             self.sharedSettingsPath = commonSharedDir + \
-                "/" + self.nameOfCustomer + "/shared"
-            self.sharedSettingsFile = self.sharedSettingsPath + "/dcSharedSettings"
+                "/" + self.nameOfCustomer + "/shared/.dcConfig"
+            self.sharedSettingsFile = self.sharedSettingsPath + "/settings"
 
         # put the baseDirectory path in the users $HOME/.dcConfig/baseDirectory
         # file so that subsequent scripts can use it as a base to work
@@ -134,7 +134,8 @@ class ManageAppName:
             except IOError:
                 print("NOTE: There is a file that needs to be created: \n"
                       "$HOME/.dcConfig/baseDirectory and could not be written"
-                      "\nPlease report this issue to the devops.center admins.")
+                      "\nPlease report this issue to the devops.center "
+                      "admins.")
 
         elif os.path.isfile(baseConfigFile) and self.altName:
             # the file exists and they are adding a new base directory
@@ -281,33 +282,37 @@ class ManageAppName:
                             gitUtilsPath = strippedLine.split("=")[1]
                             break
                 if gitUtilsPath:
-                    # since this is a shared repo for the app-utils it resides in a
-                    # different place (peer to the app directories in the baseDir)
-                    # hence we need to pass this path on to the next methods and they
-                    # will do the right thing in the right place (ie they will clone
-                    # if the directory doesn't exist, otherwise it will do a
-                    # pull)
+                    # since this is a shared repo for the app-utils it resides
+                    # in a different place (peer to the app directories in
+                    # the baseDir) hence we need to pass this path on to the
+                    # next methods and they will do the right thing in the
+                    # right place (ie they will clone if the directory
+                    # doesn't exist, otherwise it will do a pull)
                     basePath = self.baseDir + self.sharedUtilsName
-                    if re.match("http", gitUtilsPath) or re.search(".git$", gitUtilsPath):
-                        # they have entered a git repo for the existing utilities
-                        # directory
+                    if re.match("http", gitUtilsPath) or \
+                            re.search(".git$", gitUtilsPath):
+                            # they have entered a git repo for the existing
+                            # utilities directory
                         self.joinWithGit(basePath, "utils", gitUtilsPath)
                     else:
-                        # TODO need to remove the app-web that was pulled down if
-                        # we get to here.
-                        print('ERROR: the URL for the shared app-utils repository '
+                        # TODO need to remove the app-web that was pulled down
+                        # if we get to here.
+                        print('ERROR: the URL for the shared app-utils '
+                              'repository '
                               ' is invalid or unsupported: ' + gitUtilsPath +
-                              '\n You will need retry this command after that is '
-                              'corrected.')
-            except IOError as error:
+                              '\n You will need retry this command after '
+                              'that is corrected.')
+            except IOError:
                 print('Error: trying to get the shared file that contains the '
                       'respository that has this\napplications devops.center '
                       'utilities could not be found. \nThis could either be '
-                      'because this application hasnt been created yet or you\n'
-                      'dont have acces to the share drive that contians the file.')
+                      'because this application hasnt been created yet or '
+                      'you\ndont have acces to the share drive that contians '
+                      'the file.')
                 sys.exit(1)
         else:
-            if re.match("http", self.utilsPath) or re.search(".git$", self.utilsPath):
+            if re.match("http", self.utilsPath) or \
+                    re.search(".git$", self.utilsPath):
                 # they have entered a git repo for the existing utilities
                 # directory
                 self.joinWithGit(basePath, "utils", self.utilsPath)
@@ -1117,47 +1122,73 @@ class ManageAppName:
                       'app utils will not be saved. ')
                 return
 
-        sharedRepoURL = ("git@github.com:" + self.nameOfCustomer +
-                         "/dcShared-utils.git\n")
+        sharedRepoURL = self.createRepoURL()
         print('\nGenerating a git repo and put it into a shared settings file:\n'
               + sharedRepoURL)
-        # before we write out to the file check to see if the customer name has
-        # any characters that aren't alphanumeric and let them know that the
-        # generated git URL may not be correct
-        if not bool(re.match('^[a-zA-Z0-9]+$', self.nameOfCustomer)):
-            print('\nNOTE: this URL may not be correct as it has characters '
-                  'that are not letters or numbers.\nSo you may have to edit '
-                  'this file manually to reflect the actual git repo URL '
-                  'for the dcShared-utils.git.\n'
-                  'The path to the file is: ' + self.sharedSettingsFile + '\n\n')
 
         # if we get here then the shared drive and directory are set up so append
         # this app-utils information that it is shared
         try:
-            if os.path.isfile(self.sharedSettingsFile):
-                # it exists so check to see if the app has already been added
-                strToSearch = self.appName + "-utils=shared"
-                if strToSearch not in open(self.sharedSettingsFile).read():
-                    # then append this information
-                    fileHandle = open(self.sharedSettingsFile, 'a')
-                    strToWrite = (strToSearch + "\n")
-                    fileHandle.write(strToWrite)
-                    fileHandle.close()
-            else:
-                # it doesn't exist so we need to create it and add the shared repo
-                # URL and then the app-utils and that it is shared
-                fileHandle = open(self.sharedSettingsFile, 'w')
-                strToWrite = ("SHARED_APP_REPO=git@github.com:" +
-                              self.nameOfCustomer +
-                              "/dcShared-utils.git\n")
-                strToWrite += (self.appName + "-utils=shared\n")
+            strToSearch = "SHARED_APP_REPO="
+            if strToSearch not in open(self.sharedSettingsFile).read():
+                fileHandle = open(self.sharedSettingsFile, 'a')
+                strToWrite = "SHARED_APP_REPO=" + sharedRepoURL + '\n'
+                fileHandle.write(strToWrite)
+                fileHandle.close()
+
+            # it exists so check to see if the app has already been added
+            strToSearch = self.appName + "-utils=shared"
+            if strToSearch not in open(self.sharedSettingsFile).read():
+                # then append this information
+                fileHandle = open(self.sharedSettingsFile, 'a')
+                strToWrite = (strToSearch + "\n")
                 fileHandle.write(strToWrite)
                 fileHandle.close()
         except IOError:
-            print("NOTE: There is a file that needs to be created: \n"
+            print('NOTE: There is a problem writing to the shared settings:\n'
                   + self.sharedSettingsFile +
-                  "\n and it could not be written. \n"
                   "Please report this issue to the devops.center admins.")
+
+    def createRepoURL(self):
+        """Generate the repo URL for the shared utils repository."""
+        # the git service name and the git account should be stored in
+        # the shared settings file (created upon RUN-ME_FIRST.SH run by the
+        # first person of a new customer.)
+        gitServiceName = "github"
+        gitAccountName = self.nameOfCustomer
+
+        retRepoURL = None
+        if os.path.isfile(self.sharedSettingsFile):
+            # it's there so pull out the values needed
+            with open(self.sharedSettingsFile) as fp:
+                for aLine in fp:
+                    strippedLine = aLine.strip()
+                    if "GIT_SERVICE_NAME" in strippedLine:
+                        gitServiceName = strippedLine.split("=")[1]
+                    if "GIT_ACCOUNT_NAME" in strippedLine:
+                        gitAccountName = strippedLine.split("=")[1]
+
+            if gitServiceName == "github":
+                retRepoURL = "git@github.com:" + gitAccountName + \
+                    '/dcShared-utils.git'
+
+            if gitServiceName == "assembla":
+                retRepoURL = "git@gassembla.com:" + gitAccountName + \
+                    '/dcShared-utils.git'
+
+            if gitServiceName == "bitbucket":
+                retRepoURL = 'gituser@bitbucket.com:' + gitAccountName + \
+                    '/dcShared-utils.git'
+
+        else:
+            print('FYI, Can not automatically generate the dcShared-utils '
+                  'repo URL as the required information '
+                  'is not found in the shared settings file: \n' +
+                  self.sharedSettingFile)
+            retRepoURL = ("git@github.com:" + self.nameOfCustomer +
+                          "/dcShared-utils.git\n")
+
+        return retRepoURL
 
 
 def checkBaseDirectory(baseDirectory, envList):
