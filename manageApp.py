@@ -1202,6 +1202,9 @@ class ManageAppName:
                 os.rename(sharedBasePath, sharedBasePath +
                           "dcShared-utils.ORIG")
 
+        # TODO need to put the following in a try/catch block incase the
+        # shared repo doesnt exist (ie, its the VERY first app for this
+        # customer)
         originalDir = os.getcwd()
         os.chdir(sharedBasePath)
         sharedRepoURL = self.createRepoURL()
