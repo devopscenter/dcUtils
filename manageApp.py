@@ -377,6 +377,7 @@ class ManageAppName:
     def createUtilDirectories(self):
         basePath = ''
         if self.sharedUtilsFlag:
+            self.checkForExistingSharedRepo(self.baseDir)
             basePath = self.baseDir + self.sharedUtilsName
         else:
             basePath = self.baseDir + self.appName
@@ -525,26 +526,24 @@ class ManageAppName:
                 subprocess.check_call("git init .", shell=True)
                 os.chdir(originalDir)
 
-#            elif (re.match("http", userResponse) or
-#                  re.match("git", userResponse)):
-#                # its a URL so we need to get a git clone
-#                originalDir = os.getcwd()
-#                os.chdir(self.baseDir + self.appName)
-#                print "Cloning: " + userResponse
-#                cmdToRun = "git clone " + userResponse
-#
-#                try:
-#                    subprocess.check_output(cmdToRun,
-#                                            stderr=subprocess.STDOUT,
-#                                            shell=True)
-#                except subprocess.CalledProcessError:
-#                    print ("There was an issue with cloning the "
-#                           "application you specified: " + userResponse +
-#                           "\nCheck that you specified the correct owner "
-#                           "and respository name.")
-#                # TODO PROBABLY NEED TO GET THE NAME OF THE NEW WEB DIRECTORY
-#                #      HERE AND SET IT ACCORDINGLY
-#                os.chdir(originalDir)
+            elif (re.match("http", userResponse) or
+                  re.match("git", userResponse)):
+                # its a URL so we need to get a git clone
+                originalDir = os.getcwd()
+                os.chdir(self.baseDir + self.appName)
+                print("Cloning: " + userResponse)
+                cmdToRun = "git clone " + userResponse
+
+                try:
+                    subprocess.check_output(cmdToRun,
+                                            stderr=subprocess.STDOUT,
+                                            shell=True)
+                except subprocess.CalledProcessError:
+                    print ("There was an issue with cloning the "
+                           "application you specified: " + userResponse +
+                           "\nCheck that you specified the correct owner "
+                           "and respository name.")
+                os.chdir(originalDir)
 
             else:
                 # is is a local directory so we need to sym-link it
@@ -1189,6 +1188,25 @@ class ManageAppName:
                           "/dcShared-utils.git\n")
 
         return retRepoURL
+
+    def checkForExistingSharedRepo(self, sharedBasePath):
+        """Check and retrieve the dcShared-utils repo."""
+        # first get the repo name
+        if os.path.exists(sharedBasePath + "dcShared-utils"):
+            if os.path.exists(sharedBasePath + 'dcShared-utils/.git'):
+                return
+            else:
+                # the shared directory is there but is not checked in
+                # so we will move it to the side and try to pull it
+                # from the git service
+                os.rename(sharedBasePath, sharedBasePath +
+                          "dcShared-utils.ORIG")
+
+        originalDir = os.getcwd()
+        os.chdir(sharedBasePath)
+        sharedRepoURL = self.createRepoURL()
+        subprocess.check_call("git clone " + sharedRepoURL, shell=True)
+        os.chdir(originalDir)
 
 
 def checkBaseDirectory(baseDirectory, envList):
