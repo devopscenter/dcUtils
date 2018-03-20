@@ -76,6 +76,10 @@ class ManageAppName:
         self.envList = envList
         self.sharedUtilsFlag = sharedUtilsFlag
 
+        self.nameOfCustomer = self.envList["CUSTOMER_NAME"]
+        if "WORKSPACE_NAME_ORIGINAL" in self.envList:
+            self.nameOfCustomer = self.envList["WORKSPACE_NAME_ORIGINAL"]
+
         if self.sharedUtilsFlag:
             # set up the defaults for the shared info and check to see if
             # we are using a shared enviornment for this app
@@ -83,7 +87,7 @@ class ManageAppName:
             commonSharedDir = self.envList[
                 "dcCOMMON_SHARED_DIR"].replace('"', '')
             self.sharedSettingsPath = commonSharedDir + \
-                "/" + self.envList["CUSTOMER_NAME"] + "/shared"
+                "/" + self.nameOfCustomer + "/shared"
             self.sharedSettingsFile = self.sharedSettingsPath + "/dcSharedSettings"
 
         # put the baseDirectory path in the users $HOME/.dcConfig/baseDirectory
@@ -244,7 +248,7 @@ class ManageAppName:
         basePath = self.baseDir + self.appName
         dataLoadDir = basePath + "/dataload"
         if not os.path.exists(dataLoadDir):
-            os.makedirs(dataLoadDir, 0755)
+            os.makedirs(dataLoadDir, 0o755)
 
         # change to the baseDirectory
         os.chdir(basePath)
@@ -303,7 +307,7 @@ class ManageAppName:
         # and the environments directory
         envDir = basePath + "/" + self.utilsDirName + "/environments"
         if not os.path.exists(envDir):
-            os.makedirs(envDir, 0755)
+            os.makedirs(envDir, 0o755)
 
             print("Creating environment files")
             # and then create the individiual env files in that directory
@@ -318,7 +322,7 @@ class ManageAppName:
         # create a directory to hold the generated env files
         generatedEnvDir = envDir + "/.generatedEnvFiles"
         if not os.path.exists(generatedEnvDir):
-            os.makedirs(generatedEnvDir, 0755)
+            os.makedirs(generatedEnvDir, 0o755)
             open(generatedEnvDir + "/.keep", 'a').close()
 
         # TODO need to ensure any keys that are pulled down have the correct
@@ -347,7 +351,7 @@ class ManageAppName:
     def createBaseDirectories(self):
         basePath = self.baseDir + self.appName
         try:
-            os.makedirs(basePath, 0755)
+            os.makedirs(basePath, 0o755)
         except OSError:
             print('Error creating the base directory, if it exists this '
                   'will not re-create it.\nPlease check to see that this '
@@ -367,7 +371,7 @@ class ManageAppName:
         # currently up to the user.
         dataLoadDir = self.baseDir + self.appName + "/dataload"
         if not os.path.exists(dataLoadDir):
-            os.makedirs(dataLoadDir, 0755)
+            os.makedirs(dataLoadDir, 0o755)
 
         # utils path to be created
         baseUtils = basePath + "/" + self.appName + \
@@ -377,14 +381,14 @@ class ManageAppName:
         configDir = baseUtils + "config/"
         for item in commonDirs:
             if not os.path.exists(configDir + item):
-                os.makedirs(configDir + item, 0755)
+                os.makedirs(configDir + item, 0o755)
                 # and touch a file so that this isn't an empty directory
                 open(configDir + item + "/.keep", 'a').close()
 
         # and the environments directory
         envDir = baseUtils + "environments"
         if not os.path.exists(envDir):
-            os.makedirs(envDir, 0755)
+            os.makedirs(envDir, 0o755)
 
         # and then create the individiual env files in that directory
         self.createEnvFiles(envDir)
@@ -392,14 +396,14 @@ class ManageAppName:
         # create a directory to hold the generated env files
         generatedEnvDir = envDir + "/.generatedEnvFiles"
         if not os.path.exists(generatedEnvDir):
-            os.makedirs(generatedEnvDir, 0755)
+            os.makedirs(generatedEnvDir, 0o755)
             open(generatedEnvDir + "/.keep", 'a').close()
 
         # create the certs directory
         keyDir = baseUtils + "certs/"
         for item in commonDirs:
             if not os.path.exists(keyDir + item):
-                os.makedirs(keyDir + item, 0755)
+                os.makedirs(keyDir + item, 0o755)
                 # and touch a file so that this isn't an empty directory
                 open(keyDir + item + "/.keep", 'a').close()
 
@@ -407,7 +411,7 @@ class ManageAppName:
         keyDir = baseUtils + "keys/"
         for item in commonDirs:
             if not os.path.exists(keyDir + item):
-                os.makedirs(keyDir + item, 0755)
+                os.makedirs(keyDir + item, 0o755)
                 # and touch a file so that this isn't an empty directory
                 open(keyDir + item + "/.keep", 'a').close()
 
@@ -497,7 +501,7 @@ class ManageAppName:
                 # web path to be created
                 self.baseWeb = self.baseDir + self.appName + "/" + userResponse
                 if not os.path.exists(self.baseWeb):
-                    os.makedirs(self.baseWeb, 0755)
+                    os.makedirs(self.baseWeb, 0o755)
 
                 # and now run the git init on the Utils directory
                 originalDir = os.getcwd()
@@ -558,7 +562,7 @@ class ManageAppName:
             # web path to be created
             self.baseWeb = self.baseDir + self.appName + "/" + webName
             if not os.path.exists(self.baseWeb):
-                os.makedirs(self.baseWeb, 0755)
+                os.makedirs(self.baseWeb, 0o755)
 
         # set up the web name as the name for dcAPP that will be used to
         # write in the personal.env file
@@ -605,16 +609,16 @@ class ManageAppName:
         # stack path to be created
         baseStack = self.baseDir + self.appName + "/" + stackName
         if not os.path.exists(baseStack):
-            os.makedirs(baseStack, 0755)
+            os.makedirs(baseStack, 0o755)
 
         # make the web and worker directories
         for item in ["web", "web-debug", "worker"]:
             if not os.path.exists(baseStack + "/" + item):
-                os.makedirs(baseStack + "/" + item, 0755)
+                os.makedirs(baseStack + "/" + item, 0o755)
 
         # create the  web/wheelhouse directory
         if not os.path.exists(baseStack + "/web/wheelhouse"):
-            os.makedirs(baseStack + "/web/wheelhouse", 0755)
+            os.makedirs(baseStack + "/web/wheelhouse", 0o755)
 
         # and the .gitignore to ignore the wheelhouse directoryo
         gitIgnoreFile = baseStack + "/web/.gitignore"
@@ -993,14 +997,14 @@ class ManageAppName:
         # and then the config directory and all the sub directories
         configDir = baseUtils + "config/"
         if not os.path.exists(configDir + newEnvName):
-            os.makedirs(configDir + newEnvName, 0755)
+            os.makedirs(configDir + newEnvName, 0o755)
             # and touch a file so that this isn't an empty directory
             open(configDir + newEnvName + "/.keep", 'a').close()
 
         # and the environments directory
         envDir = baseUtils + "environments"
         if not os.path.exists(envDir):
-            os.makedirs(envDir, 0755)
+            os.makedirs(envDir, 0o755)
 
         # and then create the individiual env files in that directory
         envFile = envDir + "/" + newEnvName + ".env"
@@ -1024,13 +1028,13 @@ class ManageAppName:
         # and then the keys directory and all the sub directories
         keyDir = baseUtils + "keys/"
         if not os.path.exists(keyDir + newEnvName):
-            os.makedirs(keyDir + newEnvName, 0755)
+            os.makedirs(keyDir + newEnvName, 0o755)
             # and touch a file so that this isn't an empty directory
             open(keyDir + newEnvName + "/.keep", 'a').close()
 
         certsDir = baseUtils + "/certs/"
         if not os.path.exists(certsDir + newEnvName):
-            os.makedirs(certsDir + newEnvName, 0755)
+            os.makedirs(certsDir + newEnvName, 0o755)
             # and touch a file so that this isn't an empty directory
             open(keyDir + newEnvName + "/.keep", 'a').close()
 
@@ -1094,7 +1098,7 @@ class ManageAppName:
     def writeToSharedSettings(self):
         if not os.path.exists(self.sharedSettingsPath):
             try:
-                os.makedirs(self.sharedSettingsPath, 0755)
+                os.makedirs(self.sharedSettingsPath, 0o755)
             except OSError:
                 print('Error creating the shared directory: '
                       + self.sharedSettingsPath +
@@ -1102,14 +1106,14 @@ class ManageAppName:
                       'app utils will not be saved. ')
                 return
 
-        sharedRepoURL = ("git@github.com:" + self.envList["CUSTOMER_NAME"] +
+        sharedRepoURL = ("git@github.com:" + self.nameOfCustomer +
                          "/dcShared-utils.git\n")
         print('\nGenerating a git repo and put it into a shared settings file:\n'
               + sharedRepoURL)
         # before we write out to the file check to see if the customer name has
         # any characters that aren't alphanumeric and let them know that the
         # generated git URL may not be correct
-        if re.findall('\w+', self.envList["CUSTOMER_NAME"]):
+        if not bool(re.match('^[a-zA-Z0-9]+$', self.nameOfCustomer)):
             print('\nNOTE: this URL may not be correct as it has characters '
                   'that are not letters or numbers.\nSo you may have to edit '
                   'this file manually to reflect the actual git repo URL '
@@ -1133,7 +1137,7 @@ class ManageAppName:
                 # URL and then the app-utils and that it is shared
                 fileHandle = open(self.sharedSettingsFile, 'w')
                 strToWrite = ("SHARED_APP_REPO=git@github.com:" +
-                              self.envList["CUSTOMER_NAME"] +
+                              self.nameOfCustomer +
                               "/dcShared-utils.git\n")
                 strToWrite += (self.appName + "-utils=shared\n")
                 fileHandle.write(strToWrite)
@@ -1168,7 +1172,7 @@ def checkBaseDirectory(baseDirectory, envList):
         if not os.path.exists(newBaseDir):
             print('Createing base directory associated with the workspace '
                   'name:' + newBaseDir)
-            os.makedirs(newBaseDir, 0755)
+            os.makedirs(newBaseDir, 0o755)
     else:
         try:
             # lets try to write to that directory
