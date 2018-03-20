@@ -471,6 +471,14 @@ class ManageAppName:
             os.symlink(sourceUtilsDir, targetUtilsDir)
             os.chdir(originalDir)
 
+            # and do the git init if it hasn't been done before:w
+            gitDir = basePath + "/.git"
+            if not os.path.exists(gitDir):
+                originalDir = os.getcwd()
+                os.chdir(basePath)
+                subprocess.check_call("git init .", shell=True)
+                os.chdir(originalDir)
+
     def createWebDirectories(self):
         webName = self.appName + "-web"
 
