@@ -536,7 +536,7 @@ class ManageAppName:
                                             shell=True)
 
                     # get the name of the repo as the new webName
-                    webName = os.path.basename(userReponse).split('.')[0]
+                    webName = os.path.basename(userResponse).split('.')[0]
                 except subprocess.CalledProcessError:
                     print ("There was an issue with cloning the "
                            "application you specified: " + userResponse +
