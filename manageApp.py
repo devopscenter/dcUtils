@@ -538,11 +538,15 @@ class ManageAppName:
                     subprocess.check_output(cmdToRun,
                                             stderr=subprocess.STDOUT,
                                             shell=True)
+
+                    # get the name of the repo as the new webName
+                    webName = os.path.basename(userReponse).split('.')[0]
                 except subprocess.CalledProcessError:
                     print ("There was an issue with cloning the "
                            "application you specified: " + userResponse +
                            "\nCheck that you specified the correct owner "
                            "and respository name.")
+                    sys.exit(1)
                 os.chdir(originalDir)
 
             else:
