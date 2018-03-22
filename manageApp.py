@@ -432,11 +432,7 @@ class ManageAppName:
                 # and touch a file so that this isn't an empty directory
                 open(keyDir + item + "/.keep", 'a').close()
 
-        fileToWrite = ''
-        if self.sharedUtilsFlag:
-            fileToWrite = self.baseDir + self.appName + "/.dcDirMap.cnf"
-        else:
-            fileToWrite = basePath + "/.dcDirMap.cnf"
+        fileToWrite = basePath + "/.dcDirMap.cnf"
         try:
             fileHandle = open(fileToWrite, 'a')
             strToWrite = "CUSTOMER_APP_UTILS=" + self.appName + "-utils\n"
