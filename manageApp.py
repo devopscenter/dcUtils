@@ -488,7 +488,7 @@ class ManageAppName:
             os.symlink(sourceUtilsDir, targetUtilsDir)
             os.chdir(originalDir)
 
-            # and do the git init if it hasn't been done before:w
+            # and do the git init if it hasn't been done before
             gitDir = basePath + "/.git"
             if not os.path.exists(gitDir):
                 originalDir = os.getcwd()
