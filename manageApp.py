@@ -1171,10 +1171,14 @@ class ManageAppName:
                 retRepoURL = "git@github.com:" + gitAccountName + \
                     '/dcShared-utils.git'
 
+            # TODO this repo name is probably not correct and needs to
+            # be updated
             if gitServiceName == "assembla":
                 retRepoURL = "git@gassembla.com:" + gitAccountName + \
                     '/dcShared-utils.git'
 
+            # TODO this repo name is probably not correct and needs to
+            # be updated
             if gitServiceName == "bitbucket":
                 retRepoURL = 'gituser@bitbucket.com:' + gitAccountName + \
                     '/dcShared-utils.git'
