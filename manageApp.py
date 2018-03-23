@@ -63,7 +63,8 @@ __status__ = "Development"
 
 class ManageAppName:
 
-    def __init__(self, theAppName, baseDirectory, altName, appPath, utilsPath):
+    def __init__(self, theAppName, baseDirectory, altName, appPath,
+                 sharedUtilsFlag, utilsPath, envList):
         """ManageAppName constructor"""
         self.appName = theAppName
         self.dcAppName = ''
@@ -72,6 +73,22 @@ class ManageAppName:
         self.baseDir = baseDirectory
         self.altName = altName.upper()
         self.dcUtils = os.environ["dcUTILS"]
+        self.envList = envList
+        self.sharedUtilsFlag = sharedUtilsFlag
+
+        self.nameOfCustomer = self.envList["CUSTOMER_NAME"]
+        if "WORKSPACE_NAME_ORIGINAL" in self.envList:
+            self.nameOfCustomer = self.envList["WORKSPACE_NAME_ORIGINAL"]
+
+        if self.sharedUtilsFlag:
+            # set up the defaults for the shared info and check to see if
+            # we are using a shared enviornment for this app
+            self.sharedUtilsName = "dcShared-utils"
+            commonSharedDir = self.envList[
+                "dcCOMMON_SHARED_DIR"].replace('"', '')
+            self.sharedSettingsPath = commonSharedDir + \
+                "/" + self.nameOfCustomer + "/shared/.dcConfig"
+            self.sharedSettingsFile = self.sharedSettingsPath + "/settings"
 
         # put the baseDirectory path in the users $HOME/.dcConfig/baseDirectory
         # file so that subsequent scripts can use it as a base to work
@@ -103,14 +120,6 @@ class ManageAppName:
                         adjustedBaseDir + "\n"
                 fileHandle.write(strToWrite)
 
-                # add the export directory vars here
-                strToWrite = "##### EXPORT DIRECTORY VARIABLES ######\n"
-                fileHandle.write(strToWrite)
-
-                strToWrite = "export " + self.altName + "=" + \
-                             adjustedBaseDir + "\n"
-                fileHandle.write(strToWrite)
-
                 strToWrite = "##### BASE DIR CONSTRUCTION NO TOUCH ######\n"
                 fileHandle.write(strToWrite)
 
@@ -123,9 +132,10 @@ class ManageAppName:
 
                 fileHandle.close()
             except IOError:
-                print "NOTE: There is a file that needs to be created: \n" + \
-                    "$HOME/.dcConfig/baseDirectory and could not be written" +\
-                    "\nPlease report this issue to the devops.center admins."
+                print("NOTE: There is a file that needs to be created: \n"
+                      "$HOME/.dcConfig/baseDirectory and could not be written"
+                      "\nPlease report this issue to the devops.center "
+                      "admins.")
 
         elif os.path.isfile(baseConfigFile) and self.altName:
             # the file exists and they are adding a new base directory
@@ -179,9 +189,9 @@ class ManageAppName:
 
             fileHandle.close()
         except IOError:
-            print "NOTE: There is a file that needs to be created: \n" + \
-                "$HOME/.dcConfig/baseDirectory and could not be written" + \
-                "\nPlease report this issue to the devops.center admins."
+            print("NOTE: There is a file that needs to be created: \n"
+                  "$HOME/.dcConfig/baseDirectory and could not be written"
+                  "\nPlease report this issue to the devops.center admins.")
         # and add a new line with the new altName and the adjustBasedir
         # then write out the rest of the file
 
@@ -201,7 +211,10 @@ class ManageAppName:
         elif command == "delete":
             self.delete(optionsMap)
         elif command == "getUniqueID":
-            print self.getUniqueStackID()
+            print(self.getUniqueStackID())
+
+        if self.sharedUtilsFlag:
+            self.writeToSharedSettings()
 
     def parseOptions(self, options):
         """options is string of comma separate key=value pairs. If there is
@@ -218,16 +231,16 @@ class ManageAppName:
 
         return retMap
 
-    def joinExistingDevelopment(self): # noqa
+    def joinExistingDevelopment(self):  # noqa
         """This expects that the user is new and is joining development of an
         already exsiting repository.  So, this pulls down that existing repo
         with the given appName and puts it in the given baseDirectory.
         NOTE: the pound noqa after the method name will turn off the warning
         that the method is to complex."""
 
-        if (not self.appPath) or (not self.utilsPath):
-            print "ERROR: you must provide both --appPath and --utilsPath" + \
-                " to join and existing application."
+        if (not self.appPath):
+            print("ERROR: you must provide both --appPath"
+                  " to join and existing application.")
             sys.exit(1)
 
         # create the dataload directory...this is a placeholder and can
@@ -236,10 +249,10 @@ class ManageAppName:
         basePath = self.baseDir + self.appName
         dataLoadDir = basePath + "/dataload"
         if not os.path.exists(dataLoadDir):
-            os.makedirs(dataLoadDir, 0755)
+            os.makedirs(dataLoadDir, 0o755)
 
         # change to the baseDirectory
-        os.chdir(self.baseDir + "/" + self.appName)
+        os.chdir(basePath)
 
         if re.match("http", self.appPath) or re.search(".git$", self.appPath):
             # they have entered a git repo for the existing front end directory
@@ -248,23 +261,75 @@ class ManageAppName:
             # they have entered a path to an existing front end directory
             self.joinWithPath(basePath, "web", self.appPath)
 
-        if re.match("http", self.utilsPath) or re.search(".git$", self.utilsPath):
-            # they have entered a git repo for the existing utilities directory
-            self.joinWithGit(basePath, "utils", self.utilsPath)
+        # lets check for the existance of this app in the dcShared-utils
+        # if it''s not there then there is no sense in continuing
+        strToSearch = self.appName + "-utils=shared"
+        if strToSearch not in open(self.sharedSettingsFile).read():
+            print('This app does not appear to have been created or shared '
+                  'as it is not in the\n' + self.sharedSettingsFile + '\n'
+                  'as a result it will not be in the dcShared-utils repo. '
+                  'Check to see if this app has been created and if it was '
+                  'supposed to be shared. Exiting ...')
+            sys.exit(1)
+
+        if self.sharedUtilsFlag:
+            gitUtilsPath = None
+            try:
+                with open(self.sharedSettingsFile) as fp:
+                    for aLine in fp:
+                        strippedLine = aLine.strip()
+                        if "SHARED_APP_REPO" in strippedLine:
+                            gitUtilsPath = strippedLine.split("=")[1]
+                            break
+                if gitUtilsPath:
+                    # since this is a shared repo for the app-utils it resides
+                    # in a different place (peer to the app directories in
+                    # the baseDir) hence we need to pass this path on to the
+                    # next methods and they will do the right thing in the
+                    # right place (ie they will clone if the directory
+                    # doesn't exist, otherwise it will do a pull)
+                    basePath = self.baseDir + self.sharedUtilsName
+                    if re.match("http", gitUtilsPath) or \
+                            re.search(".git$", gitUtilsPath):
+                            # they have entered a git repo for the existing
+                            # utilities directory
+                        self.joinWithGit(basePath, "utils", gitUtilsPath)
+                    else:
+                        # TODO need to remove the app-web that was pulled down
+                        # if we get to here.
+                        print('ERROR: the URL for the shared app-utils '
+                              'repository '
+                              ' is invalid or unsupported: ' + gitUtilsPath +
+                              '\n You will need retry this command after '
+                              'that is corrected.')
+            except IOError:
+                print('Error: trying to get the shared file that contains the '
+                      'respository that has this\napplications devops.center '
+                      'utilities could not be found. \nThis could either be '
+                      'because this application hasnt been created yet or '
+                      'you\ndont have acces to the share drive that contians '
+                      'the file.')
+                sys.exit(1)
         else:
-            # they have entered a path to an existing utilies directory
-            self.joinWithPath(basePath, "utils", self.utilsPath)
+            if re.match("http", self.utilsPath) or \
+                    re.search(".git$", self.utilsPath):
+                # they have entered a git repo for the existing utilities
+                # directory
+                self.joinWithGit(basePath, "utils", self.utilsPath)
+            else:
+                # they have entered a path to an existing utilies directory
+                self.joinWithPath(basePath, "utils", self.utilsPath)
 
         # and the environments directory
         envDir = basePath + "/" + self.utilsDirName + "/environments"
         if not os.path.exists(envDir):
-            os.makedirs(envDir, 0755)
+            os.makedirs(envDir, 0o755)
 
-            print "Creating environment files"
+            print("Creating environment files")
             # and then create the individiual env files in that directory
             self.createEnvFiles(envDir)
         else:
-            print "Creating personal.env file"
+            print("Creating personal.env file")
             # the environments directory exists so as long as there is a
             # personal.env make a change to the dcHOME  defined there
             # to be the one that is passed into this script.
@@ -273,13 +338,13 @@ class ManageAppName:
         # create a directory to hold the generated env files
         generatedEnvDir = envDir + "/.generatedEnvFiles"
         if not os.path.exists(generatedEnvDir):
-            os.makedirs(generatedEnvDir, 0755)
+            os.makedirs(generatedEnvDir, 0o755)
             open(generatedEnvDir + "/.keep", 'a').close()
 
         # TODO need to ensure any keys that are pulled down have the correct
         # permissions
 
-        print "Completed successfully\n"
+        print("Completed successfully\n")
 
     def create(self, optionsMap):
         """creates the directory structure and sets up the appropriate
@@ -289,7 +354,7 @@ class ManageAppName:
         self.createUtilDirectories()
         self.tmpGetStackDirectory()
         self.createDockerComposeFiles()
-        print "\n\nDone"
+        print("\n\nDone")
         # self.createStackDirectory()
         # self.createAWSProfile()
 
@@ -302,40 +367,45 @@ class ManageAppName:
     def createBaseDirectories(self):
         basePath = self.baseDir + self.appName
         try:
-            os.makedirs(basePath, 0755)
+            os.makedirs(basePath, 0o755)
         except OSError:
-            print 'Error creating the base directory, if it exists this ' + \
-                'will not re-create it.\nPlease check to see that this ' + \
-                'path does not already exist: \n' + basePath
+            print('Error creating the base directory, if it exists this '
+                  'will not re-create it.\nPlease check to see that this '
+                  'path does not already exist: \n' + basePath)
             sys.exit(1)
 
     def createUtilDirectories(self):
-        basePath = self.baseDir + self.appName
+        basePath = ''
+        if self.sharedUtilsFlag:
+            self.checkForExistingSharedRepo(self.baseDir)
+            basePath = self.baseDir + self.sharedUtilsName
+        else:
+            basePath = self.baseDir + self.appName
         commonDirs = ["local", "dev", "staging", "prod"]
 
         # create the dataload directory...this is a placeholder and can
         # be a link to somewhere else with more diskspace.  But that is
         # currently up to the user.
-        dataLoadDir = basePath + "/dataload"
+        dataLoadDir = self.baseDir + self.appName + "/dataload"
         if not os.path.exists(dataLoadDir):
-            os.makedirs(dataLoadDir, 0755)
+            os.makedirs(dataLoadDir, 0o755)
 
         # utils path to be created
-        baseUtils = self.baseDir + self.appName + "/" + self.appName + \
+        baseUtils = basePath + "/" + self.appName + \
             "-utils/"
 
         # and then the config directory and all the sub directories
         configDir = baseUtils + "config/"
         for item in commonDirs:
             if not os.path.exists(configDir + item):
-                os.makedirs(configDir + item, 0755)
+                os.makedirs(configDir + item, 0o755)
                 # and touch a file so that this isn't an empty directory
                 open(configDir + item + "/.keep", 'a').close()
 
         # and the environments directory
         envDir = baseUtils + "environments"
         if not os.path.exists(envDir):
-            os.makedirs(envDir, 0755)
+            os.makedirs(envDir, 0o755)
 
         # and then create the individiual env files in that directory
         self.createEnvFiles(envDir)
@@ -343,14 +413,14 @@ class ManageAppName:
         # create a directory to hold the generated env files
         generatedEnvDir = envDir + "/.generatedEnvFiles"
         if not os.path.exists(generatedEnvDir):
-            os.makedirs(generatedEnvDir, 0755)
+            os.makedirs(generatedEnvDir, 0o755)
             open(generatedEnvDir + "/.keep", 'a').close()
 
         # create the certs directory
         keyDir = baseUtils + "certs/"
         for item in commonDirs:
             if not os.path.exists(keyDir + item):
-                os.makedirs(keyDir + item, 0755)
+                os.makedirs(keyDir + item, 0o755)
                 # and touch a file so that this isn't an empty directory
                 open(keyDir + item + "/.keep", 'a').close()
 
@@ -358,7 +428,7 @@ class ManageAppName:
         keyDir = baseUtils + "keys/"
         for item in commonDirs:
             if not os.path.exists(keyDir + item):
-                os.makedirs(keyDir + item, 0755)
+                os.makedirs(keyDir + item, 0o755)
                 # and touch a file so that this isn't an empty directory
                 open(keyDir + item + "/.keep", 'a').close()
 
@@ -369,14 +439,17 @@ class ManageAppName:
             fileHandle.write(strToWrite)
             fileHandle.close()
         except IOError:
-            print "NOTE: There is a file that needs to be created: \n" + \
-                basePath + "/.dcDirMap.cnf and could not be written. \n" + \
-                "Please report this issue to the devops.center admins."
+            print("NOTE: There is a file that needs to be created: \n" +
+                  basePath + "/.dcDirMap.cnf and could not be written. \n"
+                  "Please report this issue to the devops.center admins.")
 
         # put a .gitignore file in the appName directory to properly ignore
         # some files that will be created that don't need to go into the
         # repository
-        gitIgnoreFile = baseUtils + "/.gitignore"
+        if self.sharedUtilsFlag:
+            gitIgnoreFile = basePath + "/.gitignore"
+        else:
+            gitIgnoreFile = baseUtils + "/.gitignore"
 
         try:
             fileHandle = open(gitIgnoreFile, 'w')
@@ -388,15 +461,40 @@ class ManageAppName:
             fileHandle.write(strToWrite)
             fileHandle.close()
         except IOError:
-            print "NOTE: There is a file that needs to be created: \n" + \
-                basePath + "/.gitignore and could not be written. \n" + \
-                "Please report this issue to the devops.center admins."
+            if self.sharedUtilsFlag:
+                aPath = basePath
+            else:
+                aPath = baseUtils
+
+            print("NOTE: There is a file that needs to be created: \n" +
+                  aPath + "/.gitignore and could not be written. \n"
+                  "Please report this issue to the devops.center admins.")
 
         # and now run the git init on the Utils directory
-        originalDir = os.getcwd()
-        os.chdir(baseUtils)
-        subprocess.check_call("git init .", shell=True)
-        os.chdir(originalDir)
+        if not self.sharedUtilsFlag:
+            originalDir = os.getcwd()
+            os.chdir(baseUtils)
+            subprocess.check_call("git init .", shell=True)
+            os.chdir(originalDir)
+        else:
+            # make a symbolic link from the newly created directory in
+            # the shared utils directory to the web
+            originalDir = os.getcwd()
+            os.chdir(self.baseDir + self.appName)
+            sourceUtilsDir = "../" + self.sharedUtilsName + "/" + \
+                self.appName + "-utils/"
+            targetUtilsDir = self.baseDir + "/" + self.appName + "/" + \
+                self.appName + "-utils"
+            os.symlink(sourceUtilsDir, targetUtilsDir)
+            os.chdir(originalDir)
+
+            # and do the git init if it hasn't been done before
+            gitDir = basePath + "/.git"
+            if not os.path.exists(gitDir):
+                originalDir = os.getcwd()
+                os.chdir(basePath)
+                subprocess.check_call("git init .", shell=True)
+                os.chdir(originalDir)
 
     def createWebDirectories(self):
         webName = self.appName + "-web"
@@ -414,36 +512,38 @@ class ManageAppName:
                 #  is just a name
                 webName = userResponse
                 # web path to be created
-                baseWeb = self.baseDir + self.appName + "/" + userResponse
-                if not os.path.exists(baseWeb):
-                    os.makedirs(baseWeb, 0755)
+                self.baseWeb = self.baseDir + self.appName + "/" + userResponse
+                if not os.path.exists(self.baseWeb):
+                    os.makedirs(self.baseWeb, 0o755)
 
                 # and now run the git init on the Utils directory
                 originalDir = os.getcwd()
-                os.chdir(baseWeb)
+                os.chdir(self.baseWeb)
                 subprocess.check_call("git init .", shell=True)
                 os.chdir(originalDir)
 
-#            elif (re.match("http", userResponse) or
-#                  re.match("git", userResponse)):
-#                # its a URL so we need to get a git clone
-#                originalDir = os.getcwd()
-#                os.chdir(self.baseDir + self.appName)
-#                print "Cloning: " + userResponse
-#                cmdToRun = "git clone " + userResponse
-#
-#                try:
-#                    subprocess.check_output(cmdToRun,
-#                                            stderr=subprocess.STDOUT,
-#                                            shell=True)
-#                except subprocess.CalledProcessError:
-#                    print ("There was an issue with cloning the "
-#                           "application you specified: " + userResponse +
-#                           "\nCheck that you specified the correct owner "
-#                           "and respository name.")
-#                # TODO PROBABLY NEED TO GET THE NAME OF THE NEW WEB DIRECTORY
-#                #      HERE AND SET IT ACCORDINGLY
-#                os.chdir(originalDir)
+            elif (re.match("http", userResponse) or
+                  re.match("git", userResponse)):
+                # its a URL so we need to get a git clone
+                originalDir = os.getcwd()
+                os.chdir(self.baseDir + self.appName)
+                print("Cloning: " + userResponse)
+                cmdToRun = "git clone " + userResponse
+
+                try:
+                    subprocess.check_output(cmdToRun,
+                                            stderr=subprocess.STDOUT,
+                                            shell=True)
+
+                    # get the name of the repo as the new webName
+                    webName = os.path.basename(userResponse).split('.')[0]
+                except subprocess.CalledProcessError:
+                    print ("There was an issue with cloning the "
+                           "application you specified: " + userResponse +
+                           "\nCheck that you specified the correct owner "
+                           "and respository name.")
+                    sys.exit(1)
+                os.chdir(originalDir)
 
             else:
                 # is is a local directory so we need to sym-link it
@@ -454,30 +554,30 @@ class ManageAppName:
                 else:
                     userRepo = userResponse
                 if not os.path.exists(userRepo):
-                    print "ERROR: That directory does not exist: {}".format(
-                        userRepo)
+                    print("ERROR: That directory does not exist: {}".format(
+                        userRepo))
                     sys.exit(1)
 
                 # other wise get the name of the repository
                 webName = os.path.basename(userRepo)
 
-                baseWeb = self.baseDir + self.appName + "/" + webName
-                print "\nThis directory: {}".format(userRepo)
-                print "will be linked to: {}\n".format(
-                    baseWeb)
+                self.baseWeb = self.baseDir + self.appName + "/" + webName
+                print("\nThis directory: {}".format(userRepo))
+                print("will be linked to: {}\n".format(
+                    self.baseWeb))
                 yesResponse = raw_input(
                     "If this is correct press Y/y (Any other response"
                     " will NOT create this directory): ")
                 if yesResponse.lower() == 'y':
                     # and the destination directory
-                    os.symlink(userRepo, baseWeb)
+                    os.symlink(userRepo, self.baseWeb)
                 else:
-                    print "The symlink was NOT created."
+                    print("The symlink was NOT created.")
         else:
             # web path to be created
-            baseWeb = self.baseDir + self.appName + "/" + webName
-            if not os.path.exists(baseWeb):
-                os.makedirs(baseWeb, 0755)
+            self.baseWeb = self.baseDir + self.appName + "/" + webName
+            if not os.path.exists(self.baseWeb):
+                os.makedirs(self.baseWeb, 0o755)
 
         # set up the web name as the name for dcAPP that will be used to
         # write in the personal.env file
@@ -490,10 +590,10 @@ class ManageAppName:
             fileHandle.write(strToWrite)
             fileHandle.close()
         except IOError:
-            print "NOTE: There is a file that needs to be created: \n" + \
-                self.basedir + self.appName + "/.dcDirMap.cnf and " + \
-                "could not be written. \n" + \
-                "Please report this issue to the devops.center admins."
+            print("NOTE: There is a file that needs to be created: \n" +
+                  self.basedir + self.appName + "/.dcDirMap.cnf and "
+                  "could not be written. \n"
+                  "Please report this issue to the devops.center admins.")
 
     def tmpGetStackDirectory(self):
         """This method is put in place to be called instead of the
@@ -508,9 +608,9 @@ class ManageAppName:
             # take the userResponse and use it to edit the docker-compose.yml
             self.uniqueStackName = userResponse
         else:
-            print "You will need to have a stack name that corresponds " + \
-                "with the name of a repository that has the web " + \
-                "(and worker) that is with dcStack"
+            print("You will need to have a stack name that corresponds "
+                  "with the name of a repository that has the web "
+                  "(and worker) that is with dcStack")
             sys.exit(1)
 
     def createStackDirectory(self):
@@ -524,16 +624,16 @@ class ManageAppName:
         # stack path to be created
         baseStack = self.baseDir + self.appName + "/" + stackName
         if not os.path.exists(baseStack):
-            os.makedirs(baseStack, 0755)
+            os.makedirs(baseStack, 0o755)
 
         # make the web and worker directories
         for item in ["web", "web-debug", "worker"]:
             if not os.path.exists(baseStack + "/" + item):
-                os.makedirs(baseStack + "/" + item, 0755)
+                os.makedirs(baseStack + "/" + item, 0o755)
 
         # create the  web/wheelhouse directory
         if not os.path.exists(baseStack + "/web/wheelhouse"):
-            os.makedirs(baseStack + "/web/wheelhouse", 0755)
+            os.makedirs(baseStack + "/web/wheelhouse", 0o755)
 
         # and the .gitignore to ignore the wheelhouse directoryo
         gitIgnoreFile = baseStack + "/web/.gitignore"
@@ -544,9 +644,9 @@ class ManageAppName:
             fileHandle.write(strToWrite)
             fileHandle.close()
         except IOError:
-            print "NOTE: There is a file that needs to be created: \n" + \
-                baseStack + "web/.gitignore and could not be written. \n" + \
-                "Please report this issue to the devops.center admins."
+            print("NOTE: There is a file that needs to be created: \n" +
+                  baseStack + "web/.gitignore and could not be written. \n"
+                  "Please report this issue to the devops.center admins.")
 
         # and get the template Dockerfile, requirements for each of the sub
         # directories
@@ -591,8 +691,8 @@ class ManageAppName:
                     "#\n")
                 fileHandle.write(strToWrite)
             except IOError:
-                print 'Unable to write to the {} file in the' + \
-                    ' given configDir: {} \n'.format(envFile, envDir)
+                print('Unable to write to the {} file in the'
+                      ' given configDir: {} \n'.format(envFile, envDir))
                 sys.exit(1)
 
         # fill the local file with some default value
@@ -616,8 +716,8 @@ class ManageAppName:
             )
             fileHandle.write(strToWrite)
         except IOError:
-            print 'Unable to write to the {} file in the' + \
-                ' given configDir: {} \n'.format(envLocalFile, envDir)
+            print('Unable to write to the {} file in the'
+                  ' given configDir: {} \n'.format(envLocalFile, envDir))
             sys.exit(1)
 
         # fill the local file with some default value
@@ -642,8 +742,8 @@ class ManageAppName:
             )
             fileHandle.write(strToWrite)
         except IOError:
-            print 'Unable to write to the {} file in the' + \
-                ' given configDir: {} \n'.format(envLocalFile, envDir)
+            print('Unable to write to the {} file in the'
+                  ' given configDir: {} \n'.format(envLocalFile, envDir))
             sys.exit(1)
 
         # and now for the personal.env file
@@ -687,9 +787,9 @@ class ManageAppName:
             fileHandle.write(strToWrite)
             fileHandle.close()
         except IOError:
-            print "NOTE: There is a file that needs to be created: \n" + \
-                "$HOME/.aws/config and could not be written. \n" + \
-                "Please report this issue to the devops.center admins."
+            print("NOTE: There is a file that needs to be created: \n"
+                  "$HOME/.aws/config and could not be written. \n"
+                  "Please report this issue to the devops.center admins.")
 
         # now add the necessary entries in credentials
         awsCredentialsFile = awsBaseDir + "/credentials"
@@ -701,16 +801,16 @@ class ManageAppName:
             fileHandle.write(strToWrite)
             fileHandle.close()
         except IOError:
-            print "NOTE: There is a file that needs to be created: \n" + \
-                "$HOME/.aws/credentials and could not be written. \n" + \
-                "Please report this issue to the devops.center admins."
+            print("NOTE: There is a file that needs to be created: \n"
+                  "$HOME/.aws/credentials and could not be written. \n"
+                  "Please report this issue to the devops.center admins.")
 
-        print "\nYou will need to add your AWS access and secret key to \n" + \
-            "the ~/.aws/credentials file and will need to check the \n" + \
-            "region in the ~/.aws/config file to ensure it is set to  \n" + \
-            "correct AWS region that your instances are created in.\n" + \
-            "Look for these entries under the profile name: \n" + \
-            self.appName + "\n\n"
+        print("\nYou will need to add your AWS access and secret key to \n"
+              "the ~/.aws/credentials file and will need to check the \n"
+              "region in the ~/.aws/config file to ensure it is set to  \n"
+              "correct AWS region that your instances are created in.\n"
+              "Look for these entries under the profile name: \n" +
+              self.appName + "\n\n")
 
     def createDockerComposeFiles(self):
         """This method will create the Dockerfile(s) as necessary for this
@@ -719,8 +819,12 @@ class ManageAppName:
 
         # set up the base config directory path
         # NOTE: it will only put these in the "local" directory
-        baseConfig = self.baseDir + self.appName + "/" + self.appName + \
-            "-utils/config/local"
+        if self.sharedUtilsFlag:
+            baseConfig = self.baseDir + self.sharedUtilsName + "/" + \
+                self.appName + "-utils/config/local"
+        else:
+            baseConfig = self.baseDir + self.appName + "/" + self.appName + \
+                "-utils/config/local"
 
         # copy the docker-compose template files
         composeFile = baseConfig + "/docker-compose.yml"
@@ -768,19 +872,39 @@ class ManageAppName:
             )
             fileHandle.write(strToWrite)
         except IOError:
-            print 'Unable to write to the {} file in the' + \
-                ' given configDir: {} \n'.format(personalFile, envDir)
+            print('Unable to write to the {} file in the'
+                  ' given configDir: {} \n'.format(personalFile, envDir))
             sys.exit(1)
 
     def joinWithGit(self, basePath, theType, theURL):
-        print "Cloning: " + theURL
-        cmdToRun = "git clone " + theURL
+        cloneOrPull = " clone "
+        if self.sharedUtilsFlag and theType == "utils":
+            # the basePath includes the standard shared repo named
+            # directory
+            if os.path.exists(basePath):
+                print("Pulling: " + theURL)
+                cloneOrPull = " pull "
+            else:
+                print("Cloning: " + theURL)
+        else:
+            print("Cloning: " + theURL)
 
+        cmdToRun = "git" + cloneOrPull + theURL
         appOutput = ''
         try:
             appOutput = subprocess.check_output(cmdToRun,
                                                 stderr=subprocess.STDOUT,
                                                 shell=True)
+
+            # if using the shared repo then we need to make a symlink
+            # from the app-utils name under the dcShared-utils to the
+            # correct place in the app directory
+            if self.sharedUtilsFlag and theType == "utils":
+                sourceUtilsDir = "../" + self.sharedUtilsName + "/" + \
+                    self.appName + "-utils/"
+                targetUtilsDir = self.baseDir + "/" + self.appName + "/" + \
+                    self.appName + "-utils"
+                os.symlink(sourceUtilsDir, targetUtilsDir)
 
             # get the newly created directory and put it in the
             # appropriate ENV variable in the dcDirMap.cnf
@@ -802,27 +926,27 @@ class ManageAppName:
                     # joinExistingDevelopment method
                     fileWriteMode = 'a'
 
-                fileToWrite = basePath + "/.dcDirMap.cnf"
+                fileToWrite = self.baseDir + self.appName + "/.dcDirMap.cnf"
                 try:
                     fileHandle = open(fileToWrite, fileWriteMode)
                     strToWrite = theEnvVarToWrite + aName + "\n"
                     fileHandle.write(strToWrite)
                     fileHandle.close()
                 except IOError:
-                    print ("NOTE: There is a file that needs to be " +
-                           "created: \n" + self.basedir + self.appName +
-                           "/.dcDirMap.cnf and could not be written. \n" +
-                           "Please report this issue to the devops.center " +
-                           "admins.")
+                    print("NOTE: There is a file that needs to be "
+                          "created: \n" + self.basedir + self.appName +
+                          "/.dcDirMap.cnf and could not be written. \n"
+                          "Please report this issue to the devops.center "
+                          "admins.")
 
         except subprocess.CalledProcessError:
-            print "There was an issue with cloning the application you " + \
-                "specified: " + theURL + \
-                "\nCheck that you have provided the correct credentials " + \
-                "and respository name."
+            print("There was an issue with cloning the application you "
+                  "specified: " + theURL +
+                  "\nCheck that you have provided the correct credentials "
+                  "and respository name.")
             sys.exit(1)
 
-        print "Done\n"
+        print("Done\n")
 
     def joinWithPath(self, basePath, theType, thePath):
         if thePath.startswith("~"):
@@ -838,8 +962,8 @@ class ManageAppName:
         aName = os.path.basename(adjustedPath)
         destPath = basePath + "/" + aName
 
-        print "Linking the path: " + adjustedPath
-        print "  to directory: " + destPath
+        print("Linking the path: " + adjustedPath)
+        print("  to directory: " + destPath)
         os.symlink(adjustedPath, destPath)
 
         # and now update the .dcDirMap.conf
@@ -865,13 +989,13 @@ class ManageAppName:
             fileHandle.write(strToWrite)
             fileHandle.close()
         except IOError:
-            print ("NOTE: There is a file that needs to be " +
-                   "created: \n" + self.basedir + self.appName +
-                   "/.dcDirMap.cnf and could not be written. \n" +
-                   "Please report this issue to the devops.center " +
-                   "admins.")
+            print("NOTE: There is a file that needs to be "
+                  "created: \n" + self.basedir + self.appName +
+                  "/.dcDirMap.cnf and could not be written. \n"
+                  "Please report this issue to the devops.center "
+                  "admins.")
 
-        print "Done\n"
+        print("Done\n")
 
     def update(self, optionsMap):
         """takes an argument that dictates what needs to be updated and then
@@ -888,14 +1012,14 @@ class ManageAppName:
         # and then the config directory and all the sub directories
         configDir = baseUtils + "config/"
         if not os.path.exists(configDir + newEnvName):
-            os.makedirs(configDir + newEnvName, 0755)
+            os.makedirs(configDir + newEnvName, 0o755)
             # and touch a file so that this isn't an empty directory
             open(configDir + newEnvName + "/.keep", 'a').close()
 
         # and the environments directory
         envDir = baseUtils + "environments"
         if not os.path.exists(envDir):
-            os.makedirs(envDir, 0755)
+            os.makedirs(envDir, 0o755)
 
         # and then create the individiual env files in that directory
         envFile = envDir + "/" + newEnvName + ".env"
@@ -912,29 +1036,29 @@ class ManageAppName:
                 "#\n")
             fileHandle.write(strToWrite)
         except IOError:
-            print 'Unable to write to the {} file in the' + \
-                ' given configDir: {} \n'.format(envFile, envDir)
+            print('Unable to write to the {} file in the'
+                  ' given configDir: {} \n'.format(envFile, envDir))
             sys.exit(1)
 
         # and then the keys directory and all the sub directories
         keyDir = baseUtils + "keys/"
         if not os.path.exists(keyDir + newEnvName):
-            os.makedirs(keyDir + newEnvName, 0755)
+            os.makedirs(keyDir + newEnvName, 0o755)
             # and touch a file so that this isn't an empty directory
             open(keyDir + newEnvName + "/.keep", 'a').close()
 
         certsDir = baseUtils + "/certs/"
         if not os.path.exists(certsDir + newEnvName):
-            os.makedirs(certsDir + newEnvName, 0755)
+            os.makedirs(certsDir + newEnvName, 0o755)
             # and touch a file so that this isn't an empty directory
             open(keyDir + newEnvName + "/.keep", 'a').close()
 
-        print "New Environment created: " + newEnvName
+        print("New Environment created: " + newEnvName)
 
     def delete(self, optionsMap):
         """delete all the necessary items that are associated with the
         appName"""
-        print "Currently under construcution\n"
+        print("Currently under construcution\n")
         sys.exit(1)
         # TODO items to delete:
         #   - self.baseDir/self.appName
@@ -956,7 +1080,7 @@ class ManageAppName:
                     continue
                 if self.appName in line:
                     foundALine = 1
-                    print re.sub("=(.*)-stack", "=" + stackName, line),
+                    printre.sub("=(.*)-stack", "=" + stackName, line),
                 else:
                     # NOTE the comma doesn't print out an extra newline
                     print line,
@@ -970,10 +1094,10 @@ class ManageAppName:
                     fileHandle.write(strToWrite)
                     fileHandle.close()
                 except IOError:
-                    print "NOTE: There is a file that needs to be " + \
-                        "created:\n./.mapAppStack\n And it could not be" + \
-                        "written. \n" + \
-                        "Please report this issue to the devops.center admins."
+                    print("NOTE: There is a file that needs to be "
+                          "created:\n./.mapAppStack\n And it could not be"
+                          "written. \n"
+                          "Please report this issue to the devops.center admins.")
         else:
             try:
                 fileHandle = open(mappingFile, 'w')
@@ -982,12 +1106,117 @@ class ManageAppName:
                 fileHandle.write(strToWrite)
                 fileHandle.close()
             except IOError:
-                print "NOTE: There is a file that needs to be created: \n" + \
-                    "./.mapAppStack and could not be written. \n" + \
-                    "Please report this issue to the devops.center admins."
+                print("NOTE: There is a file that needs to be created: \n"
+                      "./.mapAppStack and could not be written. \n"
+                      "Please report this issue to the devops.center admins.")
+
+    def writeToSharedSettings(self):
+        if not os.path.exists(self.sharedSettingsPath):
+            try:
+                os.makedirs(self.sharedSettingsPath, 0o755)
+            except OSError:
+                print('Error creating the shared directory: '
+                      + self.sharedSettingsPath +
+                      '\nSo the information about this app utilizing the shared'
+                      'app utils will not be saved. ')
+                return
+
+        sharedRepoURL = self.createRepoURL()
+        print('\nGenerating a git repo and put it into a shared settings file:\n'
+              + sharedRepoURL)
+
+        # if we get here then the shared drive and directory are set up so append
+        # this app-utils information that it is shared
+        try:
+            strToSearch = "SHARED_APP_REPO="
+            if strToSearch not in open(self.sharedSettingsFile).read():
+                fileHandle = open(self.sharedSettingsFile, 'a')
+                strToWrite = "SHARED_APP_REPO=" + sharedRepoURL + '\n'
+                fileHandle.write(strToWrite)
+                fileHandle.close()
+
+            # it exists so check to see if the app has already been added
+            strToSearch = self.appName + "-utils=shared"
+            if strToSearch not in open(self.sharedSettingsFile).read():
+                # then append this information
+                fileHandle = open(self.sharedSettingsFile, 'a')
+                strToWrite = (strToSearch + "\n")
+                fileHandle.write(strToWrite)
+                fileHandle.close()
+        except IOError:
+            print('NOTE: There is a problem writing to the shared settings:\n'
+                  + self.sharedSettingsFile +
+                  "Please report this issue to the devops.center admins.")
+
+    def createRepoURL(self):
+        """Generate the repo URL for the shared utils repository."""
+        # the git service name and the git account should be stored in
+        # the shared settings file (created upon RUN-ME_FIRST.SH run by the
+        # first person of a new customer.)
+        gitServiceName = "github"
+        gitAccountName = self.nameOfCustomer
+
+        retRepoURL = None
+        if os.path.isfile(self.sharedSettingsFile):
+            # it's there so pull out the values needed
+            with open(self.sharedSettingsFile) as fp:
+                for aLine in fp:
+                    strippedLine = aLine.strip()
+                    if "GIT_SERVICE_NAME" in strippedLine:
+                        gitServiceName = strippedLine.split("=")[1]
+                    if "GIT_ACCOUNT_NAME" in strippedLine:
+                        gitAccountName = strippedLine.split("=")[1]
+
+            if gitServiceName == "github":
+                retRepoURL = "git@github.com:" + gitAccountName + \
+                    '/dcShared-utils.git'
+
+            # TODO this repo name is probably not correct and needs to
+            # be updated
+            if gitServiceName == "assembla":
+                retRepoURL = "git@gassembla.com:" + gitAccountName + \
+                    '/dcShared-utils.git'
+
+            # TODO this repo name is probably not correct and needs to
+            # be updated
+            if gitServiceName == "bitbucket":
+                retRepoURL = 'gituser@bitbucket.com:' + gitAccountName + \
+                    '/dcShared-utils.git'
+
+        else:
+            print('FYI, Can not automatically generate the dcShared-utils '
+                  'repo URL as the required information '
+                  'is not found in the shared settings file: \n' +
+                  self.sharedSettingFile)
+            retRepoURL = ("git@github.com:" + self.nameOfCustomer +
+                          "/dcShared-utils.git\n")
+
+        return retRepoURL
+
+    def checkForExistingSharedRepo(self, sharedBasePath):
+        """Check and retrieve the dcShared-utils repo."""
+        # first get the repo name
+        if os.path.exists(sharedBasePath + "dcShared-utils"):
+            if os.path.exists(sharedBasePath + 'dcShared-utils/.git'):
+                return
+            else:
+                # the shared directory is there but is not checked in
+                # so we will move it to the side and try to pull it
+                # from the git service
+                os.rename(sharedBasePath, sharedBasePath +
+                          "dcShared-utils.ORIG")
+
+        # TODO need to put the following in a try/catch block incase the
+        # shared repo doesnt exist (ie, its the VERY first app for this
+        # customer)
+        originalDir = os.getcwd()
+        os.chdir(sharedBasePath)
+        sharedRepoURL = self.createRepoURL()
+        subprocess.check_call("git clone " + sharedRepoURL, shell=True)
+        os.chdir(originalDir)
 
 
-def checkBaseDirectory(baseDirectory):
+def checkBaseDirectory(baseDirectory, envList):
     if(baseDirectory.endswith('/')):
         if baseDirectory.startswith('~'):
             retBaseDir = baseDirectory.replace("~", expanduser("~"))
@@ -1004,30 +1233,37 @@ def checkBaseDirectory(baseDirectory):
         else:
             retBaseDir = tmpBaseDir
 
-    try:
-        # lets try to write to that directory
-        tmpFile = retBaseDir + '.removeme'
-        tmpFileHandle = open(tmpFile, 'w')
-        tmpFileHandle.close()
-        os.remove(tmpFile)
+    newBaseDir = retBaseDir
+    if "WORKSPACE_NAME" in envList:
+        newBaseDir = retBaseDir + envList["WORKSPACE_NAME_ORIGINAL"] + "/"
+        if not os.path.exists(newBaseDir):
+            print('Createing base directory associated with the workspace '
+                  'name:' + newBaseDir)
+            os.makedirs(newBaseDir, 0o755)
+    else:
+        try:
+            # lets try to write to that directory
+            tmpFile = newBaseDir + '.removeme'
+            tmpFileHandle = open(tmpFile, 'w')
+            tmpFileHandle.close()
+            os.remove(tmpFile)
 
-    except IOError:
-        print 'Unable to access base directory: ' + \
-            retBaseDir
-        sys.exit(1)
+        except IOError:
+            print('Unable to access base directory: ' + newBaseDir)
+            sys.exit(1)
 
-    return retBaseDir
+    return newBaseDir
 
 
 def getBaseDirectory():
     # read the ~/.dcConfig/settings
     baseSettingsDir = expanduser("~") + "/.dcConfig"
     if not os.path.exists(baseSettingsDir):
-        print ("You seem to be missing the $HOME/.dcConfig directory,"
-               "you will need to run the RUN-ME-FIRST.sh script that "
-               "established that directory and the settings file that"
-               "contains the initial base directory for you application"
-               "development.")
+        print("You seem to be missing the $HOME/.dcConfig directory,"
+              "you will need to run the RUN-ME-FIRST.sh script that "
+              "established that directory and the settings file that"
+              "contains the initial base directory for you application"
+              "development.")
         sys.exit(1)
 
     if os.path.isfile(baseSettingsDir + "/baseDirectory"):
@@ -1057,8 +1293,8 @@ def getBaseDirectory():
                 return(developmentBaseDir)
 
     else:
-        print ("You will need to re-run this command with the -d option to"
-               "specify the base directory to continue.")
+        print("You will need to re-run this command with the -d option to"
+              "specify the base directory to continue.")
         sys.exit(1)
 
 
@@ -1110,8 +1346,7 @@ def checkArgs():
                         'to be used to access the appName. This needs to be '
                         'an absolute path unless the first part of the path '
                         'is a tilde or $HOME.   This option is not required '
-                        'but is needed when doing a create or when using the'
-                        ' workspaceName option.',
+                        'but is needed when using the workspaceName option.',
                         required=False)
     parser.add_argument('-c', '--command', help='Command to execute' +
                         'on the appName. Default [join]',
@@ -1135,13 +1370,18 @@ def checkArgs():
                         'houses the application utilities. If you provide a '
                         'path it should be an the full absolute path as it '
                         'will be symobolically linked to the base directory '
-                        'given in this command. NOTE: tilde(~) or $HOME will '
+                        'given or into the app directory if the --sharedUtils'
+                        ' option is given. NOTE: tilde(~) or $HOME will '
                         'be expanded appropriately',
                         default='',
                         required=False)
     parser.add_argument('-o', '--cmdOptions', help='Options for the '
                         'command arg',
                         default='',
+                        required=False)
+    parser.add_argument('-s', '--separateUtils', help='Flag to determine that '
+                        'you do NOT want to to use a shared application utils. ',
+                        action="store_true",
                         required=False)
 
     try:
@@ -1150,18 +1390,18 @@ def checkArgs():
         pythonGetEnv()
         sys.exit(1)
 
+    retEnvList = pythonGetEnv(initialCreate=True)
+
     # before going further we need to check whether there is a slash at the
     # end of the value in destinationDir
     if args.baseDirectory:
-        retBaseDir = checkBaseDirectory(args.baseDirectory)
+        retBaseDir = checkBaseDirectory(args.baseDirectory, retEnvList)
     else:
         retBaseDir = getBaseDirectory()
         if not retBaseDir:
             print("Could not determine the baseDirectory, you will need to "
                   "re-run this script and provide the -d option.")
             sys.exit(1)
-
-    retEnvList = pythonGetEnv(initialCreate=True)
 
     if retEnvList["CUSTOMER_APP_NAME"]:
         retAppName = retEnvList["CUSTOMER_APP_NAME"]
@@ -1170,6 +1410,10 @@ def checkArgs():
     retAppURL = args.appPath
     retUtilsURL = args.utilsPath
 
+    retSharedUtils = True
+    if args.separateUtils:
+        retSharedUtils = False
+
     if "WORKSPACE_NAME" in retEnvList:
         retWorkspaceName = retEnvList["WORKSPACE_NAME"]
     else:
@@ -1177,15 +1421,15 @@ def checkArgs():
 
     # if we get here then the
     return (retAppName, retBaseDir, retWorkspaceName, retCommand, retAppURL,
-            retUtilsURL, retOptions)
+            retUtilsURL, retSharedUtils, retEnvList,  retOptions)
 
 
 def main(argv):
     (appName, baseDir, workspaceName, command, appPath, utilsPath,
-     options) = checkArgs()
+     sharedUtilsFlag, envList, options) = checkArgs()
 
     customerApp = ManageAppName(appName, baseDir, workspaceName, appPath,
-                                utilsPath)
+                                sharedUtilsFlag, utilsPath, envList)
     customerApp.run(command, options)
 
 
