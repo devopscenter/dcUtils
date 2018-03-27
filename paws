@@ -453,6 +453,8 @@ getPathToKey()
     else
         if [[ -f "${COMMON_KEY_DIR}/${PROFILE}/shared/keys/${keyName}.pem" ]]; then
             RETVAL="${COMMON_KEY_DIR}/${PROFILE}/shared/keys/${keyName}.pem"
+        elif [[ -f "${COMMON_KEY_DIR}/shared/keys/${keyName}.pem" ]]; then
+            RETVAL="${COMMON_KEY_DIR}/shared/keys/${keyName}.pem"
         else
             RETVAL="${COMMON_KEY_DIR}/${PROFILE}/keys/${keyName}.pem"
         fi
