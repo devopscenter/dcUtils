@@ -87,7 +87,7 @@ class ManageAppName:
             commonSharedDir = self.envList[
                 "dcCOMMON_SHARED_DIR"].replace('"', '')
             self.sharedSettingsPath = commonSharedDir + \
-                "/" + self.nameOfCustomer + "/shared/.dcConfig"
+                "/devops.center/dcConfig"
             self.sharedSettingsFile = self.sharedSettingsPath + "/settings"
 
         # put the baseDirectory path in the users $HOME/.dcConfig/baseDirectory
