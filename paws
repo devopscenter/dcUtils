@@ -244,7 +244,7 @@ while [[ $# -gt 0 ]]; do
     shift
 done
 
-COMMON_KEY_DIR=''
+TMP_COMMON_KEY_DIR=''
 if [[ ${APPNAME} ]]; then
     doProcessDCEnv
 else
@@ -257,12 +257,15 @@ else
     dcCOMMON_SHARED_DIR=${var1%\"}
 
     if [[ -z ${dcCOMMON_SHARED_DIR} ]]; then
-        COMMON_KEY_DIR=$(cd $HOME/Googl*;pwd)
+        TMP_COMMON_KEY_DIR=$(cd $HOME/Googl*;pwd)
     else
         # now strip out the key and '=' to get to the path
-        COMMON_KEY_DIR=${dcCOMMON_SHARED_DIR#*=}
+        TMP_COMMON_KEY_DIR=${dcCOMMON_SHARED_DIR#*=}
     fi
 fi
+
+# remove the last element from the common shared directory path
+COMMON_KEY_DIR=${TMP_COMMON_KEY_DIR%/*}
 
 getBasePath
 
@@ -444,17 +447,16 @@ getPathToKey()
             eval "$pathToKey=\"${RETVAL}\""
         else
             # not there so lets check the pool
-            #pathsToKey="$(find $HOME/Google* -path "*/${PROFILE}/keys/${keyName}.pem" 2>&1)"
-            pathsToKey="$(find ${COMMON_KEY_DIR} -path "*/${PROFILE}/*/keys/${keyName}.pem" 2>&1)"
+            pathsToKey="$(find ${COMMON_KEY_DIR} -path "*/devops.center/keys/${keyName}.pem" 2>&1)"
             RETVAL=''
             cleanUpPathList "${pathsToKey[@]}" RETVAL
             eval "$pathToKey=\"${RETVAL}\""
         fi
     else
-        if [[ -f "${COMMON_KEY_DIR}/${PROFILE}/shared/keys/${keyName}.pem" ]]; then
-            RETVAL="${COMMON_KEY_DIR}/${PROFILE}/shared/keys/${keyName}.pem"
-        elif [[ -f "${COMMON_KEY_DIR}/shared/keys/${keyName}.pem" ]]; then
-            RETVAL="${COMMON_KEY_DIR}/shared/keys/${keyName}.pem"
+        if [[ -f "${COMMON_KEY_DIR}/${PROFILE}/devops.center/keys/${keyName}.pem" ]]; then
+            RETVAL="${COMMON_KEY_DIR}/${PROFILE}/devops.center/keys/${keyName}.pem"
+        elif [[ -f "${COMMON_KEY_DIR}/devops.center/keys/${keyName}.pem" ]]; then
+            RETVAL="${COMMON_KEY_DIR}/devops.center/keys/${keyName}.pem"
         else
             RETVAL="${COMMON_KEY_DIR}/${PROFILE}/keys/${keyName}.pem"
         fi
