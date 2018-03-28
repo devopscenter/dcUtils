@@ -142,6 +142,7 @@ sed -i -e "s/CURRENT_WORKSPACE=.*/CURRENT_WORKSPACE=${NEW_WORKSPACE_NAME}/" "${C
 
 if [[ ${CHANGE_CUSTOMER_NAME} == "TRUE" ]]; then
     newCustomerName=${FILE_EXISTS##*/}
-    sed -i -e "s/CUSTOMER_NAME=.*/CUSTOMER_NAME=${newCustomerName}/" ~/.dcConfig/settings
-    sed -i -e "s/PROFILE=.*/PROFILE=${newCustomerName}/" ~/.dcConfig/settings
+    sed -i -e "s/CUSTOMER_NAME=.*/CUSTOMER_NAME=${newCustomerName,,}/" ~/.dcConfig/settings
+    sed -i -e "s/PROFILE=.*/PROFILE=${newCustomerName,,}/" ~/.dcConfig/settings
+    sed -i -e "/dcCOMMON_SHARED_DIR/s/=\(.*\/\).*/=\1${newCustomerName,,}/" ~/.dcConfig/settings
 fi
