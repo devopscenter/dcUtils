@@ -239,7 +239,7 @@ class ManageAppName:
         that the method is to complex."""
 
         if (not self.appPath):
-            print("ERROR: you must provide both --appPath"
+            print("ERROR: you must provide at the minimum the option --appPath"
                   " to join and existing application.")
             sys.exit(1)
 
@@ -878,12 +878,14 @@ class ManageAppName:
 
     def joinWithGit(self, basePath, theType, theURL):
         cloneOrPull = " clone "
+        cloneOrPullString = "cloning"
         if self.sharedUtilsFlag and theType == "utils":
             # the basePath includes the standard shared repo named
             # directory
             if os.path.exists(basePath):
                 print("Pulling: " + theURL)
                 cloneOrPull = " pull "
+                cloneOrPullString = "pulling"
             else:
                 print("Cloning: " + theURL)
         else:
@@ -940,7 +942,8 @@ class ManageAppName:
                           "admins.")
 
         except subprocess.CalledProcessError:
-            print("There was an issue with cloning the application you "
+            print("There was an issue with " + clonOrPullString +
+                  " the application you "
                   "specified: " + theURL +
                   "\nCheck that you have provided the correct credentials "
                   "and respository name.")
