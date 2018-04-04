@@ -949,7 +949,7 @@ class ManageAppName:
                   "specified: " + theURL +
                   "\nCheck that you have provided the correct credentials "
                   "and respository name."
-                  + appOutput + " exception:" + aStmt)
+                  + appOutput + " exception:" + aStmt.output)
             sys.exit(1)
 
         print("Done\n")
