@@ -908,17 +908,19 @@ class ManageAppName:
             # from the app-utils name under the dcShared-utils to the
             # correct place in the app directory
             if self.sharedUtilsFlag and theType == "utils":
+                aName = self.appName + "-utils"
                 sourceUtilsDir = "../" + self.sharedUtilsName + "/" + \
                     self.appName + "-utils/"
                 targetUtilsDir = self.baseDir + "/" + self.appName + "/" + \
-                    self.appName + "-utils"
+                    aName
                 print("Doing a symlink of source=>{} to destination=>{}".format(
                     sourceUtilsDir, targetUtilsDir))
                 os.symlink(sourceUtilsDir, targetUtilsDir)
 
             # get the newly created directory and put it in the
             # appropriate ENV variable in the dcDirMap.cnf
-            aName = re.search("(?<=')[^']+(?=')", appOutput).group(0)
+            if not self.sharedUtilsFlag:
+                aName = re.search("(?<=')[^']+(?=')", appOutput).group(0)
 
             if theType == "web":
                 theEnvVarToWrite = "CUSTOMER_APP_WEB="
