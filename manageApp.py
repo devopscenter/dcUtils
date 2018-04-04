@@ -916,10 +916,9 @@ class ManageAppName:
                 print("Doing a symlink of source=>{} to destination=>{}".format(
                     sourceUtilsDir, targetUtilsDir))
                 os.symlink(sourceUtilsDir, targetUtilsDir)
-
-            # get the newly created directory and put it in the
-            # appropriate ENV variable in the dcDirMap.cnf
-            if not self.sharedUtilsFlag:
+            else:
+                # get the newly created directory and put it in the
+                # appropriate ENV variable in the dcDirMap.cnf
                 aName = re.search("(?<=')[^']+(?=')", appOutput).group(0)
 
             if theType == "web":
