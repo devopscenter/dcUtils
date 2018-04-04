@@ -879,10 +879,16 @@ class ManageAppName:
     def joinWithGit(self, basePath, theType, theURL):
         cloneOrPull = " clone "
         cloneOrPullString = "cloning"
+        flagToChangeBackToOriginalDir = False
+
         if self.sharedUtilsFlag and theType == "utils":
             # the basePath includes the standard shared repo named
             # directory
             if os.path.exists(basePath):
+                # then we need to be in that directory to do the pull
+                originalDir = os.getcwd()
+                os.chdir(basePath)
+                flagToChangeBackToOriginalDir = True
                 print("Pulling: " + theURL)
                 cloneOrPull = " pull "
                 cloneOrPullString = "pulling"
@@ -951,6 +957,9 @@ class ManageAppName:
                   "and respository name."
                   + appOutput + " exception:" + aStmt.output)
             sys.exit(1)
+
+        if flagToChangeBackToOriginalDir:
+            os.chdir(originalDir)
 
         print("Done\n")
 
