@@ -944,11 +944,12 @@ class ManageAppName:
                           "admins.")
 
         except subprocess.CalledProcessError:
-            print("There was an issue with " + clonOrPullString +
+            print("There was an issue with " + cloneOrPullString +
                   " the application you "
                   "specified: " + theURL +
                   "\nCheck that you have provided the correct credentials "
-                  "and respository name.")
+                  "and respository name."
+                  + appOutput)
             sys.exit(1)
 
         print("Done\n")
