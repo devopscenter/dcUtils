@@ -918,36 +918,35 @@ class ManageAppName:
 
             # get the newly created directory and put it in the
             # appropriate ENV variable in the dcDirMap.cnf
-            if "Cloning" in appOutput or "Pulling" in appOutput:
-                aName = re.search("(?<=')[^']+(?=')", appOutput).group(0)
+            aName = re.search("(?<=')[^']+(?=')", appOutput).group(0)
 
-                if theType == "web":
-                    theEnvVarToWrite = "CUSTOMER_APP_WEB="
-                    self.dcAppName = aName
-                    # NOTE VERY dependent on the order in which this method
-                    # is called.  Web is assumed to be first ... see the
-                    # joinExistingDevelopment method
-                    fileWriteMode = 'w'
-                else:
-                    theEnvVarToWrite = "CUSTOMER_APP_UTILS="
-                    self.utilsDirName = aName
-                    # NOTE VERY dependent on the order in which this method
-                    # is called.  Web is assumed to be first ... see the
-                    # joinExistingDevelopment method
-                    fileWriteMode = 'a'
+            if theType == "web":
+                theEnvVarToWrite = "CUSTOMER_APP_WEB="
+                self.dcAppName = aName
+                # NOTE VERY dependent on the order in which this method
+                # is called.  Web is assumed to be first ... see the
+                # joinExistingDevelopment method
+                fileWriteMode = 'w'
+            else:
+                theEnvVarToWrite = "CUSTOMER_APP_UTILS="
+                self.utilsDirName = aName
+                # NOTE VERY dependent on the order in which this method
+                # is called.  Web is assumed to be first ... see the
+                # joinExistingDevelopment method
+                fileWriteMode = 'a'
 
-                fileToWrite = self.baseDir + self.appName + "/.dcDirMap.cnf"
-                try:
-                    fileHandle = open(fileToWrite, fileWriteMode)
-                    strToWrite = theEnvVarToWrite + aName + "\n"
-                    fileHandle.write(strToWrite)
-                    fileHandle.close()
-                except IOError:
-                    print("NOTE: There is a file that needs to be "
-                          "created: \n" + self.basedir + self.appName +
-                          "/.dcDirMap.cnf and could not be written. \n"
-                          "Please report this issue to the devops.center "
-                          "admins.")
+            fileToWrite = self.baseDir + self.appName + "/.dcDirMap.cnf"
+            try:
+                fileHandle = open(fileToWrite, fileWriteMode)
+                strToWrite = theEnvVarToWrite + aName + "\n"
+                fileHandle.write(strToWrite)
+                fileHandle.close()
+            except IOError:
+                print("NOTE: There is a file that needs to be "
+                      "created: \n" + self.basedir + self.appName +
+                      "/.dcDirMap.cnf and could not be written. \n"
+                      "Please report this issue to the devops.center "
+                      "admins.")
 
         except subprocess.CalledProcessError as aStmt:
             print("There was an issue with " + cloneOrPullString +
