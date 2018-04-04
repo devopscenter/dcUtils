@@ -918,7 +918,7 @@ class ManageAppName:
 
             # get the newly created directory and put it in the
             # appropriate ENV variable in the dcDirMap.cnf
-            if "Cloning" in appOutput:
+            if "Cloning" in appOutput or "Pulling" in appOutput:
                 aName = re.search("(?<=')[^']+(?=')", appOutput).group(0)
 
                 if theType == "web":
