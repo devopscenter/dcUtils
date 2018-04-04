@@ -906,6 +906,8 @@ class ManageAppName:
                     self.appName + "-utils/"
                 targetUtilsDir = self.baseDir + "/" + self.appName + "/" + \
                     self.appName + "-utils"
+                print("Doing a symlink of source=>{} to destination=>{}".format(
+                    sourceUtilsDir, targetUtilsDir))
                 os.symlink(sourceUtilsDir, targetUtilsDir)
 
             # get the newly created directory and put it in the
