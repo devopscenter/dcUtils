@@ -943,13 +943,13 @@ class ManageAppName:
                           "Please report this issue to the devops.center "
                           "admins.")
 
-        except subprocess.CalledProcessError:
+        except subprocess.CalledProcessError aStmt:
             print("There was an issue with " + cloneOrPullString +
                   " the application you "
                   "specified: " + theURL +
                   "\nCheck that you have provided the correct credentials "
                   "and respository name."
-                  + appOutput)
+                  + appOutput + " exception:" + aStmt)
             sys.exit(1)
 
         print("Done\n")
