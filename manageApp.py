@@ -943,7 +943,7 @@ class ManageAppName:
                           "Please report this issue to the devops.center "
                           "admins.")
 
-        except subprocess.CalledProcessError aStmt:
+        except subprocess.CalledProcessError as aStmt:
             print("There was an issue with " + cloneOrPullString +
                   " the application you "
                   "specified: " + theURL +
