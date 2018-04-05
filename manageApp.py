@@ -505,8 +505,10 @@ class ManageAppName:
             "and a directory will be created with that name.\n\n"
             "NOTE: If you already have a repository checked out on this \n"
             "machine, we can create a link from there into our directory\n"
-            "structure.  Provide the full path to your "
-            "existing directory.\nOr press return to accept the "
+            "structure.  Provide the full path to that existing directory."
+            "Another option is to enter the git repo URL and we can clone"
+            "it."
+            "\nOr press return to accept the "
             "default name: (" + webName + ")\n")
         if userResponse:
             if '/' not in userResponse:
