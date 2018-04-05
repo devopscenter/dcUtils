@@ -212,6 +212,7 @@ class ManageAppName:
             self.delete(optionsMap)
         elif command == "getUniqueID":
             print(self.getUniqueStackID())
+            sys.exit(1)
 
         if self.sharedUtilsFlag:
             self.writeToSharedSettings()
@@ -1368,7 +1369,8 @@ def checkArgs():
                         choices=["join",
                                  "create",
                                  "update",
-                                 "delete"],
+                                 "delete",
+                                 "getUniqueID"],
                         default='join',
                         required=False)
     parser.add_argument('-p', '--appPath', help='The customer application '
@@ -1399,6 +1401,7 @@ def checkArgs():
                         action="store_true",
                         required=False)
 
+    retAppName = None
     try:
         args, unknown = parser.parse_known_args()
     except SystemExit:
@@ -1418,7 +1421,7 @@ def checkArgs():
                   "re-run this script and provide the -d option.")
             sys.exit(1)
 
-    if retEnvList["CUSTOMER_APP_NAME"]:
+    if "CUSTOMER_APP_NAME" in retEnvList:
         retAppName = retEnvList["CUSTOMER_APP_NAME"]
     retCommand = args.command
     retOptions = args.cmdOptions
