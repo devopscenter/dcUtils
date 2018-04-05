@@ -84,11 +84,21 @@ class ManageAppName:
             # set up the defaults for the shared info and check to see if
             # we are using a shared enviornment for this app
             self.sharedUtilsName = "dcShared-utils"
-            commonSharedDir = self.envList[
-                "dcCOMMON_SHARED_DIR"].replace('"', '')
-            self.sharedSettingsPath = commonSharedDir + \
-                "/devops.center/dcConfig"
+            commonSharedDir = os.path.dirname(self.envList[
+                "dcCOMMON_SHARED_DIR"].replace('"', ''))
+            self.sharedSettingsPath = commonSharedDir + "/" + \
+                self.nameOfCustomer + "/devops.center/dcConfig"
+            if not os.path.exists(self.sharedSettingsPath):
+                os.makedirs(self.sharedSettingsPath)
             self.sharedSettingsFile = self.sharedSettingsPath + "/settings"
+            if not os.path.isfile(self.sharedSettingsFile):
+                print("ERROR: the shared settings file was not found:\n"
+                      + self.sharedSettingsFile +
+                      "\nEither you do not have the shared directory "
+                      "or the settings file has not been created.\n"
+                      "Please let the devops.center engineers know and they"
+                      " will correct this.")
+                sys.exit(1)
 
         # put the baseDirectory path in the users $HOME/.dcConfig/baseDirectory
         # file so that subsequent scripts can use it as a base to work
@@ -433,7 +443,7 @@ class ManageAppName:
                 # and touch a file so that this isn't an empty directory
                 open(keyDir + item + "/.keep", 'a').close()
 
-        fileToWrite = basePath + "/.dcDirMap.cnf"
+        fileToWrite = self.baseDir + self.appName + "/.dcDirMap.cnf"
         try:
             fileHandle = open(fileToWrite, 'a')
             strToWrite = "CUSTOMER_APP_UTILS=" + self.appName + "-utils\n"
@@ -506,8 +516,8 @@ class ManageAppName:
             "NOTE: If you already have a repository checked out on this \n"
             "machine, we can create a link from there into our directory\n"
             "structure.  Provide the full path to that existing directory."
-            "Another option is to enter the git repo URL and we can clone"
-            "it."
+            "\nAnother option is to enter the git repo URL and we can clone"
+            " it."
             "\nOr press return to accept the "
             "default name: (" + webName + ")\n")
         if userResponse:
@@ -1191,21 +1201,17 @@ class ManageAppName:
 
             # TODO this repo name is probably not correct and needs to
             # be updated
-            if gitServiceName == "assembla":
+            elif gitServiceName == "assembla":
                 retRepoURL = "git@gassembla.com:" + gitAccountName + \
                     '/dcShared-utils.git'
 
             # TODO this repo name is probably not correct and needs to
             # be updated
-            if gitServiceName == "bitbucket":
+            elif gitServiceName == "bitbucket":
                 retRepoURL = 'gituser@bitbucket.com:' + gitAccountName + \
                     '/dcShared-utils.git'
 
         else:
-            print('FYI, Can not automatically generate the dcShared-utils '
-                  'repo URL as the required information '
-                  'is not found in the shared settings file: \n' +
-                  self.sharedSettingFile)
             retRepoURL = ("git@github.com:" + self.nameOfCustomer +
                           "/dcShared-utils.git\n")
 
@@ -1213,25 +1219,40 @@ class ManageAppName:
 
     def checkForExistingSharedRepo(self, sharedBasePath):
         """Check and retrieve the dcShared-utils repo."""
-        # first get the repo name
-        if os.path.exists(sharedBasePath + "dcShared-utils"):
-            if os.path.exists(sharedBasePath + 'dcShared-utils/.git'):
-                return
-            else:
-                # the shared directory is there but is not checked in
-                # so we will move it to the side and try to pull it
-                # from the git service
-                os.rename(sharedBasePath, sharedBasePath +
-                          "dcShared-utils.ORIG")
+        # first see if there is a directory locally already
+        if not os.path.exists(sharedBasePath + "dcShared-utils"):
+            # the dcShared-utils directory did not exist so lets
+            # go see if someone else has created the dcShared-utils
+            # for this company, maybe for another app, by looking in
+            # the shared settings file.
+            foundPreviousSharedRepo = False
+            if os.path.isfile(self.sharedSettingsFile):
+                with open(self.sharedSettingsFile) as fp:
+                    for aLine in fp:
+                        strippedLine = aLine.strip()
+                        if "SHARED_APP_REPO" in strippedLine:
+                            sharedRepoURL = strippedLine.split("=")[1]
+                            foundPreviousSharedRepo = True
 
-        # TODO need to put the following in a try/catch block incase the
-        # shared repo doesnt exist (ie, its the VERY first app for this
-        # customer)
-        originalDir = os.getcwd()
-        os.chdir(sharedBasePath)
-        sharedRepoURL = self.createRepoURL()
-        subprocess.check_call("git clone " + sharedRepoURL, shell=True)
-        os.chdir(originalDir)
+                if not foundPreviousSharedRepo:
+                    # there wasn't a dcShared-utils git URL so this
+                    # is the first time to create it.
+                    os.makedirs(sharedBasePath + "dcShared-utils")
+                    # and return as that is all that needs to be done
+                    return
+
+                sharedRepoURL = self.createRepoURL()
+                try:
+                    originalDir = os.getcwd()
+                    os.chdir(sharedBasePath)
+                    sharedRepoURL = self.createRepoURL()
+                    subprocess.check_call(
+                        "git pull " + sharedRepoURL, shell=True)
+                    os.chdir(originalDir)
+                except subprocess.CalledProcessError as gitOutput:
+                    print("There was an error with pulling the "
+                          "dcShared-utils repo.\n")
+                    sys.exit(1)
 
 
 def checkBaseDirectory(baseDirectory, envList):
