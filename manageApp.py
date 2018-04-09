@@ -151,13 +151,15 @@ class ManageAppName:
             if self.altName:
                 # the file exists and they are adding a new base directory
                 self.insertIntoBaseDirectoryFile(
-                    baseConfigFile, adjustedBaseDir)
+                    baseConfigFile, adjustedBaseDir, self.altName)
             else:
                 # file exists and there is no altname so the workspace to be
                 # created is a default one
-                self.insertIntoBaseDirectoryFile(baseConfigFile, "DEFAULT")
+                self.insertIntoBaseDirectoryFile(
+                    baseConfigFile, adjustedBaseDir, "DEFAULT")
 
-    def insertIntoBaseDirectoryFile(self, baseConfigFile, adjustedBaseDir):
+    def insertIntoBaseDirectoryFile(self, baseConfigFile, adjustedBaseDir,
+                                    nameToUse):
         # so we need to read in the file into an array
         with open(baseConfigFile) as f:
             lines = [line.rstrip('\n') for line in f]
@@ -166,7 +168,7 @@ class ManageAppName:
         # base directory by this name and if so, set a flag so we dont add
         # again
         flagToAdd = 1
-        strToSearch = "_" + self.altName + "_BASE_CUSTOMER_DIR"
+        strToSearch = "_" + nameToUse + "_BASE_CUSTOMER_DIR"
         for aLine in lines:
             if strToSearch in aLine:
                 flagToAdd = 0
@@ -180,13 +182,13 @@ class ManageAppName:
             for aLine in lines:
                 # look for the CURRENT_WORKSPACE and set it to the new name
                 if "CURRENT_WORKSPACE=" in aLine:
-                    strToWrite = "CURRENT_WORKSPACE=" + self.altName + "\n"
+                    strToWrite = "CURRENT_WORKSPACE=" + nameToUse + "\n"
                     fileHandle.write(strToWrite)
                     continue
 
-                if self.altName in aLine:
+                if nameToUse in aLine:
                     if flagToAdd == 0:
-                        strToWrite = "_" + self.altName + \
+                        strToWrite = "_" + nameToUse + \
                             "_BASE_CUSTOMER_DIR=" + adjustedBaseDir + "\n"
                         fileHandle.write(strToWrite)
                         continue
@@ -195,7 +197,7 @@ class ManageAppName:
                 if "WORKSPACES" in aLine:
                     fileHandle.write(aLine + "\n")
                     if flagToAdd:
-                        strToWrite = "_" + self.altName + \
+                        strToWrite = "_" + nameToUse + \
                             "_BASE_CUSTOMER_DIR=" + adjustedBaseDir + "\n"
                         fileHandle.write(strToWrite)
                     continue
