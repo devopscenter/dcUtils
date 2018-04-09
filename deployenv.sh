@@ -347,7 +347,9 @@ else
     # The docker-current.env file will be used by the docker-compose up script and any
     # devops.center script will read in the docker-current.sh
     #-------------------------------------------------------------------------------
-    CUSTOMER_APP_UTILS=${CUSTOMER_APP_NAME}-utils
+    keyToFind="CUSTOMER_APP_UTILS"
+    aKeyValue=$(grep "^${keyToFind}" "${BASE_CUSTOMER_DIR}/${CUSTOMER_APP_NAME}/.dcDirMap.cnf")
+    CUSTOMER_APP_UTILS=${aKeyValue#*=}
     if [[ ${FOR_CUSTOMER} ]]; then
         BASE_CUSTOMER_APP_UTILS_DIR="${BASE_CUSTOMER_DIR}/${CUSTOMER_APP_NAME}/${CUSTOMER_APP_UTILS}/${FOR_CUSTOMER}"
     else
