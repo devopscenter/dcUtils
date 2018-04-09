@@ -147,9 +147,15 @@ class ManageAppName:
                       "\nPlease report this issue to the devops.center "
                       "admins.")
 
-        elif os.path.isfile(baseConfigFile) and self.altName:
-            # the file exists and they are adding a new base directory
-            self.insertIntoBaseDirectoryFile(baseConfigFile, adjustedBaseDir)
+        elif os.path.isfile(baseConfigFile):
+            if self.altName:
+                # the file exists and they are adding a new base directory
+                self.insertIntoBaseDirectoryFile(
+                    baseConfigFile, adjustedBaseDir)
+            else:
+                # file exists and there is no altname so the workspace to be
+                # created is a default one
+                self.insertIntoBaseDirectoryFile(baseConfigFile, "DEFAULT")
 
     def insertIntoBaseDirectoryFile(self, baseConfigFile, adjustedBaseDir):
         # so we need to read in the file into an array
