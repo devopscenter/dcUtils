@@ -10,7 +10,8 @@ one of the packages is dcUtils.  dcUtils is described here.
 
 ## TL&DR
 To get the local development environment running
-* [RUN-ME-FIRST.sh](README.md#installing)
+* accept the invite to the shared directory (if not already sharing)
+* [run RUN-ME-FIRST.sh](README.md#installing) from the shared directory (example: ~/Google Drive/devops.center/dcBootstrap/RUN-ME-FIRST.sh)
 * [run manageApp.py](README.md#new-applications-create-the-application) to join or create an application
 * [update env files](README.md#edit-personalenv) as appropriate
 * [run deployenv.sh](README.md#run-deployenvsh)
