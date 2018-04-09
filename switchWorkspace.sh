@@ -53,10 +53,10 @@ usage ()
     echo -e "    if it exists in the $HOME/.dcConfig/baseDirectory"
     echo -e "NOTE: use 'default' if the workspace is unknown.  This can be "
     echo -e "    checked by looking at the $HOME/.dcConfig/baseDirectory file"
-    echo -e "-x  is optional argument that when present will change the customer"
-    echo -e "    name in the ~/dcConfig/settings file.  This would be benificial"
-    echo -e "    if you need to run one of the dcUtils scripts as if it was being"
-    echo -e "    run by that customer. "
+#    echo -e "-x  is optional argument that when present will change the customer"
+#    echo -e "    name in the ~/dcConfig/settings file.  This would be benificial"
+#    echo -e "    if you need to run one of the dcUtils scripts as if it was being"
+#    echo -e "    run by that customer. "
     echo
     CURRENT=$(grep "CURRENT_WORKSPACE=" ${HOME}/.dcConfig/baseDirectory)
     echo -e "Current workspace is: ${CURRENT#CURRENT_WORKSPACE=}"
