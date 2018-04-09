@@ -117,6 +117,9 @@ setupNetwork()
         # postgres
         export DOCKER_PGMASTER_PORT_5432="${DOCKER_PGMASTER_IP}:5432:5432"
 
+        # mongodb
+        export DOCKER_MONGODB_PORT_27017="${DOCKER_PGMASTER_IP}:27017:27017"
+
         # redis
         export DOCKER_REDIS_PORT_6379="${DOCKER_REDIS_IP}:6379:6379"
 
@@ -140,6 +143,9 @@ setupNetwork()
 
         # postgres
         export DOCKER_PGMASTER_PORT_5432="5432"
+
+        # mongodb
+        export DOCKER_MONGODB_PORT_27017="27017"
 
         # redis
         export DOCKER_REDIS_PORT_6379="6379"
