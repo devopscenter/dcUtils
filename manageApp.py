@@ -272,16 +272,17 @@ class ManageAppName:
             # they have entered a path to an existing front end directory
             self.joinWithPath(basePath, "web", self.appPath)
 
-        # lets check for the existance of this app in the dcShared-utils
-        # if it''s not there then there is no sense in continuing
-        strToSearch = self.appName + "-utils=shared"
-        if strToSearch not in open(self.sharedSettingsFile).read():
-            print('This app does not appear to have been created or shared '
-                  'as it is not in the\n' + self.sharedSettingsFile + '\n'
-                  'as a result it will not be in the dcShared-utils repo. '
-                  'Check to see if this app has been created and if it was '
-                  'supposed to be shared. Exiting ...')
-            sys.exit(1)
+        if self.sharedUtilsFlag:
+            # lets check for the existance of this app in the dcShared-utils
+            # if it''s not there then there is no sense in continuing
+            strToSearch = self.appName + "-utils=shared"
+            if strToSearch not in open(self.sharedSettingsFile).read():
+                print('This app does not appear to have been created or shared '
+                      'as it is not in the\n' + self.sharedSettingsFile + '\n'
+                      'as a result it will not be in the dcShared-utils repo. '
+                      'Check to see if this app has been created and if it was '
+                      'supposed to be shared. Exiting ...')
+                sys.exit(1)
 
         if self.sharedUtilsFlag:
             gitUtilsPath = None
