@@ -38,6 +38,12 @@ Getting these installed will be dependent on how you install softare on your dev
 
 #### [accept the invite to the shared directory](README.md#shared-dir-invite)
 
+The engineers at devops.center will create the necessary shared drive on Google Drive
+and send an invite to each person that will be doing development.  The developer will
+need to accept this invitation to be able to see the shared directory.  The name of 
+the directory is "devops.center" and it will show up in the base of the Google Drive
+shared directories.
+
 #### [execute RUN-ME-FIRST.sh](README.md#installing)
 
 (example: ~/Google Drive/devops.center/dcBootstrap/RUN-ME-FIRST.sh)
