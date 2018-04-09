@@ -10,7 +10,7 @@ one of the packages is dcUtils.  dcUtils is described here.
 
 ## TL&DR
 To get the local development environment running
-* [accept the invite](REAMD.md#shared-dir-invite) to the shared directory if not already sharing
+* [accept the invite](README.md#shared-dir-invite) to the shared directory if not already sharing
 * [run RUN-ME-FIRST.sh](README.md#installing) from the shared directory 
 * [run manageApp.py](README.md#new-applications-create-the-application) to join or create an application
 * [update env files](README.md#edit-personalenv) as appropriate
