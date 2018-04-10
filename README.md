@@ -10,7 +10,7 @@ one of the packages is dcUtils.  dcUtils is described here.
 
 ## TL&DR
 To get the local development environment running
-* [accept the invite](REAMD.md#shared-dir-invite) to the shared directory if not already sharing
+* [accept the invite](README.md#accept-the-shared-directory-invite) to the shared directory if not already sharing
 * [run RUN-ME-FIRST.sh](README.md#installing) from the shared directory 
 * [run manageApp.py](README.md#new-applications-create-the-application) to join or create an application
 * [update env files](README.md#edit-personalenv) as appropriate
@@ -36,7 +36,13 @@ Getting these installed will be dependent on how you install softare on your dev
 
 ## High level flow for a brand new installation:
 
-#### [accept the invite to the shared directory](README.md#shared-dir-invite)
+#### Accept the shared directory invite
+
+The engineers at devops.center will create the necessary shared drive on Google Drive
+and send an invite to each person that will be doing development.  The developer will
+need to accept this invitation to be able to see the shared directory.  The name of 
+the directory is "devops.center" and it will show up in the base of the Google Drive
+shared directories.
 
 #### [execute RUN-ME-FIRST.sh](README.md#installing)
 
