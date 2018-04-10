@@ -87,6 +87,7 @@ setupNetwork()
     # first th estatic IP for the services
     export DOCKER_SYSLOG_IP="${SUBNET_TO_USE}.2"
     export DOCKER_PGMASTER_IP="${SUBNET_TO_USE}.4"
+    export DOCKER_MONGODB_IP="${SUBNET_TO_USE}.5"
     export DOCKER_WEB_1_IP="${SUBNET_TO_USE}.10"
     export DOCKER_WEB_2_IP="${SUBNET_TO_USE}.11"
     export DOCKER_WORKER_1_IP="${SUBNET_TO_USE}.20"
@@ -118,7 +119,7 @@ setupNetwork()
         export DOCKER_PGMASTER_PORT_5432="${DOCKER_PGMASTER_IP}:5432:5432"
 
         # mongodb
-        export DOCKER_MONGODB_PORT_27017="${DOCKER_PGMASTER_IP}:27017:27017"
+        export DOCKER_MONGODB_PORT_27017="${DOCKER_MONGODB_IP}:27017:27017"
 
         # redis
         export DOCKER_REDIS_PORT_6379="${DOCKER_REDIS_IP}:6379:6379"
@@ -179,6 +180,7 @@ tearDownNetwork()
     export DOCKER_SYSLOG_IP="${SUBNET_TO_USE}.2"
     export DOCKER_REDIS_IP="${SUBNET_TO_USE}.3"
     export DOCKER_PGMASTER_IP="${SUBNET_TO_USE}.4"
+    export DOCKER_MONGODB_IP="${SUBNET_TO_USE}.5"
     export DOCKER_WEB_1_IP="${SUBNET_TO_USE}.10"
 #    export DOCKER_WEB_2_IP="${SUBNET_TO_USE}.11"     # if needed
     export DOCKER_WORKER_1_IP="${SUBNET_TO_USE}.20"
@@ -201,6 +203,10 @@ tearDownNetwork()
         interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_PGMASTER_IP}")
         if [[ ${interfaceOutput} ]]; then
             sudo ifconfig lo0 -alias "${DOCKER_PGMASTER_IP}"
+        fi
+        interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_MONGODB_IP}")
+        if [[ ${interfaceOutput} ]]; then
+            sudo ifconfig lo0 -alias "${DOCKER_MONGODB_IP}"
         fi
         interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_WEB_1_IP}")
         if [[ ${interfaceOutput} ]]; then
