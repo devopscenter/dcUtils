@@ -1285,7 +1285,7 @@ def checkBaseDirectory(baseDirectory, envList):
     if "WORKSPACE_NAME" in envList:
         newBaseDir = retBaseDir + envList["WORKSPACE_NAME_ORIGINAL"] + "/"
         if not os.path.exists(newBaseDir):
-            print('Createing base directory associated with the workspace '
+            print('Creating base directory associated with the workspace '
                   'name:' + newBaseDir)
             os.makedirs(newBaseDir, 0o755)
     else:
