@@ -915,6 +915,9 @@ class ManageAppName:
                 cloneOrPull = " pull "
                 cloneOrPullString = "pulling"
             else:
+                flagToChangeBackToOriginalDir = True
+                originalDir = os.getcwd()
+                os.chdir(self.baseDir)
                 print("Cloning: " + theURL)
         else:
             print("Cloning: " + theURL)
