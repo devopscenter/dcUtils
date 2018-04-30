@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 #===============================================================================
 #
-#          FILE: cross-join-containers.sh
+#          FILE: cross-join-networks.sh
 #
-#         USAGE: ./cross-join-containers.sh
+#         USAGE: ./cross-join-networks.sh
 #
 #   DESCRIPTION: This script has a very specific purpose and that is to take
 #                a container from one network and add it to a other network 
@@ -51,7 +51,7 @@ usage()
 {
 cat << EOF
 
-USAGE: cross-join-containers.sh --app1 appName1 --app2 appName2 --type containerType
+USAGE: cross-join-networks.sh --app1 appName1 --app2 appName2 --type containerType
 
     --app1|-a1 appName1 is the application name for one of the app stacks that is 
               running in it's own network.
@@ -61,10 +61,13 @@ USAGE: cross-join-containers.sh --app1 appName1 --app2 appName2 --type container
 
     --type|-t containerType take the word from the name of the container that describes
               the type.
-              Example: f1-local-web-1 and f2-local-web-1 need to cross joined in the
-              others network.  The type is: web  so:
 
-              cross-join-containres.sh -t web
+    Example: f1-local-web-1 and f2-local-web-1 need to cross joined in the
+             others network.  The type is: web  so:
+
+             cross-join-networks.sh -a1 f1 -a2 f2 -t web
+             - or -
+             cross-join-networks.sh --app1 f1 --app2 f2 --type web
 
 
 EOF
