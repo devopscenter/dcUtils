@@ -145,4 +145,6 @@ if [[ ${CHANGE_CUSTOMER_NAME} == "TRUE" ]]; then
     sed -i -e "s/CUSTOMER_NAME=.*/CUSTOMER_NAME=${newCustomerName,,}/" ~/.dcConfig/settings
     sed -i -e "s/PROFILE=.*/PROFILE=${newCustomerName,,}/" ~/.dcConfig/settings
     sed -i -e "/dcCOMMON_SHARED_DIR/s/=\(.*\/\).*/=\1${newCustomerName,,}/" ~/.dcConfig/settings
+    # and get the legacy onces that might still have quotes around it and remove the quotes but change the value.
+    sed -i -e "/dcCOMMON_SHARED_DIR/s/=\"\(.*\/\).*\"/=\1${newCustomerName,,}/" ~/.dcConfig/settings
 fi
