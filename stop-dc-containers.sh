@@ -306,6 +306,14 @@ fi
 OSNAME=$(uname -s)
 setupNetwork
 
+# check to see if we are running a multiple apps stacks and if they are on MacOS we need to remove the containers before
+# stopping the containers.
+if [[ ${OSNAME} == "Darwin" ]]; then
+    if [[ ${MULTI_DOCKER_STACK_COMMUNICATION} ]]; then
+        ${dcUTILS}/cross-join-networks.sh -c disconnect -a1 ${dcDEFAULT_APP_NAME}  -a2 ${MULTI_DOCKER_STACK_COMMUNICATION} -t web
+    fi
+fi
+
 if [[ ${SERVICE_TO_STOP} ]]; then
     CMDTORUN="docker-compose -f ${DOCKER_COMPOSE_FILE} -p ${dcDEFAULT_APP_NAME} stop ${SERVICE_TO_STOP}"
 else
