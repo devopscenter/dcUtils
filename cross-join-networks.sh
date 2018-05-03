@@ -51,7 +51,7 @@ usage()
 {
 cat << EOF
 
-USAGE: cross-join-networks.sh --app1 appName1 --app2 appName2 --type containerType
+USAGE: cross-join-networks.sh --app1 appName1 --app2 appName2 --type containerType --command create|disconnect
 
     --app1|-a1 appName1 is the application name for one of the app stacks that is 
               running in it's own network.
@@ -62,10 +62,13 @@ USAGE: cross-join-networks.sh --app1 appName1 --app2 appName2 --type containerTy
     --type|-t containerType take the word from the name of the container that describes
               the type.
 
+    --command|-c create|disconnect the containers from the two networks
+
     Example: f1-local-web-1 and f2-local-web-1 need to cross joined in the
              others network.  The type is: web  so:
 
-             cross-join-networks.sh -a1 f1 -a2 f2 -t web
+             # to join the containers to the two networks
+             cross-join-networks.sh -a1 f1 -a2 f2 -t web -c create
              - or -
              cross-join-networks.sh --app1 f1 --app2 f2 --type web
 
@@ -156,6 +159,9 @@ while [[ $# -gt 0 ]]; do
       --type|-t )   shift
              CONTAINER_TYPE=$1
              ;;
+      --commadn|-c )   shift
+             COMMAND=$1
+             ;;
       * )    usage
              exit 1
     esac
@@ -198,6 +204,13 @@ NETWORK1_NAME=${APP_1}_local_network
 APP2_NAME=$(docker ps  --filter name="$APP_2-local-${CONTAINER_TYPE}*" --format '{{.Names}}')
 NETWORK2_NAME=${APP_2}_local_network
 
-# to to cross
-docker network connect ${NETWORK2_NAME} ${APP1_NAME} >/dev/null 2>&1 
-docker network connect ${NETWORK1_NAME} ${APP2_NAME} >/dev/null 2>&1 
+if [[ ${COMMAND} == "create" ]]; then
+    # to to cross
+    docker network connect ${NETWORK2_NAME} ${APP1_NAME} >/dev/null 2>&1
+    docker network connect ${NETWORK1_NAME} ${APP2_NAME} >/dev/null 2>&1
+else
+    # to undo a cross
+    docker network disconnect ${NETWORK2_NAME} ${APP1_NAME} >/dev/null 2>&1
+    docker network disconnect ${NETWORK1_NAME} ${APP2_NAME} >/dev/null 2>&1
+fi
+
