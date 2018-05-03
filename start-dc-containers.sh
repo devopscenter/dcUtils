@@ -216,7 +216,7 @@ setupNetwork()
 
 #---  FUNCTION  ----------------------------------------------------------------
 #          NAME:  findContainerName
-#   DESCRIPTION:  loops through the compose config and searchs for a container
+#   DESCRIPTION:  loops through the compose config and searches for a container
 #                 name that is associated with service name
 #    PARAMETERS:
 #       RETURNS:  container_name value
@@ -231,7 +231,7 @@ findContainerName()
     while [[ ${c} -lt ${NUM_LINES} ]]
     do
         if [[ ${ALL_CONFIG[$c]} == "services:" ]]; then
-            # now contiue until the current service is found
+            # now continue until the current service is found
             while [[ ${c} -lt ${NUM_LINES} ]]
             do
                 c=$(($c + 1))
@@ -347,11 +347,16 @@ ${CMDTORUN}
 
 # allow multiple docker containers networks to talk to each other, but needs to do it after the containers are up
 if [[ ${OSNAME} != "Darwin" ]]; then
-    if [[ ${MULTI_DOCKER_STACK_COMMUNICATION} == "yes" ]]; then
+    if [[ ${MULTI_DOCKER_STACK_COMMUNICATION} ]]; then
         echo 
         echo "We need to update the local iptables so that the multiple stacks can talk to each other"
         echo "So, you may be asked to enter your password to do this"
         sudo iptables --flush DOCKER-ISOLATION
+    fi
+else
+    # they are on MacOS
+    if [[ ${MULTI_DOCKER_STACK_COMMUNICATION} ]]; then
+        ${dcUTILS}/cross-join-networks.sh -c create -a1 ${dcDEFAULT_APP_NAME}  -a2 ${MULTI_DOCKER_STACK_COMMUNICATION} -t web
     fi
 fi
 
@@ -371,8 +376,11 @@ SERVICES=($(docker-compose -f ${DOCKER_COMPOSE_FILE} config --services))
 for service in ${SERVICES[@]}
 do
     CONTAINER_NAME=$(findContainerName $service)
-    serviceIP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${CONTAINER_NAME})
+    set -x
+    myNetworkName=${dcDEFAULT_APP_NAME}_local_network
+    serviceIP=$(docker inspect -f "{{.NetworkSettings.Networks.${myNetworkName}.IPAddress}}" ${CONTAINER_NAME})
     hostEntry=$(grep ${CONTAINER_NAME} /etc/hosts)
+    set +x
 
     echo "${CONTAINER_NAME} => ${serviceIP}"
     if [[ ${hostEntry} ]]; then
