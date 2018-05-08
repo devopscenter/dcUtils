@@ -1,5 +1,23 @@
 #!/usr/bin/env python
-"""Docstring for instanceinfo.py."""
+"""
+Docstring for instanceinfo.py. This script will act as an abstraction layer
+between the connection information for AWS instances and private instances that
+might reside beyond a proxy server.
+
+Several namedtuples are used in the script and are defined as:
+
+InstanceDetails defines the elements of an instance that can be used as input modeled after the need of the CodeDeploy
+module.
+InstanceDetails = namedtuple('InstanceDetails', 'IPAddressDetails, InstanceName, DestLogin, DestKey, Shard')
+
+IPAddressSet defines the elements for the private and public dns, ip and ports.  This set of data is added to
+the InstanceDetails tuple as the IPAddressDetails.
+IPAddressSet = namedtuple('IPAddressSet', 'PublicIpAddress, PublicDnsName, PublicPort, PrivateIpAddress,
+                                           PrivateDnsName, PrivatePort' )
+
+ConnectParts are the elements that can be combined to form an SSH or SCP connect string for an instance.
+ConnectParts = namedtuple('ConnectParts', 'DestHost, DestSSHPort, DestSCPPort, DestKey, JumpServerPart')
+"""
 
 import sys
 import argparse
