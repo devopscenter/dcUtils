@@ -6,6 +6,7 @@ import argparse
 import json
 import re
 from collections import namedtuple
+from os.path import expanduser
 
 # ==============================================================================
 __version__ = "0.1"
@@ -99,8 +100,12 @@ class InstanceInfo:
         defined in the file"""
 
         # first read in the file
-        with open(self.configFileName) as data_file:
-            self.data = json.load(data_file)
+        try:
+            with open(expanduser(self.configFileName)) as data_file:
+                self.data = json.load(data_file)
+        except IOError as e:
+            print("Config file error: {}".format(e))
+            sys.exit(1)
 
         self.createAllInstances()
         self.getServersFromConfig()
@@ -237,8 +242,8 @@ def main(argv):
     listOfIPs = instances.getInstanceIPs(tagList)
     print("list of instances:")
     for item in listOfIPs:
-        print("\nInstanceInfo\n=>{}<=".format(item))
-        print("Connect String:")
+        print("\nInstanceInfo (getInstanceIPs({}))\n=>{}<=".format(tagList,item))
+        print("Connect String (getConnectString(InstanceDetails):")
         parts = instances.getConnectString(item)
         print("For ssh:\nssh " + (parts.JumpServerPart if parts.JumpServerPart else '') + parts.DestSSHPort + \
               parts.DestKey + parts.DestHost)
