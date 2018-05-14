@@ -258,7 +258,7 @@ def main(argv):
 
     instances = InstanceInfo(customer, region, keysDir, configFile)
     listOfIPs = instances.getInstanceIPs(tagList)
-    print("list of instances:")
+    print("Looping through list of instances:")
     for item in listOfIPs:
         print("\nInstanceInfo (getInstanceIPs({}))\n=>{}<=".format(tagList,item))
         print("Connect String (getConnectString(InstanceDetails):")
