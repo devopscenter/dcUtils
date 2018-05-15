@@ -65,6 +65,8 @@ class InstanceInfo:
         self.jumpServers = {}
         self.filters = {}
         self.lastReturnedListOfInstances = {}
+        self.lastReturnedListOfIPAddresses = []
+        self.lastReturnedListOfKeyAndPaths = []
 
 
     def getInstanceIPs(self, filterList):
@@ -77,7 +79,6 @@ class InstanceInfo:
         else:
             self.getInstancesFromAWS()
 
-        retList = []
         for theKey in self.lastReturnedListOfInstances:
             anInst = self.lastReturnedListOfInstances[theKey]
 
@@ -96,17 +97,20 @@ class InstanceInfo:
             if self.keysDirectory:
                 theKey = self.keysDirectory + "/" + anInst["KeyName"] + ".pem"
 
+            # store these away if needed later
+            self.lastReturnedListOfKeyAndPaths.append(theKey)
+
             # return named tuple of (IPAddress, name, userLoginName, keyname, shard,)
 
             InstanceDetails = namedtuple('InstanceDetails', 'IPAddressDetails, InstanceName, DestLogin, DestKey, Shard')
 
-            retList.append(InstanceDetails(IPAddressDetails=IPAddresses,
+            self.lastReturnedListOfIPAddresses.append(InstanceDetails(IPAddressDetails=IPAddresses,
                             InstanceName=anInst["TagsDict"]["Name"],
                             DestLogin=anInst["UserLogin"] if "UserLogin" in anInst else '',
                             DestKey=theKey,
                             Shard=anInst["shard"] if "shard" in anInst else ''))
 
-        return retList
+        return self.lastReturnedListOfIPAddresses
 
     def getInstancesFromAWS(self):
         """Create a list of IPs for the instances that are found based upon the filters from AWS."""
@@ -148,6 +152,7 @@ class InstanceInfo:
                 self.instances[instance] = self.allInstances[instance].copy()
 
     def checkInstanceForTags(self, anInstance, filterList):
+        """Iterate through the instances looking for the set of filters."""
         numFilters = len(filterList)
 
         c = 0
@@ -169,6 +174,7 @@ class InstanceInfo:
                 self.lastReturnedListOfInstances[anInstance] = tmpInstance
 
     def getConnectString(self, anInstanceName):
+        """Return the connection strings that can be then used to build ssh/scp commands to access an instance."""
         ConnectParts = namedtuple('ConnectParts', 'DestHost, DestSSHPort, DestSCPPort, DestKey, JumpServerPart')
         try:
             anInstInfo = self.lastReturnedListOfInstances[anInstanceName.InstanceName]
@@ -210,6 +216,15 @@ class InstanceInfo:
             print("=>{}<=".format(e))
 
         return retParts
+
+    def getListOfKeys(self):
+        """Return a list of keys with their path for the last returned set of instances."""
+        # trim out any duplicates before returning the list of keys with their path
+        retList = []
+        [retList.append(item) for item in self.lastReturnedListOfKeyAndPaths if item not in retList]
+        return retList
+
+
 
 def checkArgs():
     """Check the command line arguments."""
@@ -268,6 +283,11 @@ def main(argv):
         print("For scp /tmp/foobar to destination home directory:")
         print("scp " + parts.DestSCPPort + parts.DestKey + (parts.JumpServerPart if parts.JumpServerPart else '') + \
               " /tmp/foobar " + parts.DestHost + ":~")
+
+    print("\n\nList of unique keys (with path) to try:")
+    keys = instances.getListOfKeys()
+    for aKey in keys:
+        print("{}".format(aKey))
     print("THE END")
 
 
