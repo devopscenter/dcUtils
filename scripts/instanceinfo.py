@@ -220,6 +220,8 @@ class InstanceInfo:
     def getListOfKeys(self):
         """Return a list of keys with their path for the last returned set of instances."""
         # trim out any duplicates before returning the list of keys with their path
+        # retList = list(set(self.lastReturnedListOfKeyAndPaths))
+        # or is list comprehension more efficient...?
         retList = []
         [retList.append(item) for item in self.lastReturnedListOfKeyAndPaths if item not in retList]
         return retList
