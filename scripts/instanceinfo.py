@@ -245,6 +245,13 @@ def checkArgs():
                         required=False)
     parser.add_argument('-kd', '--keysDirectory', help='This is the path to where the key resides on your system ',
                         required=False)
+    parser.add_argument('-sc', '--shellCommand', help='If this python script is run from a shell command line or shell '
+                                                      'script then this would execute one method with a given set of '
+                                                      'tags/filters.  You would have to provide the filter set each '
+                                                      'time as the object would go away once the python script ends, '
+                                                      'which would be with each invocation of this script.',
+                        choices=["sshConnect", "scpConnect", "listOfIPAddresses", "listOfKeys"],
+                        required=False)
     args, unknown = parser.parse_known_args()
 
     retConfigFile = ""
@@ -267,30 +274,65 @@ def checkArgs():
     if args.keysDirectory:
         retKeysDirectory = args.keysDirectory
 
-    return(retCustomer, retRegion, retKeysDirectory, retConfigFile, retTags)
+    retCommand = ""
+    if args.shellCommand:
+        retCommand = args.shellCommand
+
+    return(retCustomer, retRegion, retKeysDirectory, retConfigFile, retTags, retCommand)
 
 def main(argv):
     """Main code goes here."""
-    (customer, region, keysDir, configFile, tagList) = checkArgs()
+    (customer, region, keysDir, configFile, tagList, shellCommand) = checkArgs()
 
     instances = InstanceInfo(customer, region, keysDir, configFile)
     listOfIPs = instances.getInstanceIPs(tagList)
-    print("Looping through list of instances:")
-    for item in listOfIPs:
-        print("\nInstanceInfo (getInstanceIPs({}))\n=>{}<=".format(tagList,item))
-        print("Connect String (getConnectString(InstanceDetails):")
-        parts = instances.getConnectString(item)
-        print("For ssh:\nssh " + (parts.JumpServerPart if parts.JumpServerPart else '') + parts.DestSSHPort + \
-              parts.DestKey + parts.DestHost)
-        print("For scp /tmp/foobar to destination home directory:")
-        print("scp " + parts.DestSCPPort + parts.DestKey + (parts.JumpServerPart if parts.JumpServerPart else '') + \
-              " /tmp/foobar " + parts.DestHost + ":~")
+    if shellCommand:
+        if shellCommand == "sshConnect":
+            if len(listOfIPs) > 1:
+                print("ERROR: Filter list returned more than one result")
+                sys.exit(1)
+            for item in listOfIPs:
+                parts = instances.getConnectString(item)
+                print("ssh " + (parts.JumpServerPart if parts.JumpServerPart else '') + parts.DestSSHPort +
+                      parts.DestKey + parts.DestHost)
 
-    print("\n\nList of unique keys (with path) to try:")
-    keys = instances.getListOfKeys()
-    for aKey in keys:
-        print("{}".format(aKey))
-    print("THE END")
+        if shellCommand == "scpConnect":
+            if len(listOfIPs) > 1:
+                print("ERROR: Filter list returned more than one result")
+                sys.exit(1)
+            for item in listOfIPs:
+                parts = instances.getConnectString(item)
+                print("scp " + parts.DestSCPPort + parts.DestKey +
+                      (parts.JumpServerPart if parts.JumpServerPart else '') + " REPLACE_WITH_YOUR_FILE " +
+                      parts.DestHost + ":~")
+
+        if shellCommand == "listOfIPAddresses":
+            import simplejson as json
+            for item in listOfIPs:
+                jsonObj = json.dumps(item)
+                print("{}".format(jsonObj))
+
+        if shellCommand == "listOfKeys":
+            keys = instances.getListOfKeys()
+            for aKey in keys:
+                print("{}".format(aKey))
+    else:
+        print("Example Mode\nLooping through list of instances:")
+        for item in listOfIPs:
+            print("\nInstanceInfo (getInstanceIPs({}))\n=>{}<=".format(tagList,item))
+            print("Connect String (getConnectString(InstanceDetails):")
+            parts = instances.getConnectString(item)
+            print("For ssh:\nssh " + (parts.JumpServerPart if parts.JumpServerPart else '') + parts.DestSSHPort + \
+                  parts.DestKey + parts.DestHost)
+            print("For scp /tmp/foobar to destination home directory:")
+            print("scp " + parts.DestSCPPort + parts.DestKey + (parts.JumpServerPart if parts.JumpServerPart else '') + \
+                  " /tmp/foobar " + parts.DestHost + ":~")
+
+        print("\n\nList of unique keys (with path) to try:")
+        keys = instances.getListOfKeys()
+        for aKey in keys:
+            print("{}".format(aKey))
+        print("THE END")
 
 
 if __name__ == "__main__":
