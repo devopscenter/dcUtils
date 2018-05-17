@@ -168,8 +168,8 @@ class InstanceInfo:
 
     def applyFilters(self, filterList):
         """Create a list of instances based upon the filters."""
-        for anInstance in self.instances:
-            tmpInstance = self.checkInstanceForTags(self.instances[anInstance], filterList)
+        for anInstance in self.allInstances:
+            tmpInstance = self.checkInstanceForTags(self.allInstances[anInstance], filterList)
             if tmpInstance:
                 self.lastReturnedListOfInstances[anInstance] = tmpInstance
 
