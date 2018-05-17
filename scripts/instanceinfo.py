@@ -250,7 +250,7 @@ def checkArgs():
                                                       'tags/filters.  You would have to provide the filter set each '
                                                       'time as the object would go away once the python script ends, '
                                                       'which would be with each invocation of this script.',
-                        choices=["sshConnect", "scpConnect", "listOfIPAddresses", "listOfKeys"],
+                        choices=["connectParts", "sshConnect", "scpConnect", "listOfIPAddresses", "listOfKeys"],
                         required=False)
     args, unknown = parser.parse_known_args()
 
@@ -287,6 +287,20 @@ def main(argv):
     instances = InstanceInfo(customer, region, keysDir, configFile)
     listOfIPs = instances.getInstanceIPs(tagList)
     if shellCommand:
+        if shellCommand == "connectParts":
+            # if len(listOfIPs) > 1:
+            #     print("ERROR: Filter list returned more than one result")
+            #     sys.exit(1)
+
+            import simplejson as json
+            partsList = []
+            for item in listOfIPs:
+                parts = instances.getConnectString(item)
+                partsList.append(parts)
+
+            jsonObj = json.dumps(partsList)
+            print("{}".format(jsonObj))
+
         if shellCommand == "sshConnect":
             if len(listOfIPs) > 1:
                 print("ERROR: Filter list returned more than one result")
