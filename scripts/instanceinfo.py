@@ -288,10 +288,6 @@ def main(argv):
     listOfIPs = instances.getInstanceIPs(tagList)
     if shellCommand:
         if shellCommand == "connectParts":
-            # if len(listOfIPs) > 1:
-            #     print("ERROR: Filter list returned more than one result")
-            #     sys.exit(1)
-
             import simplejson as json
             partsList = []
             for item in listOfIPs:
