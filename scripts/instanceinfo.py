@@ -54,12 +54,12 @@ __status__ = "Development"
 
 class InstanceInfo:
 
-    def __init__(self, customerIn, regionIn, keysDir, fileName):
+    def __init__(self, customerIn, keysDir, instType,  source, regions=None):
         """Construct an instance of the InstanceInfo class."""
         self.customer = customerIn
-        self.region = regionIn
+        self.instanceType = instType
+        self.source = source
         self.keysDirectory = keysDir
-        self.configFileName = fileName
         self.allInstances = {}
         self.instances = {}
         self.jumpServers = {}
@@ -68,8 +68,12 @@ class InstanceInfo:
         self.lastReturnedListOfIPAddresses = []
         self.lastReturnedListOfKeyAndPaths = []
 
+        if self.instanceType == "AWS":
+            self.regions = regions
+        elif self.instanceType == "VM":
+            self.configFileName = source["configFileName"]
 
-    def getInstanceIPs(self, filterList):
+    def getInstanceInfo(self, filterList):
         """Create a list of IPs for the instances that are found based upon the filters."""
         # read and split up the instances and jumpservers into two dictionaries
         # that are made into instance variables.
@@ -84,13 +88,13 @@ class InstanceInfo:
 
             # set up the IP address structure for returning
             IPAddressSet = namedtuple('IPAddressSet',
-                                     'PublicIpAddress, PublicDnsName, PublicPort, PrivateIpAddress, PrivateDnsName, PrivatePort' )
+                                      'PublicIpAddress, PublicDnsName, PublicPort, PrivateIpAddress, PrivateDnsName, PrivatePort' )
             IPAddresses = IPAddressSet(PublicIpAddress=(anInst["PublicIpAddress"] if "PublicIpAddress" in anInst else ''),
-                         PublicDnsName=(anInst["PublicDnsName"] if "PublicDnsName" in anInst else ''),
-                         PublicPort=(anInst["PublicPort"] if "PublicPort" in anInst else ''),
-                         PrivateIpAddress=(anInst["PrivateIpAddress"] if "PrivateIpAddress" in anInst else ''),
-                         PrivateDnsName=(anInst["PrivateDnsName"] if "PrivateDnsName" in anInst else ''),
-                         PrivatePort=(anInst["PrivatePort"] if "PrivatePort" in anInst else ''))
+                                       PublicDnsName=(anInst["PublicDnsName"] if "PublicDnsName" in anInst else ''),
+                                       PublicPort=(anInst["PublicPort"] if "PublicPort" in anInst else ''),
+                                       PrivateIpAddress=(anInst["PrivateIpAddress"] if "PrivateIpAddress" in anInst else ''),
+                                       PrivateDnsName=(anInst["PrivateDnsName"] if "PrivateDnsName" in anInst else ''),
+                                       PrivatePort=(anInst["PrivatePort"] if "PrivatePort" in anInst else ''))
 
             # prepend the path if we have it.  And if so, then the key doesn't have the extension either so add it
             theKey = anInst["KeyName"]
@@ -175,6 +179,8 @@ class InstanceInfo:
 
     def getConnectString(self, anInstanceName):
         """Return the connection strings that can be then used to build ssh/scp commands to access an instance."""
+
+        retParts = None
         ConnectParts = namedtuple('ConnectParts', 'DestHost, DestSSHPort, DestSCPPort, DestKey, JumpServerPart')
         try:
             anInstInfo = self.lastReturnedListOfInstances[anInstanceName.InstanceName]
@@ -227,7 +233,6 @@ class InstanceInfo:
         return retList
 
 
-
 def checkArgs():
     """Check the command line arguments."""
     parser = argparse.ArgumentParser(
@@ -235,10 +240,13 @@ def checkArgs():
     parser.add_argument('-c', '--customer', help='The customer name, which will also be used as the lookup for the '
                                                    'profile, if needed',
                         required=True)
-    parser.add_argument('-r', '--region', help='The region to search in for customer instances customer ',
+    parser.add_argument('-i', '--instanceType', help='The name of the location where the instance resides.  For '
+                                                     'example: AWS, internal, VM, Azure etc.',
                         required=False)
-    parser.add_argument('-f', '--configFile', help='The json config file '
-                                                   'that defines the architecture for the appName',
+    parser.add_argument('-r', '--regions', help='The region(s) to search in for customer instances customer',
+                        required=False)
+    parser.add_argument('-s', '--source', help='The an overloaded dictionary of items that will be interpreted based '
+                                               'upon the instanceType.',
                         required=False)
     parser.add_argument('-t', '--tags', help='A list of key=value pairs separated by a space (no space before or after '
                                              'the equal sign).  This will be used to filter list to return ',
@@ -250,42 +258,47 @@ def checkArgs():
                                                       'tags/filters.  You would have to provide the filter set each '
                                                       'time as the object would go away once the python script ends, '
                                                       'which would be with each invocation of this script.',
-                        choices=["connectParts", "sshConnect", "scpConnect", "listOfIPAddresses", "listOfKeys"],
+                        choices=['connectParts', 'sshConnect', 'scpConnect', 'listOfIPAddresses', 'listOfKeys'],
                         required=False)
     args, unknown = parser.parse_known_args()
 
-    retConfigFile = ""
-    if args.configFile:
-        retConfigFile = args.configFile
+    retCustomer = ''
+    if args.customer:
+        retCustomer = args.customer
+
+    retInstanceType = ''
+    if args.instanceType:
+        retInstanceType = args.instanceType
+
+    retSource = {}
+    if args.source:
+        retSource = dict(item.split("=") for item in args.source.split(" "))
+
+    retRegions = ''
+    if args.regions:
+        retRegions = args.regions
 
     retTags = {}
     if args.tags:
         retTags = dict(item.split("=") for item in args.tags.split(" "))
 
-    retCustomer = ""
-    if args.customer:
-        retCustomer = args.customer
-
-    retRegion = ""
-    if args.region:
-        retRegion = args.region
-
-    retKeysDirectory = ""
+    retKeysDirectory = ''
     if args.keysDirectory:
         retKeysDirectory = args.keysDirectory
 
-    retCommand = ""
+    retCommand = ''
     if args.shellCommand:
         retCommand = args.shellCommand
 
-    return(retCustomer, retRegion, retKeysDirectory, retConfigFile, retTags, retCommand)
+    return(retCustomer, retInstanceType, retRegions, retKeysDirectory, retSource, retTags, retCommand )
+
 
 def main(argv):
     """Main code goes here."""
-    (customer, region, keysDir, configFile, tagList, shellCommand) = checkArgs()
+    (customer, instType, region, keysDir, source, tagList, shellCommand) = checkArgs()
 
-    instances = InstanceInfo(customer, region, keysDir, configFile)
-    listOfIPs = instances.getInstanceIPs(tagList)
+    instances = InstanceInfo(customer, keysDir, instType, source, region)
+    listOfIPs = instances.getInstanceInfo(tagList)
     if shellCommand:
         if shellCommand == "connectParts":
             import simplejson as json
@@ -329,13 +342,13 @@ def main(argv):
     else:
         print("Example Mode\nLooping through list of instances:")
         for item in listOfIPs:
-            print("\nInstanceInfo (getInstanceIPs({}))\n=>{}<=".format(tagList,item))
+            print("\nInstanceInfo (getInstanceIPs({}))\n=>{}<=".format(tagList, item))
             print("Connect String (getConnectString(InstanceDetails):")
             parts = instances.getConnectString(item)
-            print("For ssh:\nssh " + (parts.JumpServerPart if parts.JumpServerPart else '') + parts.DestSSHPort + \
+            print("For ssh:\nssh " + (parts.JumpServerPart if parts.JumpServerPart else '') + parts.DestSSHPort +
                   parts.DestKey + parts.DestHost)
             print("For scp /tmp/foobar to destination home directory:")
-            print("scp " + parts.DestSCPPort + parts.DestKey + (parts.JumpServerPart if parts.JumpServerPart else '') + \
+            print("scp " + parts.DestSCPPort + parts.DestKey + (parts.JumpServerPart if parts.JumpServerPart else '') +
                   " /tmp/foobar " + parts.DestHost + ":~")
 
         print("\n\nList of unique keys (with path) to try:")
