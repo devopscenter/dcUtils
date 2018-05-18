@@ -23,6 +23,8 @@ import sys
 import argparse
 import json
 import re
+import boto3
+from botocore.exceptions import ClientError
 from collections import namedtuple
 from os.path import expanduser
 
@@ -64,6 +66,7 @@ class InstanceInfo:
         self.instances = {}
         self.jumpServers = {}
         self.filters = {}
+        self.configFileName = None
         self.lastReturnedListOfInstances = {}
         self.lastReturnedListOfIPAddresses = []
         self.lastReturnedListOfKeyAndPaths = []
@@ -81,7 +84,7 @@ class InstanceInfo:
             self.readInstanceConfigFile()
             self.applyFilters(filterList)
         else:
-            self.getInstancesFromAWS()
+            self.getInstancesFromAWS(filterList)
 
         for theKey in self.lastReturnedListOfInstances:
             anInst = self.lastReturnedListOfInstances[theKey]
@@ -116,10 +119,42 @@ class InstanceInfo:
 
         return self.lastReturnedListOfIPAddresses
 
-    def getInstancesFromAWS(self):
+    def createAWSFilterListFromDict(self, filterList):
+        """Break down the filterList dictionary sent in to construct the AWS filter list"""
+        returnList = []
+
+        # for each k,v pair in the passed in filterList make a dictionary of {'Name':'tag:'k, 'Values':[v1,v2...]}
+        # and then append them to the returnList
+        for filterKey in filterList:
+            anonDict = {}
+            anonDict['Name'] = 'tag:' + filterKey
+            anonDict['Values'] = filterList[filterKey]
+            returnList.append(anonDict)
+
+        return returnList
+
+    def getInstancesFromAWS(self, filterList):
         """Create a list of IPs for the instances that are found based upon the filters from AWS."""
-        print("Yet to be implemented")
+        if self.customer:
+            self.session = boto3.Session(profile_name=self.customer)
+        else:
+            self.session = boto3.Session()
+
+        self.client = self.session.client('ec2')
         # use the filters to make a call to AWS using boto3 to get the the list of IPs
+        filterListToSend = self.createAWSFilterListFromDict(filterList)
+        response = self.client.describe_instances(Filters=filterListToSend)
+
+        if len(response['Reservations']):
+            for tmpInst in response['Reservations']:
+                self.createAllInstances(tmpInst['Instances'])
+
+            self.getServersFromConfig()
+            for anInstance in self.allInstances:
+                self.lastReturnedListOfInstances[anInstance] = self.allInstances[anInstance]
+        else:
+            print("There were no instances returned")
+            sys.exit(1)
 
     def readInstanceConfigFile(self):
         """read the json config file and return a List of the elements found
@@ -133,12 +168,12 @@ class InstanceInfo:
             print("Config file error: {}".format(e))
             sys.exit(1)
 
-        self.createAllInstances()
+        self.createAllInstances(self.data['Instances'])
         self.getServersFromConfig()
 
-    def createAllInstances(self):
+    def createAllInstances(self, aSetOfInstances):
         """Create a true dictionary for each set of tags per instance."""
-        for instance in self.data["Instances"]:
+        for instance in aSetOfInstances:
             tagsDict = {}
             for tags in instance["Tags"]:
                 tagsDict[tags["Key"]] = tags["Value"]
@@ -160,10 +195,13 @@ class InstanceInfo:
         numFilters = len(filterList)
 
         c = 0
-        for k, v in filterList.iteritems():
+        for k, v in filterList.items():
             if k in anInstance['TagsDict']:
-                if re.search(v, anInstance['TagsDict'][k]):
-                    c += 1
+                # since each value should be a list we need to go through each of them
+                for eachValue in v:
+                    if re.match(eachValue, anInstance['TagsDict'][k]):
+                        c += 1
+                        break
 
         if c == numFilters:
             return anInstance
@@ -292,7 +330,7 @@ def checkArgs():
         # make a dictionary out of the string now
         tmpDict = dict(item.split("=") for item in spacedOutString.split(" "))
         # and use a dict comprehension to get the spaces back in at the appropriate place
-        retTags = {k: re.sub(r"\!\+\!", " ", v) for k, v in tmpDict.items()}
+        retTags = {k: re.sub(r"\!\+\!", " ", v).split(" ") for k, v in tmpDict.items()}
 
     retKeysDirectory = ''
     if args.keysDirectory:
