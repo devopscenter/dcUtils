@@ -162,16 +162,12 @@ class InstanceInfo:
         # use the filters to make a call to AWS using boto3 to get the the list of IPs
         response = client.describe_instances(Filters=filterList)
 
-#        if len(response['Reservations']):
         for tmpInst in response['Reservations']:
             self.createAllInstances(tmpInst['Instances'])
 
         self.getServersFromConfig()
         for anInstance in self.allInstances:
             self.lastReturnedListOfInstances[anInstance] = self.allInstances[anInstance]
-#        else:
-#            print("There were no instances returned")
-#            sys.exit(1)
 
     def readInstanceConfigFile(self):
         """read the json config file and return a List of the elements found
