@@ -135,26 +135,43 @@ class InstanceInfo:
 
     def getInstancesFromAWS(self, filterList):
         """Create a list of IPs for the instances that are found based upon the filters from AWS."""
-        if self.customer:
-            self.session = boto3.Session(profile_name=self.customer)
-        else:
-            self.session = boto3.Session()
-
-        self.client = self.session.client('ec2')
-        # use the filters to make a call to AWS using boto3 to get the the list of IPs
+        # AWS wants the filters to be a specific way, so we need to convert the passed in filterList
         filterListToSend = self.createAWSFilterListFromDict(filterList)
-        response = self.client.describe_instances(Filters=filterListToSend)
 
-        if len(response['Reservations']):
-            for tmpInst in response['Reservations']:
-                self.createAllInstances(tmpInst['Instances'])
+        # - we couldn't get here if we didn't have a customer name, so we'll use that as the profile name
+        # - next we need to see if they passed in any regions.  If they have not, then we default to what
+        #   they have defined in the ~/.aws/config
+        # - if there are one or more regions then we will loop through all the regions getting all the
+        #   instances that match the filterList
+        if len(self.regions) > 0:
+            # looping through regions gathering data
+            for aRegion in self.regions:
+                aSession = boto3.Session(profile_name=self.customer, region_name=aRegion)
+                self.getInstancesFromAWSForRegion(aSession, filterListToSend)
 
-            self.getServersFromConfig()
-            for anInstance in self.allInstances:
-                self.lastReturnedListOfInstances[anInstance] = self.allInstances[anInstance]
+        elif self.customer:
+            aSession = boto3.Session(profile_name=self.customer)
+            self.getInstancesFromAWSForRegion(aSession, filterListToSend)
         else:
-            print("There were no instances returned")
-            sys.exit(1)
+            # Don't know if we will ever have this situation with no customer, but it's here just in case
+            aSession = boto3.Session()
+            self.getInstancesFromAWSForRegion(aSession, filterListToSend)
+
+    def getInstancesFromAWSForRegion(self, awsSession, filterList):
+        client = awsSession.client('ec2')
+        # use the filters to make a call to AWS using boto3 to get the the list of IPs
+        response = client.describe_instances(Filters=filterList)
+
+#        if len(response['Reservations']):
+        for tmpInst in response['Reservations']:
+            self.createAllInstances(tmpInst['Instances'])
+
+        self.getServersFromConfig()
+        for anInstance in self.allInstances:
+            self.lastReturnedListOfInstances[anInstance] = self.allInstances[anInstance]
+#        else:
+#            print("There were no instances returned")
+#            sys.exit(1)
 
     def readInstanceConfigFile(self):
         """read the json config file and return a List of the elements found
@@ -320,7 +337,14 @@ def checkArgs():
 
     retRegions = ''
     if args.regions:
-        retRegions = args.regions
+        # first change the spaces that need to be there to something that shouldn't be in the string
+        # looking for backslash space
+        spacedOutString = re.sub(r"[\\]\s", "!+!", args.regions)
+        # make a dictionary out of the string now
+        tmpList = spacedOutString.split(" ")
+        # and use a dict comprehension to get the spaces back in at the appropriate place
+        retRegions = [re.sub(r"\!\+\!", " ", k) for k in tmpList]
+
 
     retTags = {}
     if args.tags:
@@ -345,9 +369,9 @@ def checkArgs():
 
 def main(argv):
     """Main code goes here."""
-    (customer, instType, region, keysDir, source, tagList, shellCommand) = checkArgs()
+    (customer, instType, regions, keysDir, source, tagList, shellCommand) = checkArgs()
 
-    instances = InstanceInfo(customer, keysDir, instType, source, region)
+    instances = InstanceInfo(customer, keysDir, instType, source, regions)
     listOfIPs = instances.getInstanceInfo(tagList)
     if shellCommand:
         if shellCommand == "connectParts":
