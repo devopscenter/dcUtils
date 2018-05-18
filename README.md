@@ -11,7 +11,7 @@ one of the packages is dcUtils.  dcUtils is described here.
 ## TL&DR
 To get the local development environment running
 * [accept the invite](README.md#accept-the-shared-directory-invite) to the shared directory if not already sharing
-* [run RUN-ME-FIRST.sh](README.md#installing) from the shared directory 
+* [run RUN-ME-FIRST.sh](README.md#installing) from the shared directory (each developer runs this one time to set up personal environment)
 * [run manageApp.py](README.md#new-applications-create-the-application) to join or create an application
 * [update env files](README.md#edit-personalenv) as appropriate
 * [run deployenv.sh](README.md#run-deployenvsh)
@@ -106,7 +106,8 @@ be placed into a shared directory and you will execute it from
 there.  It will ask a series of questions, what is your application name, what
 do you want for your username to be in the cloud environment, what directory do
 you want dcUtils cloned to, what directory do you want for your application
-development, etc.   
+development, etc.   NOTE: this script should only have to be run one time to set
+up the personal development environment on the developers machine.
 
 One of the questions will ask where you will want to put your applications that
 you will be building with the devops.center tools.  This will be the base directory
@@ -170,7 +171,7 @@ that contains the necessary code modules that you will need to use for your appl
 You can look at the repository of available stacks and choose the one that best suits
 your needs.
 
-There will be a utilities directory added to this direcotry structure and 
+There will be a utilities directory added to this directory structure and 
 is used for configurations and will be utilized by the
 devops.center tools to set up and manage the application as it run in your different
 environments.  These tools allow different configuration and keys per environment.
