@@ -236,7 +236,7 @@ class InstanceInfo:
 def checkArgs():
     """Check the command line arguments."""
     parser = argparse.ArgumentParser(
-        description=('Thist script will return a list of instances based upon filters (tags of key=value pairs) '))
+        description=('This script will return a list of instances based upon filters (tags of key=value pairs) '))
     parser.add_argument('-c', '--customer', help='The customer name, which will also be used as the lookup for the '
                                                    'profile, if needed',
                         required=True)
@@ -272,7 +272,13 @@ def checkArgs():
 
     retSource = {}
     if args.source:
-        retSource = dict(item.split("=") for item in args.source.split(" "))
+        # first change the spaces that need to be there to something that shouldn't be in the string
+        # looking for backslash space
+        spacedOutString = re.sub(r"[\\]\s", "!+!", args.source)
+        # make a dictionary out of the string now
+        tmpDict = dict(item.split("=") for item in spacedOutString.split(" "))
+        # and use a dict comprehension to get the spaces back in at the appropriate place
+        retSource = {k: re.sub(r"\!\+\!", " ", v) for k, v in tmpDict.items()}
 
     retRegions = ''
     if args.regions:
@@ -280,7 +286,13 @@ def checkArgs():
 
     retTags = {}
     if args.tags:
-        retTags = dict(item.split("=") for item in args.tags.split(" "))
+        # first change the spaces that need to be there to something that shouldn't be in the string
+        # looking for backslash space
+        spacedOutString = re.sub(r"[\\]\s", "!+!", args.tags)
+        # make a dictionary out of the string now
+        tmpDict = dict(item.split("=") for item in spacedOutString.split(" "))
+        # and use a dict comprehension to get the spaces back in at the appropriate place
+        retTags = {k: re.sub(r"\!\+\!", " ", v) for k, v in tmpDict.items()}
 
     retKeysDirectory = ''
     if args.keysDirectory:
