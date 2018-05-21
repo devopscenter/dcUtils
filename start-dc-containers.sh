@@ -376,11 +376,9 @@ SERVICES=($(docker-compose -f ${DOCKER_COMPOSE_FILE} config --services))
 for service in ${SERVICES[@]}
 do
     CONTAINER_NAME=$(findContainerName $service)
-    set -x
     myNetworkName=${dcDEFAULT_APP_NAME}_local_network
     serviceIP=$(docker inspect -f "{{.NetworkSettings.Networks.${myNetworkName}.IPAddress}}" ${CONTAINER_NAME})
     hostEntry=$(grep ${CONTAINER_NAME} /etc/hosts)
-    set +x
 
     echo "${CONTAINER_NAME} => ${serviceIP}"
     if [[ ${hostEntry} ]]; then
@@ -396,7 +394,6 @@ do
             echo "${serviceIP}    ${CONTAINER_NAME} " | sudo tee -a /etc/hosts > /dev/null
         fi
     fi
-        set +x
 done
 
 dcEndLog "Finished..."
