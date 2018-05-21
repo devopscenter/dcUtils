@@ -107,15 +107,14 @@ class InstanceInfo:
             # store these away if needed later
             self.lastReturnedListOfKeyAndPaths.append(theKey)
 
-            # return named tuple of (IPAddress, name, userLoginName, keyname, shard,)
-
+            # create a named tuple to return
             InstanceDetails = namedtuple('InstanceDetails', 'IPAddressDetails, InstanceName, DestLogin, DestKey, Shard')
 
             self.lastReturnedListOfIPAddresses.append(InstanceDetails(IPAddressDetails=IPAddresses,
                             InstanceName=anInst["TagsDict"]["Name"],
                             DestLogin=anInst["UserLogin"] if "UserLogin" in anInst else '',
                             DestKey=theKey,
-                            Shard=anInst["shard"] if "shard" in anInst else ''))
+                            Shard=anInst["TagsDict"]["Shard"] if "Shard" in anInst["TagsDict"] else ''))
 
         return self.lastReturnedListOfIPAddresses
 
@@ -331,7 +330,7 @@ def checkArgs():
         # and use a dict comprehension to get the spaces back in at the appropriate place
         retSource = {k: re.sub(r"\!\+\!", " ", v) for k, v in tmpDict.items()}
 
-    retRegions = ''
+    retRegions = []
     if args.regions:
         # first change the spaces that need to be there to something that shouldn't be in the string
         # looking for backslash space
