@@ -6,14 +6,9 @@ might reside beyond a proxy server.
 
 Several namedtuples are used in the script and are defined as:
 
-InstanceDetails defines the elements of an instance that can be used as input modeled after the need of the CodeDeploy
-module.
-InstanceDetails = namedtuple('InstanceDetails', 'IPAddressDetails, InstanceName, DestLogin, DestKey, Shard')
-
-IPAddressSet defines the elements for the private and public dns, ip and ports.  This set of data is added to
-the InstanceDetails tuple as the IPAddressDetails.
+IPAddressSet defines the elements for the private and public dns, ip and ports.
 IPAddressSet = namedtuple('IPAddressSet', 'PublicIpAddress, PublicDnsName, PublicPort, PrivateIpAddress,
-                                           PrivateDnsName, PrivatePort' )
+                                           PrivateDnsName, PrivatePort',  InstanceName, DestLogin, DestKey, Shard')
 
 ConnectParts are the elements that can be combined to form an SSH or SCP connect string for an instance.
 ConnectParts = namedtuple('ConnectParts', 'DestHost, DestSSHPort, DestSCPPort, DestKey, JumpServerPart')
@@ -89,16 +84,6 @@ class InstanceInfo:
         for theKey in self.lastReturnedListOfInstances:
             anInst = self.lastReturnedListOfInstances[theKey]
 
-            # set up the IP address structure for returning
-            IPAddressSet = namedtuple('IPAddressSet',
-                                      'PublicIpAddress, PublicDnsName, PublicPort, PrivateIpAddress, PrivateDnsName, PrivatePort' )
-            IPAddresses = IPAddressSet(PublicIpAddress=(anInst["PublicIpAddress"] if "PublicIpAddress" in anInst else ''),
-                                       PublicDnsName=(anInst["PublicDnsName"] if "PublicDnsName" in anInst else ''),
-                                       PublicPort=(anInst["PublicPort"] if "PublicPort" in anInst else ''),
-                                       PrivateIpAddress=(anInst["PrivateIpAddress"] if "PrivateIpAddress" in anInst else ''),
-                                       PrivateDnsName=(anInst["PrivateDnsName"] if "PrivateDnsName" in anInst else ''),
-                                       PrivatePort=(anInst["PrivatePort"] if "PrivatePort" in anInst else ''))
-
             # prepend the path if we have it.  And if so, then the key doesn't have the extension either so add it
             theKey = anInst["KeyName"]
             if self.keysDirectory:
@@ -108,13 +93,21 @@ class InstanceInfo:
             self.lastReturnedListOfKeyAndPaths.append(theKey)
 
             # create a named tuple to return
-            InstanceDetails = namedtuple('InstanceDetails', 'IPAddressDetails, InstanceName, DestLogin, DestKey, Shard')
+            InstanceDetails = namedtuple('InstanceDetails', 'PublicIpAddress, PublicDnsName, PublicPort, '
+                                                            'PrivateIpAddress, PrivateDnsName, PrivatePort, ' 
+                                                            'InstanceName, DestLogin, DestKey, Shard')
 
-            self.lastReturnedListOfIPAddresses.append(InstanceDetails(IPAddressDetails=IPAddresses,
-                            InstanceName=anInst["TagsDict"]["Name"],
-                            DestLogin=anInst["UserLogin"] if "UserLogin" in anInst else '',
-                            DestKey=theKey,
-                            Shard=anInst["TagsDict"]["Shard"] if "Shard" in anInst["TagsDict"] else ''))
+            self.lastReturnedListOfIPAddresses.append(InstanceDetails(
+                PublicIpAddress=(anInst["PublicIpAddress"] if "PublicIpAddress" in anInst else ''),
+                PublicDnsName=(anInst["PublicDnsName"] if "PublicDnsName" in anInst else ''),
+                PublicPort=(anInst["PublicPort"] if "PublicPort" in anInst else ''),
+                PrivateIpAddress=(anInst["PrivateIpAddress"] if "PrivateIpAddress" in anInst else ''),
+                PrivateDnsName=(anInst["PrivateDnsName"] if "PrivateDnsName" in anInst else ''),
+                PrivatePort=(anInst["PrivatePort"] if "PrivatePort" in anInst else ''),
+                InstanceName=anInst["TagsDict"]["Name"],
+                DestLogin=anInst["UserLogin"] if "UserLogin" in anInst else '',
+                DestKey=theKey,
+                Shard=anInst["TagsDict"]["Shard"] if "Shard" in anInst["TagsDict"] else ''))
 
         return self.lastReturnedListOfIPAddresses
 
@@ -247,23 +240,23 @@ class InstanceInfo:
                                  "@" + jumpServerInfo["PublicIpAddress"] + "\""
 
                 destHost = ""
-                destSSHPort = " -p " + str(anInstanceName.IPAddressDetails.PrivatePort) + " "
-                destSCPPort = " -P " + str(anInstanceName.IPAddressDetails.PrivatePort) + " "
+                destSSHPort = " -p " + str(anInstanceName.PrivatePort) + " "
+                destSCPPort = " -P " + str(anInstanceName.PrivatePort) + " "
                 destKey = " -i " + anInstanceName.DestKey + " "
                 if anInstanceName.DestLogin:
-                    destHost = anInstanceName.DestLogin + "@" + anInstanceName.IPAddressDetails.PrivateIpAddress
+                    destHost = anInstanceName.DestLogin + "@" + anInstanceName.PrivateIpAddress
                 else:
-                    destHost = anInstanceName.IPAddressDetails.PrivateIpAddress
+                    destHost = anInstanceName.PrivateIpAddress
 
             else:
                 destHost = ""
-                destSSHPort = " -p " + str(anInstanceName.IPAddressDetails.PublicPort) + " "
-                destSCPPort = " -P " + str(anInstanceName.IPAddressDetails.PublicPort) + " "
+                destSSHPort = " -p " + str(anInstanceName.PublicPort) + " "
+                destSCPPort = " -P " + str(anInstanceName.PublicPort) + " "
                 destKey = " -i " + anInstanceName.DestKey + " "
                 if anInstanceName.DestLogin:
-                    destHost = anInstanceName.DestLogin + "@" + anInstanceName.IPAddressDetails.PublicIpAddress
+                    destHost = anInstanceName.DestLogin + "@" + anInstanceName.PublicIpAddress
                 else:
-                    destHost = anInstanceName.IPAddressDetails.PublicIpAddress
+                    destHost = anInstanceName.PublicIpAddress
 
             retParts = ConnectParts(DestHost=destHost, DestSSHPort=destSSHPort, DestSCPPort=destSCPPort,
                                     DestKey=destKey, JumpServerPart=jumpServerPart if jumpServerPart else "")
