@@ -192,35 +192,35 @@ tearDownNetwork()
         # since this operating system is OSX then we have to set up an alias on lo0 (the interface
         # that docker talks on) to set up a connection to the container
         # in linux the bridge is created with an interface that the host can access
-        interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_SYSLOG_IP}")
+        interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_SYSLOG_IP} ")
         if [[ ${interfaceOutput} ]]; then
             sudo ifconfig lo0 -alias "${DOCKER_SYSLOG_IP}"
         fi
-        interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_REDIS_IP}")
+        interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_REDIS_IP} ")
         if [[ ${interfaceOutput} ]]; then
             sudo ifconfig lo0 -alias "${DOCKER_REDIS_IP}"
         fi
-        interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_PGMASTER_IP}")
+        interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_PGMASTER_IP} ")
         if [[ ${interfaceOutput} ]]; then
             sudo ifconfig lo0 -alias "${DOCKER_PGMASTER_IP}"
         fi
-        interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_MONGODB_IP}")
+        interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_MONGODB_IP} ")
         if [[ ${interfaceOutput} ]]; then
-            sudo ifconfig lo0 -alias "${DOCKER_MONGODB_IP}"
+            sudo ifconfig lo0 -alias "${DOCKER_MONGODB_IP} "
         fi
-        interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_WEB_1_IP}")
+        interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_WEB_1_IP} ")
         if [[ ${interfaceOutput} ]]; then
             sudo ifconfig lo0 -alias "${DOCKER_WEB_1_IP}"
         fi
-#        interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_WEB_2_IP}")
+#        interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_WEB_2_IP} ")
 #        if [[ ${interfaceOutput} ]]; then
 #            sudo ifconfig lo0 -alias "${DOCKER_WEB_2_IP}"
 #        fi
-        interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_WORKER_1_IP}")
+        interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_WORKER_1_IP} ")
         if [[ ${interfaceOutput} ]]; then
             sudo ifconfig lo0 -alias "${DOCKER_WORKER_1_IP}"
         fi
-#        interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_WORKER_2_IP}")
+#        interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_WORKER_2_IP} ")
 #        if [[ -z ${interfaceOutput} ]]; then
 #            sudo ifconfig lo0 alias "${DOCKER_WORKER_2_IP}"
 #        fi
