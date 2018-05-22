@@ -92,6 +92,17 @@ class InstanceInfo:
             # store these away if needed later
             self.lastReturnedListOfKeyAndPaths.append(theKey)
 
+            # and see if this instance has a jumpserver associated with it and add that jump servers keyName to the
+            # list
+            if "JumpServer" in anInst:
+                # have to get it from the all instances structure tha has all the instances
+                jumpServerKey = self.allInstances[anInst["JumpServer"]]["KeyName"]
+                if self.keysDirectory:
+                    jumpServerKey = self.keysDirectory + "/" + jumpServerKey + ".pem"
+
+                # and store this away if needed later
+                self.lastReturnedListOfKeyAndPaths.append(jumpServerKey)
+
             # create a named tuple to return
             InstanceDetails = namedtuple('InstanceDetails', 'PublicIpAddress, PublicDnsName, PublicPort, '
                                                             'PrivateIpAddress, PrivateDnsName, PrivatePort, ' 
@@ -220,6 +231,24 @@ class InstanceInfo:
             if tmpInstance:
                 self.lastReturnedListOfInstances[anInstance] = tmpInstance
 
+
+    def getGatewayInfo(self, anInstanceName):
+        """Return the jumpserver/gateway connect information like: user@IP:port."""
+        gatewayString = None
+        try:
+            anInstInfo = self.lastReturnedListOfInstances[anInstanceName.InstanceName]
+
+            if "JumpServer" in anInstInfo:
+                # get the JumpServer info
+                jumpServerInfo = self.jumpServers[anInstInfo["JumpServer"]]
+                gatewayString = jumpServerInfo["UserLogin"] + "@" + jumpServerInfo["PublicIpAddress"] + ":" + \
+                    str(jumpServerInfo["PublicPort"])
+
+        except SystemError as e:
+            print("=>{}<=".format(e))
+
+        return gatewayString
+
     def getConnectString(self, anInstanceName):
         """Return the connection strings that can be then used to build ssh/scp commands to access an instance."""
 
@@ -235,7 +264,10 @@ class InstanceInfo:
 
                 # TODO: determine if we want to support that if they provide a directory for the keys that both the
                 # jumpserver key and the instance key will be in the same directory.
-                jumpServerPart = " -o ProxyCommand=\"ssh -i " + anInstanceName.DestKey + " -W %h:%p -p " + \
+
+                if self.keysDirectory:
+                    jumpServerKey = self.keysDirectory + "/" + jumpServerInfo["KeyName"] + ".pem"
+                jumpServerPart = " -o ProxyCommand=\"ssh -i " + jumpServerKey + " -W %h:%p -p " + \
                                  str(jumpServerInfo["PublicPort"]) + " " + jumpServerInfo["UserLogin"] + \
                                  "@" + jumpServerInfo["PublicIpAddress"] + "\""
 
@@ -301,7 +333,7 @@ def checkArgs():
                                                       'tags/filters.  You would have to provide the filter set each '
                                                       'time as the object would go away once the python script ends, '
                                                       'which would be with each invocation of this script.',
-                        choices=['connectParts', 'sshConnect', 'scpConnect', 'listOfIPAddresses', 'listOfKeys'],
+                        choices=['connectParts', 'sshConnect', 'scpConnect', 'listOfIPAddresses', 'listOfKeys', 'gatewayInfo'],
                         required=False)
     args, unknown = parser.parse_known_args()
 
@@ -401,6 +433,12 @@ def main(argv):
             keys = instances.getListOfKeys()
             for aKey in keys:
                 print("{}".format(aKey))
+
+        if shellCommand == "gatewayInfo":
+            import simplejson as json
+            for item in listOfIPs:
+                gatewayInfo = instances.getGatewayInfo(item)
+                print("Gateway/JumpServer info: {}".format(gatewayInfo))
     else:
         print("Example Mode\nLooping through list of instances:")
         for item in listOfIPs:
