@@ -1127,7 +1127,7 @@ class ManageAppName:
                     continue
                 if self.appName in line:
                     foundALine = 1
-                    printre.sub("=(.*)-stack", "=" + stackName, line),
+                    print re.sub("=(.*)-stack", "=" + stackName, line),
                 else:
                     # NOTE the comma doesn't print out an extra newline
                     print line,
