@@ -82,13 +82,21 @@ class ManageAppName:
 
         if self.sharedUtilsFlag:
             # set up the defaults for the shared info and check to see if
-            # we are using a shared enviornment for this app
+            # we are using a shared environment for this app
             self.sharedUtilsName = "dcShared-utils"
-            commonSharedDir = os.path.dirname(self.envList[
-                "dcCOMMON_SHARED_DIR"].replace('"', ''))
-            self.sharedSettingsPath = commonSharedDir + "/devops.center/dcConfig"
-            if not os.path.exists(self.sharedSettingsPath):
-                os.makedirs(self.sharedSettingsPath)
+
+            # check to see if the shared config directory exists
+            commonSharedDir = self.envList["dcCOMMON_SHARED_DIR"].replace('"', '')
+            sharedSettingsDir = commonSharedDir + "/devops.center/dcConfig"
+            if not os.path.exists(sharedSettingsDir):
+                print("ERROR: the directory for the shared settings file was not found:\n"
+                      + sharedSettingsDir +
+                      "Please let the devops.center engineers know and they"
+                      " will assist with correcting this.")
+                sys.exit(1)
+            else:
+                self.sharedSettingsPath = sharedSettingsDir
+
             self.sharedSettingsFile = self.sharedSettingsPath + "/settings"
             if not os.path.isfile(self.sharedSettingsFile):
                 print("ERROR: the shared settings file was not found:\n"
@@ -96,7 +104,7 @@ class ManageAppName:
                       "\nEither you do not have the shared directory "
                       "or the settings file has not been created.\n"
                       "Please let the devops.center engineers know and they"
-                      " will correct this.")
+                      " will assist with correcting this.")
                 sys.exit(1)
 
         # put the baseDirectory path in the users $HOME/.dcConfig/baseDirectory
