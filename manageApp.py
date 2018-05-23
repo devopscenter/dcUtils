@@ -86,8 +86,7 @@ class ManageAppName:
             self.sharedUtilsName = "dcShared-utils"
             commonSharedDir = os.path.dirname(self.envList[
                 "dcCOMMON_SHARED_DIR"].replace('"', ''))
-            self.sharedSettingsPath = commonSharedDir + "/" + \
-                self.nameOfCustomer + "/devops.center/dcConfig"
+            self.sharedSettingsPath = commonSharedDir + "/devops.center/dcConfig"
             if not os.path.exists(self.sharedSettingsPath):
                 os.makedirs(self.sharedSettingsPath)
             self.sharedSettingsFile = self.sharedSettingsPath + "/settings"
