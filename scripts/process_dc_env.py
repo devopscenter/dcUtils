@@ -441,7 +441,10 @@ def shellGetEnv():
 
     returnStr = "export"
     for key, value in returnEnvList.iteritems():
-        returnStr += " " + key + '="' + value + '"'
+        if '\"' in value or '\'' in value:
+            returnStr += " " + key + '=' + value
+        else:
+            returnStr += " " + key + '="' + value + '"'
 
     curDir = os.path.dirname(sys.argv[0])
     with open(curDir + '/shellfunctions.incl', 'r') as includeFile:
