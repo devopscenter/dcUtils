@@ -257,15 +257,12 @@ else
     dcCOMMON_SHARED_DIR=${var1%\"}
 
     if [[ -z ${dcCOMMON_SHARED_DIR} ]]; then
-        TMP_COMMON_KEY_DIR=$(cd $HOME/Googl*;pwd)
+        COMMON_KEY_DIR=$(cd $HOME/Googl*;pwd)
     else
         # now strip out the key and '=' to get to the path
-        TMP_COMMON_KEY_DIR=${dcCOMMON_SHARED_DIR#*=}
+        COMMON_KEY_DIR=${dcCOMMON_SHARED_DIR#*=}
     fi
 fi
-
-# remove the last element from the common shared directory path
-COMMON_KEY_DIR=${TMP_COMMON_KEY_DIR%/*}
 
 getBasePath
 
