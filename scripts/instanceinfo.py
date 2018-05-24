@@ -51,13 +51,14 @@ __status__ = "Development"
 
 class InstanceInfo:
 
-    def __init__(self, customerIn, keysDir, instType,  source, regions=None):
+    def __init__(self, customerIn, keysDir, regions=None):
         """Construct an instance of the InstanceInfo class."""
         self.customer = customerIn
-        self.instanceType = instType
-        self.source = source
         self.keysDirectory = keysDir
+        self.regionsToSearch = regions
+        self.customerRegionsToSearch = []
         self.allInstances = {}
+        self.allRegions = []
         self.instances = {}
         self.jumpServers = {}
         self.filters = {}
@@ -66,23 +67,71 @@ class InstanceInfo:
         self.lastReturnedListOfIPAddresses = []
         self.lastReturnedListOfKeyAndPaths = []
 
-        if self.instanceType == "AWS":
-            self.regions = regions
-        elif self.instanceType == "VM":
-            self.configFileName = source["configFileName"]
+
+        self.getCustomerRegions()
+
+    def getCustomerRegions(self):
+        """read the customers shared settings file to get the regions they have instances in."""
+        # first get the shard directory from the users specific settings file
+        commonSharedFile = self.getSettingsValue("dcCOMMON_SHARED_DIR") + "/devops.center/dcConfig/settings.json"
+
+        # read in the shared settings file
+        try:
+            with open(expanduser(commonSharedFile)) as data_file:
+                settingsRaw = json.load(data_file)
+        except IOError as e:
+            print("Config file error: {}".format(e))
+            sys.exit(1)
+
+        self.allRegions = settingsRaw['Regions']
+
+    def getSettingsValue(self,theKey):
+        """Read the ~/.dcConfig/settings file."""
+        baseSettingsFile = expanduser("~") + "/.dcConfig/settings"
+        with open(baseSettingsFile, 'r') as f:
+            lines = [line.rstrip('\n') for line in f]
+
+        for aLine in lines:
+
+            if re.search("^"+theKey+"=", aLine):
+                theValue = aLine.split("=")[1].replace('"', '')
+                return theValue
+
+    def getRegionsToSearch(self):
+        """Match up the regions passed in with the regions that the user has defined."""
+        if not self.regionsToSearch or len(self.regionsToSearch) == 0:
+            self.customerRegionsToSearch = self.allRegions
+        else:
+            # match up the regions passed in to use with the all the possible regions for the customer
+            # to create a set of regions to search for instances.
+            for x in self.regionsToSearch:
+                for item in self.allRegions:
+                    if x == item['RegionName']:
+                        self.customerRegionsToSearch.append(item)
+
+        if len(self.customerRegionsToSearch) == 0:
+            print("No regions matched the regions that the customer has instances in. Exiting...")
+            sys.exit(1)
 
     def getInstanceInfo(self, filterList):
         """Create a list of IPs for the instances that are found based upon the filters."""
-        # read and split up the instances and jumpservers into two dictionaries
-        # that are made into instance variables.
-        if self.configFileName:
-            self.readInstanceConfigFile()
-            self.applyFilters(filterList)
-        else:
-            self.getInstancesFromAWS(filterList)
+        # select the regions based upon the regions the user passed in
+        self.getRegionsToSearch()
 
-        for theKey in self.lastReturnedListOfInstances:
-            anInst = self.lastReturnedListOfInstances[theKey]
+        # if we get here there are customer regions that match the regions we need to search in
+        # so we need to loop through all the regions to search, looking for the instances that match the filters
+        for regionInfo in self.customerRegionsToSearch:
+            if regionInfo['InstanceType'] == "AWS":
+                self.getInstancesFromAWS(filterList)
+            elif regionInfo['InstanceType'] == "VM":
+                self.readInstanceConfigFile(regionInfo['configFileName'])
+                self.applyFilters(filterList)
+            else:
+                print("Error: Unknown InstanceType({}) for region: {}".format(regionInfo['InstanceType']),
+                      regionInfo['RegionName'])
+
+        for theInstanceName in self.lastReturnedListOfInstances:
+            anInst = self.lastReturnedListOfInstances[theInstanceName]
 
             # prepend the path if we have it.  And if so, then the key doesn't have the extension either so add it
             theKey = anInst["KeyName"]
@@ -95,13 +144,16 @@ class InstanceInfo:
             # and see if this instance has a jumpserver associated with it and add that jump servers keyName to the
             # list
             if "JumpServer" in anInst:
-                # have to get it from the all instances structure tha has all the instances
-                jumpServerKey = self.allInstances[anInst["JumpServer"]]["KeyName"]
-                if self.keysDirectory:
-                    jumpServerKey = self.keysDirectory + "/" + jumpServerKey + ".pem"
+                jumpServerInfo = self.getJumpServerInfo(theInstanceName)
 
-                # and store this away if needed later
-                self.lastReturnedListOfKeyAndPaths.append(jumpServerKey)
+                if jumpServerInfo:
+                    if self.keysDirectory:
+                        jumpServerKey = self.keysDirectory + "/" + jumpServerInfo['KeyName'] + ".pem"
+                    else:
+                        jumpServerKey = jumpServerInfo['KeyName']
+
+                    # and store this away if needed later
+                    self.lastReturnedListOfKeyAndPaths.append(jumpServerKey)
 
             # create a named tuple to return
             InstanceDetails = namedtuple('InstanceDetails', 'PublicIpAddress, PublicDnsName, PublicPort, '
@@ -146,10 +198,10 @@ class InstanceInfo:
         #   they have defined in the ~/.aws/config
         # - if there are one or more regions then we will loop through all the regions getting all the
         #   instances that match the filterList
-        if len(self.regions) > 0:
+        if self.customerRegionsToSearch and len(self.customerRegionsToSearch) > 0:
             # looping through regions gathering data
-            for aRegion in self.regions:
-                aSession = boto3.Session(profile_name=self.customer, region_name=aRegion)
+            for aRegion in self.customerRegionsToSearch:
+                aSession = boto3.Session(profile_name=self.customer, region_name=aRegion['RegionName'])
                 self.getInstancesFromAWSForRegion(aSession, filterListToSend)
 
         elif self.customer:
@@ -168,24 +220,24 @@ class InstanceInfo:
         for tmpInst in response['Reservations']:
             self.createAllInstances(tmpInst['Instances'])
 
-        self.getServersFromConfig()
         for anInstance in self.allInstances:
             self.lastReturnedListOfInstances[anInstance] = self.allInstances[anInstance]
 
-    def readInstanceConfigFile(self):
+    def readInstanceConfigFile(self, configFileName):
         """read the json config file and return a List of the elements found
         defined in the file"""
 
+        # need to determine the path to the configFileName as it should be in the dcCOMMON_SHARED_DIR path
+        sharedInstanceInfo = self.getSettingsValue("dcCOMMON_SHARED_DIR") + "/devops.center/dcConfig/" + configFileName
         # first read in the file
         try:
-            with open(expanduser(self.configFileName)) as data_file:
+            with open(expanduser(sharedInstanceInfo)) as data_file:
                 self.data = json.load(data_file)
         except IOError as e:
             print("Config file error: {}".format(e))
             sys.exit(1)
 
         self.createAllInstances(self.data['Instances'])
-        self.getServersFromConfig()
 
     def createAllInstances(self, aSetOfInstances):
         """Create a true dictionary for each set of tags per instance."""
@@ -232,20 +284,34 @@ class InstanceInfo:
                 self.lastReturnedListOfInstances[anInstance] = tmpInstance
 
 
-    def getGatewayInfo(self, anInstanceName):
+    def getJumpServerInfo(self, anInstanceName):
         """Return the jumpserver/gateway connect information like: user@IP:port."""
-        gatewayString = None
         try:
-            anInstInfo = self.lastReturnedListOfInstances[anInstanceName.InstanceName]
+            anInstInfo = self.lastReturnedListOfInstances[anInstanceName]
 
             if "JumpServer" in anInstInfo:
-                # get the JumpServer info
-                jumpServerInfo = self.jumpServers[anInstInfo["JumpServer"]]
-                gatewayString = jumpServerInfo["UserLogin"] + "@" + jumpServerInfo["PublicIpAddress"] + ":" + \
-                    str(jumpServerInfo["PublicPort"])
+                # go through each of the customer regions to search
+                for region in self.customerRegionsToSearch:
+                    # looking for a Gatway section
+                    if "Gateway" in region:
+                        # and if found go through the list to find the jumpserver match
+                        for jumpServer in region["Gateway"]:
+                            if jumpServer["JumpServerName"] == anInstInfo["JumpServer"]:
+                                return jumpServer
 
         except SystemError as e:
             print("=>{}<=".format(e))
+
+        return None
+
+    def getGatewayInfo(self, anInstanceName):
+        """Return the jumpserver/gateway connect information like: user@IP:port."""
+        # get the JumpServer info
+        jumpServerInfo = self.getJumpServerInfo(anInstanceName.InstanceName)
+        gatewayString = None
+        if jumpServerInfo:
+            gatewayString = jumpServerInfo["UserLogin"] + "@" + jumpServerInfo["PublicIpAddress"] + ":" + \
+                        str(jumpServerInfo["PublicPort"])
 
         return gatewayString
 
@@ -260,7 +326,7 @@ class InstanceInfo:
             jumpServerPart = ""
             if "JumpServer" in anInstInfo:
                 # get the JumpServer info
-                jumpServerInfo = self.jumpServers[anInstInfo["JumpServer"]]
+                jumpServerInfo = self.getJumpServerInfo(anInstanceName.InstanceName)
 
                 # TODO: determine if we want to support that if they provide a directory for the keys that both the
                 # jumpserver key and the instance key will be in the same directory.
@@ -271,20 +337,32 @@ class InstanceInfo:
                                  str(jumpServerInfo["PublicPort"]) + " " + jumpServerInfo["UserLogin"] + \
                                  "@" + jumpServerInfo["PublicIpAddress"] + "\""
 
-                destHost = ""
-                destSSHPort = " -p " + str(anInstanceName.PrivatePort) + " "
-                destSCPPort = " -P " + str(anInstanceName.PrivatePort) + " "
-                destKey = " -i " + anInstanceName.DestKey + " "
+                destSSHPort = ""
+                destSCPPort = ""
+                destKey = ""
+                if anInstanceName.PrivatePort:
+                    destSSHPort = " -p " + str(anInstanceName.PrivatePort) + " "
+                    destSCPPort = " -P " + str(anInstanceName.PrivatePort) + " "
+
+                if anInstanceName.DestKey:
+                    destKey = " -i " + anInstanceName.DestKey + " "
+
                 if anInstanceName.DestLogin:
                     destHost = anInstanceName.DestLogin + "@" + anInstanceName.PrivateIpAddress
                 else:
                     destHost = anInstanceName.PrivateIpAddress
 
             else:
-                destHost = ""
-                destSSHPort = " -p " + str(anInstanceName.PublicPort) + " "
-                destSCPPort = " -P " + str(anInstanceName.PublicPort) + " "
-                destKey = " -i " + anInstanceName.DestKey + " "
+                destSSHPort = ""
+                destSCPPort = ""
+                destKey = ""
+                if anInstanceName.PublicPort:
+                    destSSHPort = " -p " + str(anInstanceName.PublicPort) + " "
+                    destSCPPort = " -P " + str(anInstanceName.PublicPort) + " "
+
+                if anInstanceName.DestKey:
+                    destKey = " -i " + anInstanceName.DestKey + " "
+
                 if anInstanceName.DestLogin:
                     destHost = anInstanceName.DestLogin + "@" + anInstanceName.PublicIpAddress
                 else:
@@ -315,13 +393,7 @@ def checkArgs():
     parser.add_argument('-c', '--customer', help='The customer name, which will also be used as the lookup for the '
                                                    'profile, if needed',
                         required=True)
-    parser.add_argument('-i', '--instanceType', help='The name of the location where the instance resides.  For '
-                                                     'example: AWS, internal, VM, Azure etc.',
-                        required=False)
     parser.add_argument('-r', '--regions', help='The region(s) to search in for customer instances customer',
-                        required=False)
-    parser.add_argument('-s', '--source', help='The an overloaded dictionary of items that will be interpreted based '
-                                               'upon the instanceType.',
                         required=False)
     parser.add_argument('-t', '--tags', help='A list of key=value pairs separated by a space (no space before or after '
                                              'the equal sign).  This will be used to filter list to return ',
@@ -340,20 +412,6 @@ def checkArgs():
     retCustomer = ''
     if args.customer:
         retCustomer = args.customer
-
-    retInstanceType = ''
-    if args.instanceType:
-        retInstanceType = args.instanceType
-
-    retSource = {}
-    if args.source:
-        # first change the spaces that need to be there to something that shouldn't be in the string
-        # looking for backslash space
-        spacedOutString = re.sub(r"[\\]\s", "!+!", args.source)
-        # make a dictionary out of the string now
-        tmpDict = dict(item.split("=") for item in spacedOutString.split(" "))
-        # and use a dict comprehension to get the spaces back in at the appropriate place
-        retSource = {k: re.sub(r"\!\+\!", " ", v) for k, v in tmpDict.items()}
 
     retRegions = []
     if args.regions:
@@ -384,14 +442,14 @@ def checkArgs():
     if args.shellCommand:
         retCommand = args.shellCommand
 
-    return(retCustomer, retInstanceType, retRegions, retKeysDirectory, retSource, retTags, retCommand )
+    return(retCustomer, retRegions, retKeysDirectory, retTags, retCommand )
 
 
 def main(argv):
     """Main code goes here."""
-    (customer, instType, regions, keysDir, source, tagList, shellCommand) = checkArgs()
+    (customer, regions, keysDir, tagList, shellCommand) = checkArgs()
 
-    instances = InstanceInfo(customer, keysDir, instType, source, regions)
+    instances = InstanceInfo(customer, keysDir, regions)
     listOfIPs = instances.getInstanceInfo(tagList)
     if shellCommand:
         if shellCommand == "connectParts":
