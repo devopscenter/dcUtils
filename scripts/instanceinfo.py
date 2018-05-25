@@ -291,14 +291,6 @@ class InstanceInfo:
             instanceName = tagsDict["Name"]
             self.allInstances[instanceName] = instance.copy()
 
-    def getServersFromConfig(self):
-        """Extract all the jump servers from the config and create a dictionary of jump servers by name."""
-        for instance in self.allInstances:
-            if self.allInstances[instance]["TagsDict"]["Type"] == "jumpserver":
-                self.jumpServers[instance] = self.allInstances[instance].copy()
-            else:
-                self.instances[instance] = self.allInstances[instance].copy()
-
     def checkInstanceForTags(self, anInstance, filterList):
         """Iterate through the instances looking for the set of filters."""
         numFilters = len(filterList)
@@ -308,9 +300,16 @@ class InstanceInfo:
             if k in anInstance['TagsDict']:
                 # since each value should be a list we need to go through each of them
                 for eachValue in v:
-                    if re.match(eachValue, anInstance['TagsDict'][k]):
-                        c += 1
-                        break
+                    if '*' in eachValue:
+                        # update the search mechanism to make this behave like AWS search.
+                        regexValue = '^' + eachValue.replace('*', '.*')
+                        if re.match(regexValue, anInstance['TagsDict'][k]):
+                            c += 1
+                            break
+                    else:
+                        if eachValue == anInstance['TagsDict'][k]:
+                            c += 1
+                            break
 
         if c == numFilters:
             return anInstance
