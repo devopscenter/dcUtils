@@ -14,6 +14,7 @@ ConnectParts are the elements that can be combined to form an SSH or SCP connect
 ConnectParts = namedtuple('ConnectParts', 'DestHost, DestSSHPort, DestSCPPort, DestKey, JumpServerPart')
 """
 
+import os
 import sys
 import argparse
 import json
@@ -51,7 +52,7 @@ __status__ = "Development"
 
 class InstanceInfo:
 
-    def __init__(self, customerIn, keysDir, regions=None):
+    def __init__(self, customerIn, keysDir, regions=None, sharedDir=None):
         """Construct an instance of the InstanceInfo class."""
         self.customer = customerIn
         self.keysDirectory = keysDir
@@ -62,7 +63,7 @@ class InstanceInfo:
         self.instances = {}
         self.jumpServers = {}
         self.filters = {}
-        self.configFileName = None
+        self.sharedDirectory = sharedDir
         self.lastReturnedListOfInstances = {}
         self.lastReturnedListOfIPAddresses = []
         self.lastReturnedListOfKeyAndPaths = []
@@ -73,14 +74,31 @@ class InstanceInfo:
     def getCustomerRegions(self):
         """read the customers shared settings file to get the regions they have instances in."""
         # first get the shard directory from the users specific settings file
-        commonSharedFile = self.getSettingsValue("dcCOMMON_SHARED_DIR") + "/devops.center/dcConfig/settings.json"
+        if not self.sharedDirectory:
+            checkForDCInternal = self.getSettingsValue("dcInternal")
+            commonSharedDir = self.getSettingsValue("dcCOMMON_SHARED_DIR")
+            if commonSharedDir:
+                # now we need to check if this is being run internally the common dir will have a customer name
+                # at the end and we need to strip that off and put the customer name from this run there instead.
+                if not checkForDCInternal:
+                    commonSharedFile = commonSharedDir + "/devops.center/dcConfig/settings.json"
+                else:
+                    commonSharedFile = os.path.dirname(commonSharedDir) + "/" + self.customer + \
+                                       "/devops.center/dcConfig/settings.json"
+            else:
+                print('The key dcCOMMON_SHARED_DIR was not found in the ~/.dcConfig/settings file.  You can specify '
+                      'a shared directory with the --sharedDirectory option.')
+                sys.exit(1)
+        else:
+            commonSharedFile = self.sharedDirectory + "/devops.center/dcConfig/settings.json"
 
         # read in the shared settings file
         try:
             with open(expanduser(commonSharedFile)) as data_file:
                 settingsRaw = json.load(data_file)
         except IOError as e:
-            print("Config file error: {}".format(e))
+            print("ERROR trying to read the shared settings file for {}".format(self.customer))
+            print("Shared dcConfig settings file error: {}".format(e))
             sys.exit(1)
 
         self.allRegions = settingsRaw['Regions']
@@ -88,14 +106,21 @@ class InstanceInfo:
     def getSettingsValue(self,theKey):
         """Read the ~/.dcConfig/settings file."""
         baseSettingsFile = expanduser("~") + "/.dcConfig/settings"
-        with open(baseSettingsFile, 'r') as f:
-            lines = [line.rstrip('\n') for line in f]
+        try:
+            with open(baseSettingsFile, 'r') as f:
+                lines = [line.rstrip('\n') for line in f]
+        except IOError as e:
+            print("ERROR trying to read the personal settings file to get key: {}".format(theKey))
+            print("Personal dcConfig settings file error: {}".format(e))
+            sys.exit(1)
 
+        retValue = None
         for aLine in lines:
-
             if re.search("^"+theKey+"=", aLine):
-                theValue = aLine.split("=")[1].replace('"', '')
-                return theValue
+                retValue = aLine.split("=")[1].replace('"', '')
+                break
+
+        return retValue
 
     def getRegionsToSearch(self):
         """Match up the regions passed in with the regions that the user has defined."""
@@ -127,7 +152,8 @@ class InstanceInfo:
                 self.readInstanceConfigFile(regionInfo['configFileName'])
                 self.applyFilters(filterList)
             else:
-                print("Error: Unknown InstanceType({}) for region: {}".format(regionInfo['InstanceType']),
+                print("Error: Unknown InstanceType({}) for region: {}".format(regionInfo['InstanceType'],
+                                                                              regionInfo['RegionName']),
                       regionInfo['RegionName'])
 
         for theInstanceName in self.lastReturnedListOfInstances:
@@ -201,8 +227,9 @@ class InstanceInfo:
         if self.customerRegionsToSearch and len(self.customerRegionsToSearch) > 0:
             # looping through regions gathering data
             for aRegion in self.customerRegionsToSearch:
-                aSession = boto3.Session(profile_name=self.customer, region_name=aRegion['RegionName'])
-                self.getInstancesFromAWSForRegion(aSession, filterListToSend)
+                if aRegion['InstanceType'] == 'AWS':
+                    aSession = boto3.Session(profile_name=self.customer, region_name=aRegion['RegionName'])
+                    self.getInstancesFromAWSForRegion(aSession, filterListToSend)
 
         elif self.customer:
             aSession = boto3.Session(profile_name=self.customer)
@@ -213,9 +240,12 @@ class InstanceInfo:
             self.getInstancesFromAWSForRegion(aSession, filterListToSend)
 
     def getInstancesFromAWSForRegion(self, awsSession, filterList):
-        client = awsSession.client('ec2')
-        # use the filters to make a call to AWS using boto3 to get the the list of IPs
-        response = client.describe_instances(Filters=filterList)
+        try:
+            client = awsSession.client('ec2')
+            # use the filters to make a call to AWS using boto3 to get the the list of IPs
+            response = client.describe_instances(Filters=filterList)
+        except ClientError as e:
+            print("Could not make a client session to AWS: \nReason: {0}".format(e))
 
         for tmpInst in response['Reservations']:
             self.createAllInstances(tmpInst['Instances'])
@@ -229,12 +259,23 @@ class InstanceInfo:
 
         # need to determine the path to the configFileName as it should be in the dcCOMMON_SHARED_DIR path
         sharedInstanceInfo = self.getSettingsValue("dcCOMMON_SHARED_DIR") + "/devops.center/dcConfig/" + configFileName
+
+        checkForDCInternal = self.getSettingsValue("dcInternal")
+        commonSharedDir = self.getSettingsValue("dcCOMMON_SHARED_DIR")
+        if commonSharedDir:
+            # now we need to check if this is being run internally the common dir will have a customer name
+            # at the end and we need to strip that off and put the customer name from this run there instead.
+            if not checkForDCInternal:
+                sharedInstanceInfo = commonSharedDir + "/devops.center/dcConfig/" + configFileName
+            else:
+                sharedInstanceInfo = os.path.dirname(commonSharedDir) + "/" + self.customer + \
+                                   "/devops.center/dcConfig/" + configFileName
         # first read in the file
         try:
             with open(expanduser(sharedInstanceInfo)) as data_file:
                 self.data = json.load(data_file)
         except IOError as e:
-            print("Config file error: {}".format(e))
+            print("ERORR: with InstanceInfo.json file: {}".format(e))
             sys.exit(1)
 
         self.createAllInstances(self.data['Instances'])
@@ -400,6 +441,11 @@ def checkArgs():
                         required=False)
     parser.add_argument('-kd', '--keysDirectory', help='This is the path to where the key resides on your system ',
                         required=False)
+    parser.add_argument('-sd', '--sharedDirectory', help='This is the path to the shared drive on the system this is '
+                                                         'running on.  If this machine does not have a shared drive '
+                                                         'use this to point to where the shared files have been copied'
+                                                         'to. ',
+                        required=False)
     parser.add_argument('-sc', '--shellCommand', help='If this python script is run from a shell command line or shell '
                                                       'script then this would execute one method with a given set of '
                                                       'tags/filters.  You would have to provide the filter set each '
@@ -438,18 +484,22 @@ def checkArgs():
     if args.keysDirectory:
         retKeysDirectory = args.keysDirectory
 
+    retSharedDirectory = ''
+    if args.sharedDirectory:
+        retSharedDirectory = args.sharedDirectory
+
     retCommand = ''
     if args.shellCommand:
         retCommand = args.shellCommand
 
-    return(retCustomer, retRegions, retKeysDirectory, retTags, retCommand )
+    return(retCustomer, retRegions, retKeysDirectory, retSharedDirectory, retTags, retCommand )
 
 
 def main(argv):
     """Main code goes here."""
-    (customer, regions, keysDir, tagList, shellCommand) = checkArgs()
+    (customer, regions, keysDir, sharedDir, tagList, shellCommand) = checkArgs()
 
-    instances = InstanceInfo(customer, keysDir, regions)
+    instances = InstanceInfo(customer, keysDir, regions, sharedDir)
     listOfIPs = instances.getInstanceInfo(tagList)
     if shellCommand:
         if shellCommand == "connectParts":
