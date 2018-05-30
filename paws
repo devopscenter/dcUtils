@@ -292,9 +292,11 @@ SOURCE_DIR=$HOME
 # get full description of running instances from api and filter data using jq instead of with aws-cli
 #-------------------------------------------------------------------------------
 if ! [[ -z "$REGION" ]]; then
-    DESCRIBE_ALL=$(aws --profile "$PROFILE" --region "$REGION" ec2 describe-instances --filters Name=instance-state-name,Values=running)
+    DESCRIBE_ALL=$(${dcUTILS}/scripts/instanceinfo.py -sc listOfIPAddresses -c ${PROFILE} -r ${REGION} -t "instance-state-name=running" )
+    #DESCRIBE_ALL=$(aws --profile "$PROFILE" --region "$REGION" ec2 describe-instances --filters Name=instance-state-name,Values=running)
 else
-    DESCRIBE_ALL=$(aws --profile "$PROFILE" ec2 describe-instances --filters Name=instance-state-name,Values=running)
+    DESCRIBE_ALL=$(${dcUTILS}/scripts/instanceinfo.py -sc listOfIPAddresses -c ${PROFILE}  -t "instance-state-name=running" )
+    #DESCRIBE_ALL=$(aws --profile "$PROFILE" ec2 describe-instances --filters Name=instance-state-name,Values=running)
 fi
 
 #-------------------------------------------------------------------------------
