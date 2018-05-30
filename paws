@@ -455,12 +455,12 @@ getPathToKey()
         fi
     else
         DC_COMMON_KEY_DIR=${COMMON_KEY_DIR%/*}
-        if [[ -f "${COMMON_KEY_DIR}/devops.center/keys/${keyName}.pem" ]]; then
+        if [[ -f "${DC_COMMON_KEY_DIR}/${PROFILE}/devops.center/keys/${keyName}.pem" ]]; then
+            RETVAL="${DC_COMMON_KEY_DIR}/${PROFILE}/devops.center/keys/${keyName}.pem"
+        elif [[ -f "${COMMON_KEY_DIR}/devops.center/keys/${keyName}.pem" ]]; then
             RETVAL="${COMMON_KEY_DIR}/devops.center/keys/${keyName}.pem"
         elif [[ -f "${COMMON_KEY_DIR}/${PROFILE}/devops.center/keys/${keyName}.pem" ]]; then
             RETVAL="${COMMON_KEY_DIR}/${PROFILE}/devops.center/keys/${keyName}.pem"
-        elif [[ -f "${DC_COMMON_KEY_DIR}/${PROFILE}/devops.center/keys/${keyName}.pem" ]]; then
-            RETVAL="${DC_COMMON_KEY_DIR}/${PROFILE}/devops.center/keys/${keyName}.pem"
         else
             RETVAL="${COMMON_KEY_DIR}/${PROFILE}/keys/${keyName}.pem"
         fi
