@@ -258,18 +258,20 @@ class InstanceInfo:
         defined in the file"""
 
         # need to determine the path to the configFileName as it should be in the dcCOMMON_SHARED_DIR path
-        sharedInstanceInfo = self.getSettingsValue("dcCOMMON_SHARED_DIR") + "/devops.center/dcConfig/" + configFileName
+        if not self.sharedDirectory:
+            checkForDCInternal = self.getSettingsValue("dcInternal")
+            commonSharedDir = self.getSettingsValue("dcCOMMON_SHARED_DIR")
+            if commonSharedDir:
+                # now we need to check if this is being run internally the common dir will have a customer name
+                # at the end and we need to strip that off and put the customer name from this run there instead.
+                if not checkForDCInternal:
+                    sharedInstanceInfo = commonSharedDir + "/devops.center/dcConfig/" + configFileName
+                else:
+                    sharedInstanceInfo = os.path.dirname(commonSharedDir) + "/" + self.customer + \
+                                       "/devops.center/dcConfig/" + configFileName
+        else:
+            sharedInstanceInfo = self.sharedDirectory + "/devops.center/dcConfig/" + configFileName
 
-        checkForDCInternal = self.getSettingsValue("dcInternal")
-        commonSharedDir = self.getSettingsValue("dcCOMMON_SHARED_DIR")
-        if commonSharedDir:
-            # now we need to check if this is being run internally the common dir will have a customer name
-            # at the end and we need to strip that off and put the customer name from this run there instead.
-            if not checkForDCInternal:
-                sharedInstanceInfo = commonSharedDir + "/devops.center/dcConfig/" + configFileName
-            else:
-                sharedInstanceInfo = os.path.dirname(commonSharedDir) + "/" + self.customer + \
-                                   "/devops.center/dcConfig/" + configFileName
         # first read in the file
         try:
             with open(expanduser(sharedInstanceInfo)) as data_file:
