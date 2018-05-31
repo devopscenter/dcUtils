@@ -184,7 +184,7 @@ class InstanceInfo:
             # create a named tuple to return
             InstanceDetails = namedtuple('InstanceDetails', 'PublicIpAddress, PublicDnsName, PublicPort, '
                                                             'PrivateIpAddress, PrivateDnsName, PrivatePort, ' 
-                                                            'InstanceName, DestLogin, DestKey, Shard')
+                                                            'InstanceName, DestLogin, DestKey, Shard, Tags')
 
             self.lastReturnedListOfIPAddresses.append(InstanceDetails(
                 PublicIpAddress=(anInst["PublicIpAddress"] if "PublicIpAddress" in anInst else ''),
@@ -196,7 +196,8 @@ class InstanceInfo:
                 InstanceName=anInst["TagsDict"]["Name"],
                 DestLogin=anInst["UserLogin"] if "UserLogin" in anInst else '',
                 DestKey=theKey,
-                Shard=anInst["TagsDict"]["Shard"] if "Shard" in anInst["TagsDict"] else ''))
+                Shard=anInst["TagsDict"]["Shard"] if "Shard" in anInst["TagsDict"] else '',
+                Tags=anInst["TagsDict"]))
 
         return self.lastReturnedListOfIPAddresses
 
@@ -251,7 +252,9 @@ class InstanceInfo:
             self.createAllInstances(tmpInst['Instances'])
 
         for anInstance in self.allInstances:
-            self.lastReturnedListOfInstances[anInstance] = self.allInstances[anInstance]
+            tmpInst = self.allInstances[anInstance]
+            if "instance-association" not in tmpInst["TagsDict"]:
+                self.lastReturnedListOfInstances[anInstance] = self.allInstances[anInstance]
 
     def readInstanceConfigFile(self, configFileName):
         """read the json config file and return a List of the elements found
@@ -534,9 +537,8 @@ def main(argv):
 
         if shellCommand == "listOfIPAddresses":
             import simplejson as json
-            for item in listOfIPs:
-                jsonObj = json.dumps(item)
-                print("{}".format(jsonObj))
+            jsonObj = json.dumps(listOfIPs)
+            print("{}".format(jsonObj))
 
         if shellCommand == "listOfKeys":
             keys = instances.getListOfKeys()
