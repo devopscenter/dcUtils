@@ -178,6 +178,81 @@ checkHostAccess()
 }
 
 
+#---  FUNCTION  ----------------------------------------------------------------
+#          NAME:  cleanUpPathList
+#   DESCRIPTION:
+#
+#    PARAMETERS:
+#       RETURNS:
+#-------------------------------------------------------------------------------
+cleanUpPathList()
+{
+    local pathsToKey="${1}"
+    retVal=$2
+
+    numPaths=${#pathsToKey[@]}
+    if [[ numPaths -ne 0 ]]; then
+        retPath=""
+       c=0
+       while [[ ${c} -lt ${numPaths} ]]; do
+            if [[ "${pathsToKey[${c}]}" != *"Permission denied"* ]] && [[ "${pathsToKey[${c}]}" != *"find:"* ]]; then
+                eval "$retVal=\"${pathsToKey[${c}]}\""
+                return
+            fi
+            c=$(($c+1))
+       done
+
+    else
+        echo "ERROR: No access key file ($keyName.pem) for this instance: $HOST could be found"
+        rm -f ${TMP_CONFIG}
+        exit 1
+    fi
+}
+
+
+#---  FUNCTION  ----------------------------------------------------------------
+#          NAME:  getPathToKey
+#   DESCRIPTION:
+#
+#    PARAMETERS:
+#       RETURNS:
+#-------------------------------------------------------------------------------
+getPathToKey()
+{
+    local keyName=$1
+    pathToKey=$2
+
+    if [[ ${dcDEFAULT_APP_NAME} ]]; then
+        # check the appUtils keys first
+        pathsToKey=($(find ${BASE_CUSTOMER_DIR}/${dcDEFAULT_APP_NAME}/${CUSTOMER_APP_UTILS} -name "$keyName.pem"))
+        numPaths=${#pathsToKey[@]}
+        if [[ numPaths -ne 0 ]]; then
+            RETVAL=''
+            cleanUpPathList "${pathsToKey[@]}" RETVAL
+            eval "$pathToKey=\"${RETVAL}\""
+        else
+            # not there so lets check the pool
+            pathsToKey="$(find ${COMMON_KEY_DIR} -path "*/devops.center/keys/${keyName}.pem" 2>&1)"
+            RETVAL=''
+            cleanUpPathList "${pathsToKey[@]}" RETVAL
+            eval "$pathToKey=\"${RETVAL}\""
+        fi
+    else
+        DC_COMMON_KEY_DIR=${COMMON_KEY_DIR%/*}
+        if [[ -f "${DC_COMMON_KEY_DIR}/${PROFILE}/devops.center/keys/${keyName}.pem" ]]; then
+            RETVAL="${DC_COMMON_KEY_DIR}/${PROFILE}/devops.center/keys/${keyName}.pem"
+        elif [[ -f "${COMMON_KEY_DIR}/devops.center/keys/${keyName}.pem" ]]; then
+            RETVAL="${COMMON_KEY_DIR}/devops.center/keys/${keyName}.pem"
+        elif [[ -f "${COMMON_KEY_DIR}/${PROFILE}/devops.center/keys/${keyName}.pem" ]]; then
+            RETVAL="${COMMON_KEY_DIR}/${PROFILE}/devops.center/keys/${keyName}.pem"
+        else
+            RETVAL="${COMMON_KEY_DIR}/${PROFILE}/keys/${keyName}.pem"
+        fi
+        eval "$pathToKey=\"${RETVAL}\""
+    fi
+}
+
+#-------------------- end of function definitions ------------------------------
 
 NEW_CMD_LINE=''
 APPNAME=''
@@ -421,65 +496,6 @@ fi
 #-------------------------------------------------------------------------------
 # create and populate temporary .ssh/config file
 #-------------------------------------------------------------------------------
-cleanUpPathList()
-{
-    local pathsToKey="${1}"
-    retVal=$2
-
-    numPaths=${#pathsToKey[@]}
-    if [[ numPaths -ne 0 ]]; then
-        retPath=""
-       c=0 
-       while [[ ${c} -lt ${numPaths} ]]; do
-            if [[ "${pathsToKey[${c}]}" != *"Permission denied"* ]] && [[ "${pathsToKey[${c}]}" != *"find:"* ]]; then
-                eval "$retVal=\"${pathsToKey[${c}]}\""
-                return
-            fi
-            c=$(($c+1))
-       done
-
-    else
-        echo "ERROR: No access key file ($keyName.pem) for this instance: $HOST could be found"
-        rm -f ${TMP_CONFIG}
-        exit 1
-    fi
-}
-
-getPathToKey()
-{
-    local keyName=$1
-    pathToKey=$2
-
-    if [[ ${dcDEFAULT_APP_NAME} ]]; then
-        # check the appUtils keys first
-        pathsToKey=($(find ${BASE_CUSTOMER_DIR}/${dcDEFAULT_APP_NAME}/${CUSTOMER_APP_UTILS} -name "$keyName.pem"))
-        numPaths=${#pathsToKey[@]}
-        if [[ numPaths -ne 0 ]]; then
-            RETVAL=''
-            cleanUpPathList "${pathsToKey[@]}" RETVAL
-            eval "$pathToKey=\"${RETVAL}\""
-        else
-            # not there so lets check the pool
-            pathsToKey="$(find ${COMMON_KEY_DIR} -path "*/devops.center/keys/${keyName}.pem" 2>&1)"
-            RETVAL=''
-            cleanUpPathList "${pathsToKey[@]}" RETVAL
-            eval "$pathToKey=\"${RETVAL}\""
-        fi
-    else
-        DC_COMMON_KEY_DIR=${COMMON_KEY_DIR%/*}
-        if [[ -f "${DC_COMMON_KEY_DIR}/${PROFILE}/devops.center/keys/${keyName}.pem" ]]; then
-            RETVAL="${DC_COMMON_KEY_DIR}/${PROFILE}/devops.center/keys/${keyName}.pem"
-        elif [[ -f "${COMMON_KEY_DIR}/devops.center/keys/${keyName}.pem" ]]; then
-            RETVAL="${COMMON_KEY_DIR}/devops.center/keys/${keyName}.pem"
-        elif [[ -f "${COMMON_KEY_DIR}/${PROFILE}/devops.center/keys/${keyName}.pem" ]]; then
-            RETVAL="${COMMON_KEY_DIR}/${PROFILE}/devops.center/keys/${keyName}.pem"
-        else
-            RETVAL="${COMMON_KEY_DIR}/${PROFILE}/keys/${keyName}.pem"
-        fi
-        eval "$pathToKey=\"${RETVAL}\""
-    fi
-}
-
 TMP_CONFIG=$(mktemp "${HOME}"/.ssh/.config.XXXXX)
 numSSH_CONFIG="${#SSH_CONFIG_VARS[@]}"
 q=0
