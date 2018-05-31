@@ -292,37 +292,49 @@ SOURCE_DIR=$HOME
 # get full description of running instances from api and filter data using jq instead of with aws-cli
 #-------------------------------------------------------------------------------
 if ! [[ -z "$REGION" ]]; then
-    DESCRIBE_ALL=$(${dcUTILS}/scripts/instanceinfo.py -sc listOfIPAddresses -c ${PROFILE} -r ${REGION} )
-    #DESCRIBE_ALL=$(aws --profile "$PROFILE" --region "$REGION" ec2 describe-instances --filters Name=instance-state-name,Values=running)
+    DESCRIBE_ALL=$(${dcUTILS}/scripts/instanceinfo.py -sc listOfIPAddresses -c ${PROFILE} -r ${REGION} | jq -c 'sort_by(.InstanceName)' )
 else
-    DESCRIBE_ALL=$(${dcUTILS}/scripts/instanceinfo.py -sc listOfIPAddresses -c ${PROFILE} )
-    #DESCRIBE_ALL=$(aws --profile "$PROFILE" ec2 describe-instances --filters Name=instance-state-name,Values=running)
+    DESCRIBE_ALL=$(${dcUTILS}/scripts/instanceinfo.py -sc listOfIPAddresses -c ${PROFILE}  | jq -c 'sort_by(.InstanceName)')
 fi
 
 #-------------------------------------------------------------------------------
 # LIST ONLY
 #-------------------------------------------------------------------------------
 if [[ "$LIST_NAMES" == 'true' ]] || [[ "$CONNECT" == 'true' ]]; then
-    LIST_FULL=$(echo $DESCRIBE_ALL| jq -cS '.Reservations[]|.Instances[]|[[[.Tags[]|select(.Key | contains("Name"))]|from_entries],[{"PublicIP":.PublicIpAddress}],[[.Tags[]|select(.Key | contains("Name")|not)]|from_entries]]'|sed 's/,{/: /g'|tr -d '[]{}"'|tr ':' '='|sed 's/= /: /g'|tr ',' ' ')
 
-    i=1
-    while read -r line; do
+    i=0
+    numItems=$(echo ${DESCRIBE_ALL} | jq -c 'length')
+    while [[ ${i} -lt ${numItems} ]]; do
         #-------------------------------------------------------------------------------
         # FOR NAMES ONLY number each line to use for selection
         #-------------------------------------------------------------------------------
+        hostName=$(echo ${DESCRIBE_ALL} | jq -r ".[${i}].InstanceName")
+        instancePublicIP=$(echo ${DESCRIBE_ALL} | jq -r ".[${i}].PublicIpAddress")
+        instancePrivateIP=$(echo ${DESCRIBE_ALL} | jq -r ".[${i}].PrivateIpAddress")
         if [[ "$LIST_ALL" != 'true' ]]; then
-            hostName=$(echo -e "$line"|awk -F= '{print $2}'|awk '{print $1}')
-            instancePublicIP=$(echo -e "$line"|awk -F= '{print $3}'|awk '{print $1}')
-            line="${hostName} (${instancePublicIP})"
+            if [[ -z ${instancePublicIP} ]]; then
+                line="${hostName} (${instancePrivateIP})"
+            else
+                line="${hostName} (${instancePublicIP})"
+            fi
+        else
+            # put all the tags in the line also
+            allTags=$(echo ${DESCRIBE_ALL} | jq -c ".[${i}].Tags")
+            tagsAsString=$(echo ${allTags} | jq -r "to_entries|map(select( all(. ; .key != \"Name\")))|from_entries|to_entries|map(\"\(.key)=\(.value|tostring)\")|.[]" | tr -s '\n' ' ' )
+
+            if [[ -z ${instancePublicIP} ]]; then
+                line="Name=${hostName} PrivateIP=${instancePrivateIP} ${tagsAsString}"
+            else
+                line="Name=${hostName} PublicIP=${instancePublicIP} ${tagsAsString}"
+            fi
         fi
         #-------------------------------------------------------------------------------
         # FOR BOTH NAMES AND ALL
         #-------------------------------------------------------------------------------
+        i=$((i+1))
         NUMBERED_LINE="${i}. ${line}\n"
         NUMBERED_LIST="${NUMBERED_LIST}${NUMBERED_LINE}"
-        i=$((i+1))
-    done < <(echo -e "$LIST_FULL"|grep -v '^$'|sort)
-
+    done
 fi
 
 #-------------------------------------------------------------------------------
