@@ -366,7 +366,8 @@ class InstanceInfo:
         """Return the connection strings that can be then used to build ssh/scp commands to access an instance."""
 
         retParts = None
-        ConnectParts = namedtuple('ConnectParts', 'DestHost, DestSSHPort, DestSCPPort, DestLogin, DestKey, JumpServerPart')
+        ConnectParts = namedtuple('ConnectParts', 'DestHost, DestSSHPort, DestSCPPort, DestLogin, DestKey,'
+                                                  'JumpServerHost, JumpServerPort, JumpServerLogin, JumpServerKey')
         try:
             anInstInfo = self.lastReturnedListOfInstances[anInstanceName.InstanceName]
 
@@ -383,9 +384,13 @@ class InstanceInfo:
                 else:
                     jumpServerKey = jumpServerInfo["KeyName"] + ".pem"
 
-                jumpServerPart = "ProxyCommand=\"ssh -i " + jumpServerKey + " -W %h:%p -p " + \
-                                 str(jumpServerInfo["PublicPort"]) + " " + jumpServerInfo["UserLogin"] + \
-                                 "@" + jumpServerInfo["PublicIpAddress"] + "\""
+                #jumpServerPart = "ProxyCommand=\"ssh -i " + jumpServerKey + " -W %h:%p -p " + \
+                #                 str(jumpServerInfo["PublicPort"]) + " " + jumpServerInfo["UserLogin"] + \
+                #                 "@" + jumpServerInfo["PublicIpAddress"] + "\""
+                jumpServerPartHost = jumpServerInfo["PublicIpAddress"]
+                jumpServerPartPort = jumpServerInfo["PublicPort"]
+                jumpServerPartLogin = jumpServerInfo["UserLogin"]
+                jumpServerPartKey = jumpServerKey
 
                 destSSHPort = ""
                 destSCPPort = ""
@@ -419,10 +424,17 @@ class InstanceInfo:
                     destLogin = anInstanceName.DestLogin
 
                 destHost = anInstanceName.PublicIpAddress
+                jumpServerPartHost = None
+                jumpServerPartPort = None
+                jumpServerPartLogin = None
+                jumpServerPartKey = None
 
             retParts = ConnectParts(DestHost=destHost, DestSSHPort=destSSHPort, DestSCPPort=destSCPPort,
                                     DestLogin=destLogin, DestKey=destKey,
-                                    JumpServerPart=jumpServerPart if jumpServerPart else "")
+                                    JumpServerHost=jumpServerPartHost if jumpServerPartHost else "",
+                                    JumpServerPort=jumpServerPartPort if jumpServerPartPort else "",
+                                    JumpServerLogin=jumpServerPartLogin if jumpServerPartLogin else "",
+                                    JumpServerKey=jumpServerPartKey if jumpServerPartKey else "")
 
         except SystemError as e:
             print("=>{}<=".format(e))
