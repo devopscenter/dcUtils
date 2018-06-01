@@ -11,7 +11,7 @@ IPAddressSet = namedtuple('IPAddressSet', 'PublicIpAddress, PublicDnsName, Publi
                                            PrivateDnsName, PrivatePort',  InstanceName, DestLogin, DestKey, Shard')
 
 ConnectParts are the elements that can be combined to form an SSH or SCP connect string for an instance.
-ConnectParts = namedtuple('ConnectParts', 'DestHost, DestSSHPort, DestSCPPort, DestKey, JumpServerPart')
+ConnectParts = namedtuple('ConnectParts', 'DestHost, DestSSHPort, DestSCPPort, DestLogin, DestKey, JumpServerPart')
 """
 
 import os
@@ -364,7 +364,7 @@ class InstanceInfo:
         """Return the connection strings that can be then used to build ssh/scp commands to access an instance."""
 
         retParts = None
-        ConnectParts = namedtuple('ConnectParts', 'DestHost, DestSSHPort, DestSCPPort, DestKey, JumpServerPart')
+        ConnectParts = namedtuple('ConnectParts', 'DestHost, DestSSHPort, DestSCPPort, DestLogin, DestKey, JumpServerPart')
         try:
             anInstInfo = self.lastReturnedListOfInstances[anInstanceName.InstanceName]
 
@@ -378,7 +378,12 @@ class InstanceInfo:
 
                 if self.keysDirectory:
                     jumpServerKey = self.keysDirectory + "/" + jumpServerInfo["KeyName"] + ".pem"
-                jumpServerPart = " -o ProxyCommand=\"ssh -i " + jumpServerKey + " -W %h:%p -p " + \
+                else:
+                    print("ERROR: a path to the key is required to generate the appropriate information for this "
+                          "option.\nPlease run again and provide the --keysDirectory (-kd) option")
+                    sys.exit(1)
+
+                jumpServerPart = "ProxyCommand=\"ssh -i " + jumpServerKey + " -W %h:%p -p " + \
                                  str(jumpServerInfo["PublicPort"]) + " " + jumpServerInfo["UserLogin"] + \
                                  "@" + jumpServerInfo["PublicIpAddress"] + "\""
 
@@ -386,35 +391,38 @@ class InstanceInfo:
                 destSCPPort = ""
                 destKey = ""
                 if anInstanceName.PrivatePort:
-                    destSSHPort = " -p " + str(anInstanceName.PrivatePort) + " "
-                    destSCPPort = " -P " + str(anInstanceName.PrivatePort) + " "
+                    destSSHPort = str(anInstanceName.PrivatePort)
+                    destSCPPort = str(anInstanceName.PrivatePort)
 
                 if anInstanceName.DestKey:
-                    destKey = " -i " + anInstanceName.DestKey + " "
+                    destKey = anInstanceName.DestKey
 
+                destLogin = ""
                 if anInstanceName.DestLogin:
-                    destHost = anInstanceName.DestLogin + "@" + anInstanceName.PrivateIpAddress
-                else:
-                    destHost = anInstanceName.PrivateIpAddress
+                    destLogin = anInstanceName.DestLogin
+
+                destHost = anInstanceName.PrivateIpAddress
 
             else:
                 destSSHPort = ""
                 destSCPPort = ""
                 destKey = ""
                 if anInstanceName.PublicPort:
-                    destSSHPort = " -p " + str(anInstanceName.PublicPort) + " "
-                    destSCPPort = " -P " + str(anInstanceName.PublicPort) + " "
+                    destSSHPort = str(anInstanceName.PublicPort)
+                    destSCPPort = str(anInstanceName.PublicPort)
 
                 if anInstanceName.DestKey:
-                    destKey = " -i " + anInstanceName.DestKey + " "
+                    destKey = anInstanceName.DestKey
 
+                destLogin = ""
                 if anInstanceName.DestLogin:
-                    destHost = anInstanceName.DestLogin + "@" + anInstanceName.PublicIpAddress
-                else:
-                    destHost = anInstanceName.PublicIpAddress
+                    destLogin = anInstanceName.DestLogin
+
+                destHost = anInstanceName.PublicIpAddress
 
             retParts = ConnectParts(DestHost=destHost, DestSSHPort=destSSHPort, DestSCPPort=destSCPPort,
-                                    DestKey=destKey, JumpServerPart=jumpServerPart if jumpServerPart else "")
+                                    DestLogin=destLogin, DestKey=destKey,
+                                    JumpServerPart=jumpServerPart if jumpServerPart else "")
 
         except SystemError as e:
             print("=>{}<=".format(e))
