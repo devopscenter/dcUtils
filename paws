@@ -95,13 +95,45 @@ callInstanceInfo ()
         # ensure there isn't a comma after each key=value pair
         #-------------------------------------------------------------------------------
         tagsNoComma=${tagToUse//,/}
-        CMD_TO_RUN+=" -t ${tagsNoComma} "
-    fi
-
-    if [[ -n ${sortKey} ]]; then
-        INST_INFO_OUTPUT=$(${CMD_TO_RUN} | jq -c "sort_by(.${sortKey})" )
+        CMD_TO_RUN+=" -t "
+        CMD_TO_RUN+="${tagsNoComma}"
+        CMD_TO_RUN+=" "
+        if [[ -n ${sortKey} ]]; then
+            #INST_INFO_OUTPUT=$(${CMD_TO_RUN} -t "${tagsNoComma}" | jq -c "sort_by(.${sortKey})" )
+            CMD_OUTPUT=$(${CMD_TO_RUN} -t "${tagsNoComma}")
+            if [[ $? -eq 0 ]]; then
+                INST_INFO_OUTPUT=$(echo ${CMD_OUTPUT} | jq -c "sort_by(.${sortKey})" )
+            else
+                echo ${CMD_OUTPUT}
+                exit 1
+            fi
+        else
+            CMD_OUTPUT=$(${CMD_TO_RUN} -t "${tagsNoComma}")
+            if [[ $? -eq 0 ]]; then
+                INST_INFO_OUTPUT=${CMD_OUTPUT}
+            else
+                echo ${CMD_OUTPUT}
+                exit 1
+            fi
+        fi
     else
-        INST_INFO_OUTPUT=$(${CMD_TO_RUN})
+        if [[ -n ${sortKey} ]]; then
+            CMD_OUTPUT=$(${CMD_TO_RUN})
+            if [[ $? -eq 0 ]]; then
+                INST_INFO_OUTPUT=$(echo ${CMD_OUTPUT} | jq -c "sort_by(.${sortKey})" )
+            else
+                echo ${CMD_OUTPUT}
+                exit 1
+            fi
+        else
+            CMD_OUTPUT=$(${CMD_TO_RUN})
+            if [[ $? -eq 0 ]]; then
+                INST_INFO_OUTPUT=${CMD_OUTPUT}
+            else
+                echo ${CMD_OUTPUT}
+                exit 1
+            fi
+        fi
     fi
 }  # -------- end function callInstanceInfo
 
