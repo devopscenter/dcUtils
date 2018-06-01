@@ -184,6 +184,7 @@ class InstanceInfo:
             # create a named tuple to return
             InstanceDetails = namedtuple('InstanceDetails', 'PublicIpAddress, PublicDnsName, PublicPort, '
                                                             'PrivateIpAddress, PrivateDnsName, PrivatePort, ' 
+                                                            'Gateway, '
                                                             'InstanceName, DestLogin, DestKey, Shard, Tags')
 
             self.lastReturnedListOfIPAddresses.append(InstanceDetails(
@@ -193,6 +194,7 @@ class InstanceInfo:
                 PrivateIpAddress=(anInst["PrivateIpAddress"] if "PrivateIpAddress" in anInst else ''),
                 PrivateDnsName=(anInst["PrivateDnsName"] if "PrivateDnsName" in anInst else ''),
                 PrivatePort=(anInst["PrivatePort"] if "PrivatePort" in anInst else ''),
+                Gateway=(anInst["JumpServer"] if "JumpServer" in anInst else ''),
                 InstanceName=anInst["TagsDict"]["Name"],
                 DestLogin=anInst["UserLogin"] if "UserLogin" in anInst else '',
                 DestKey=theKey,
@@ -463,7 +465,7 @@ def checkArgs():
                                                       'tags/filters.  You would have to provide the filter set each '
                                                       'time as the object would go away once the python script ends, '
                                                       'which would be with each invocation of this script.',
-                        choices=['connectParts', 'sshConnect', 'scpConnect', 'listOfIPAddresses', 'listOfKeys', 'gatewayInfo'],
+                        choices=['connectParts', 'listOfIPAddresses', 'listOfKeys', 'gatewayInfo'],
                         required=False)
     args, unknown = parser.parse_known_args()
 
@@ -523,25 +525,6 @@ def main(argv):
 
             jsonObj = json.dumps(partsList)
             print("{}".format(jsonObj))
-
-        if shellCommand == "sshConnect":
-            if len(listOfIPs) > 1:
-                print("ERROR: Filter list returned more than one result")
-                sys.exit(1)
-            for item in listOfIPs:
-                parts = instances.getConnectString(item)
-                print("ssh " + (parts.JumpServerPart if parts.JumpServerPart else '') + parts.DestSSHPort +
-                      parts.DestKey + parts.DestHost)
-
-        if shellCommand == "scpConnect":
-            if len(listOfIPs) > 1:
-                print("ERROR: Filter list returned more than one result")
-                sys.exit(1)
-            for item in listOfIPs:
-                parts = instances.getConnectString(item)
-                print("scp " + parts.DestSCPPort + parts.DestKey +
-                      (parts.JumpServerPart if parts.JumpServerPart else '') + " REPLACE_WITH_YOUR_FILE " +
-                      parts.DestHost + ":~")
 
         if shellCommand == "listOfIPAddresses":
             import simplejson as json
