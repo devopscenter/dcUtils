@@ -381,9 +381,7 @@ class InstanceInfo:
                 if self.keysDirectory:
                     jumpServerKey = self.keysDirectory + "/" + jumpServerInfo["KeyName"] + ".pem"
                 else:
-                    print("ERROR: a path to the key is required to generate the appropriate information for this "
-                          "option.\nPlease run again and provide the --keysDirectory (-kd) option")
-                    sys.exit(1)
+                    jumpServerKey = jumpServerInfo["KeyName"] + ".pem"
 
                 jumpServerPart = "ProxyCommand=\"ssh -i " + jumpServerKey + " -W %h:%p -p " + \
                                  str(jumpServerInfo["PublicPort"]) + " " + jumpServerInfo["UserLogin"] + \
