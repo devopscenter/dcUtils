@@ -382,7 +382,7 @@ class InstanceInfo:
                 if self.keysDirectory:
                     jumpServerKey = self.keysDirectory + "/" + jumpServerInfo["KeyName"] + ".pem"
                 else:
-                    jumpServerKey = jumpServerInfo["KeyName"] + ".pem"
+                    jumpServerKey = jumpServerInfo["KeyName"]
 
                 #jumpServerPart = "ProxyCommand=\"ssh -i " + jumpServerKey + " -W %h:%p -p " + \
                 #                 str(jumpServerInfo["PublicPort"]) + " " + jumpServerInfo["UserLogin"] + \
