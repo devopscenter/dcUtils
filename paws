@@ -225,7 +225,13 @@ checkHostAccess()
         exit 1
     fi
 
-    NAME_LIST=$(echo $DESCRIBE_ALL| jq -r '.Reservations[].Instances[].Tags[]| select(.Key == "Name").Value')
+    declare -a NAME_LIST
+    i=0
+    numItems=$(echo ${DESCRIBE_ALL} | jq -c 'length')
+    while [[ ${i} -lt ${numItems} ]]; do
+        NAME_LIST+=($(echo ${DESCRIBE_ALL} | jq -r ".[${i}].InstanceName"))
+        i=$((i+1))
+    done
 
     #-------------------------------------------------------------------------------
     # the commented out section was an attempt to check all in parallel.  It does, but
