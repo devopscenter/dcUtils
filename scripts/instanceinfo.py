@@ -150,7 +150,7 @@ class InstanceInfo:
                 self.getInstancesFromAWS(filterList)
             elif regionInfo['InstanceType'] == "VM":
                 self.readInstanceConfigFile(regionInfo['configFileName'])
-                self.applyFilters(filterList)
+                self.applyVMFilters(filterList)
             else:
                 print("Error: Unknown InstanceType({}) for region: {}".format(regionInfo['InstanceType'],
                                                                               regionInfo['RegionName']),
@@ -326,11 +326,12 @@ class InstanceInfo:
                             break
 
         if c == numFilters:
-            return anInstance
+            if anInstance['TagsDict']['instance-state-name'] == "running":
+                return anInstance
         else:
             return None
 
-    def applyFilters(self, filterList):
+    def applyVMFilters(self, filterList):
         """Create a list of instances based upon the filters."""
         for anInstance in self.allInstances:
             tmpInstance = self.checkInstanceForTags(self.allInstances[anInstance], filterList)
