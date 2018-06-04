@@ -215,6 +215,13 @@ class InstanceInfo:
             anonDict['Values'] = filterList[filterKey]
             returnList.append(anonDict)
 
+        # and now add in that we are only getting the running instances
+        runningDict = {}
+        runningDict['Name'] = 'instance-state-name'
+        runningDict['Values'] = ['running']
+        returnList.append(runningDict)
+
+
         return returnList
 
     def getInstancesFromAWS(self, filterList):
