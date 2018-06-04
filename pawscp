@@ -488,7 +488,7 @@ createSSHConfigFile()
 
             jumpServerPathToKey=''
             getPathToKey ${jumpServerKey} jumpServerPathToKey
-            jumpServerCommand="ProxyCommand "ssh -i ${jumpServerPathToKey} -W %h:%p -p ${jumpServerPort} ${jumpServerLogin}@${jumpServerHost}"
+            jumpServerCommand="ProxyCommand ssh -i ${jumpServerPathToKey} -W %h:%p -p ${jumpServerPort} ${jumpServerLogin}@${jumpServerHost}"
             echo " ${jumpServerCommand}" >> ${TMP_CONFIG}
         fi
         echo >> ${TMP_CONFIG}
