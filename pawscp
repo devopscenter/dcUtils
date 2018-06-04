@@ -154,17 +154,27 @@ myscp()
     local SECOND_FILE=$3
     local SECOND_HOST=$4
 
+    QUIET_OPTION=""
+    if [[ ${PRINT_OUTPUT} == 'false' ]]; then
+        QUIET_OPTION=" -q "
+    fi
     if [[ -z ${FIRST_HOST} ]]; then
         if [[ ${DO_NOT_RUN} == 'true' ]]; then
             echo "scp -F ${TMP_CONFIG} ${FIRST_FILE} ${SECOND_HOST}:${SECOND_FILE}"
         else
-            scp -q -F ${TMP_CONFIG} "${FIRST_FILE}" "${SECOND_HOST}:${SECOND_FILE}"
+            if [[ ${PRINT_OUTPUT} == 'true' ]]; then
+                echo "transferring: ${FIRST_FILE} => $SECOND_HOST:$SECOND_FILE"
+            fi
+            scp ${QUIET_OPTION} -F ${TMP_CONFIG} "${FIRST_FILE}" "${SECOND_HOST}:${SECOND_FILE}"
         fi
     else
         if [[ ${DO_NOT_RUN} == 'true' ]]; then
             echo "scp -F ${TMP_CONFIG} ${FIRST_HOST}:${FIRST_FILE} ${SECOND_FILE}"
         else
-            scp -q -F ${TMP_CONFIG} "${FIRST_HOST}:${FIRST_FILE}" "${SECOND_FILE}"
+            if [[ ${PRINT_OUTPUT} == 'true' ]]; then
+                echo "transferring: ${FIRST_FILE} => $SECOND_HOST:$SECOND_FILE"
+            fi
+            scp ${QUIET_OPTION} -F ${TMP_CONFIG} "${FIRST_HOST}:${FIRST_FILE}" "${SECOND_FILE}"
         fi
     fi
 }
@@ -505,8 +515,7 @@ createSSHConfigFile()
 #---- start of main ------------------------------------------------------------
 
 NEW_CMD_LINE=''
-APPNAME=''
-WORKSPACENAME=''
+PRINT_OUTPUT='true'
 while [[ $# -gt 0 ]]; do
     case $1 in
         -p ) shift
@@ -518,31 +527,8 @@ while [[ $# -gt 0 ]]; do
         -t ) shift
                 TAG=$1
                 ;;
-        -w ) shift
-                HOSTS=$1
-	            ;;
-        -l ) LIST_NAMES='true'
-	            ;;
-        -c ) if [[ $# -eq 2 ]]; then
-                shift
-	            HOST=$1
-	        else
-	            CONNECT='true'
-	        fi
-                 ;;
-        -L ) LIST_NAMES='true'
-             LIST_ALL='true'
-                 ;;
-        -a | --appName) shift
-             APPNAME=$1
-             dcDEFAULT_APP_NAME=$1
-             NEW_CMD_LINE="${NEW_CMD_LINE} --appName $APPNAME"
-                 ;;
-        --workspaceName) shift
-             NEW_CMD_LINE="${NEW_CMD_LINE} --workspaceName $1"
-                 ;;
-        -e | --env) shift
-             NEW_CMD_LINE="${NEW_CMD_LINE} --env $1"
+        -q | --quiet )
+             PRINT_OUTPUT='false'
                  ;;
         --test )
              DO_NOT_RUN='true'
@@ -553,10 +539,6 @@ while [[ $# -gt 0 ]]; do
  [!-]* ) if [[ $# -eq 2 ]]; then
              FIRST_ARG=$1
              SECOND_ARG=$2
-	     elif ! [[ -z "$HOST" ]]; then
-             echo -e "Too many/few of the 1 required parameters.\n"
-             usage
-             exit 1
          fi
                  ;;
 #         * ) echo -e "Unrecognized input.\n"
