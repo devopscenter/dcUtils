@@ -34,8 +34,8 @@ function usage
     echo -e "    pawscp is a tool that makes it easier to transfer files to and from and AWS EC2 instances.   \n"
     echo -e "Usage:"
     echo -e "    Optional arguments that can be used with any other combination of arguments:"
-    echo -e "    [-p PROFILE] [-r REGION] [-t \"TAG=VALUE\"\n"
-    echo -e "    [host/all:]file1 [host/all:]file2" 
+    echo -e "    [-p PROFILE] [-r REGION] [--quiet] [-t \"TAG=VALUE OTHERTAG=OTHERVALUE\"]\n"
+    echo -e "    [host/all]:file1 [host/all]:file2"
     echo 
     echo -e "  NOTE: the file1 and file2 arguments need to be the last two arguments"
     echo 
@@ -47,6 +47,9 @@ function usage
    # echo -e "    If there is no 'host:' or 'all:' -  it will take file1 and transfer it to all hosts found for PROFILE and REGION"
    # echo -e "        at the file2 location"
     echo -e "    If host is missing from either and each has a colon: that's an error since it doesn't know where to put it"
+    echo -e "    By default it will express what is being transferred to where, good from the command line to see what"
+    echo -e "       is happening.  However, if run from scripts a lot of times you don't want that output, so there is"
+    echo -e "       an option -q|--quiet to suppress that output."
     echo -e "Examples:"
     echo -e "    copy a file from the local machine to a specific destination host and put the file in the home directory."
     echo -e "    pawscp -p devops.center ~/filetotransfer destHost:~"
