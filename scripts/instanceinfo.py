@@ -11,7 +11,7 @@ IPAddressSet = namedtuple('IPAddressSet', 'PublicIpAddress, PublicDnsName, Publi
                                            PrivateDnsName, PrivatePort',  InstanceName, DestLogin, DestKey, Shard')
 
 ConnectParts are the elements that can be combined to form an SSH or SCP connect string for an instance.
-ConnectParts = namedtuple('ConnectParts', 'DestHost, DestSSHPort, DestSCPPort, DestKey, JumpServerPart')
+ConnectParts = namedtuple('ConnectParts', 'DestHost, DestSSHPort, DestSCPPort, DestLogin, DestKey, JumpServerPart')
 """
 
 import os
@@ -150,7 +150,7 @@ class InstanceInfo:
                 self.getInstancesFromAWS(filterList)
             elif regionInfo['InstanceType'] == "VM":
                 self.readInstanceConfigFile(regionInfo['configFileName'])
-                self.applyFilters(filterList)
+                self.applyVMFilters(filterList)
             else:
                 print("Error: Unknown InstanceType({}) for region: {}".format(regionInfo['InstanceType'],
                                                                               regionInfo['RegionName']),
@@ -184,7 +184,8 @@ class InstanceInfo:
             # create a named tuple to return
             InstanceDetails = namedtuple('InstanceDetails', 'PublicIpAddress, PublicDnsName, PublicPort, '
                                                             'PrivateIpAddress, PrivateDnsName, PrivatePort, ' 
-                                                            'InstanceName, DestLogin, DestKey, Shard')
+                                                            'Gateway, '
+                                                            'InstanceName, DestLogin, DestKey, Shard, Tags')
 
             self.lastReturnedListOfIPAddresses.append(InstanceDetails(
                 PublicIpAddress=(anInst["PublicIpAddress"] if "PublicIpAddress" in anInst else ''),
@@ -193,10 +194,12 @@ class InstanceInfo:
                 PrivateIpAddress=(anInst["PrivateIpAddress"] if "PrivateIpAddress" in anInst else ''),
                 PrivateDnsName=(anInst["PrivateDnsName"] if "PrivateDnsName" in anInst else ''),
                 PrivatePort=(anInst["PrivatePort"] if "PrivatePort" in anInst else ''),
+                Gateway=(anInst["JumpServer"] if "JumpServer" in anInst else ''),
                 InstanceName=anInst["TagsDict"]["Name"],
                 DestLogin=anInst["UserLogin"] if "UserLogin" in anInst else '',
                 DestKey=theKey,
-                Shard=anInst["TagsDict"]["Shard"] if "Shard" in anInst["TagsDict"] else ''))
+                Shard=anInst["TagsDict"]["Shard"] if "Shard" in anInst["TagsDict"] else '',
+                Tags=anInst["TagsDict"]))
 
         return self.lastReturnedListOfIPAddresses
 
@@ -211,6 +214,13 @@ class InstanceInfo:
             anonDict['Name'] = 'tag:' + filterKey
             anonDict['Values'] = filterList[filterKey]
             returnList.append(anonDict)
+
+        # and now add in that we are only getting the running instances
+        runningDict = {}
+        runningDict['Name'] = 'instance-state-name'
+        runningDict['Values'] = ['running']
+        returnList.append(runningDict)
+
 
         return returnList
 
@@ -251,7 +261,9 @@ class InstanceInfo:
             self.createAllInstances(tmpInst['Instances'])
 
         for anInstance in self.allInstances:
-            self.lastReturnedListOfInstances[anInstance] = self.allInstances[anInstance]
+            tmpInst = self.allInstances[anInstance]
+            if "instance-association" not in tmpInst["TagsDict"]:
+                self.lastReturnedListOfInstances[anInstance] = self.allInstances[anInstance]
 
     def readInstanceConfigFile(self, configFileName):
         """read the json config file and return a List of the elements found
@@ -314,11 +326,12 @@ class InstanceInfo:
                             break
 
         if c == numFilters:
-            return anInstance
+            if anInstance['TagsDict']['instance-state-name'] == "running":
+                return anInstance
         else:
             return None
 
-    def applyFilters(self, filterList):
+    def applyVMFilters(self, filterList):
         """Create a list of instances based upon the filters."""
         for anInstance in self.allInstances:
             tmpInstance = self.checkInstanceForTags(self.allInstances[anInstance], filterList)
@@ -361,7 +374,8 @@ class InstanceInfo:
         """Return the connection strings that can be then used to build ssh/scp commands to access an instance."""
 
         retParts = None
-        ConnectParts = namedtuple('ConnectParts', 'DestHost, DestSSHPort, DestSCPPort, DestKey, JumpServerPart')
+        ConnectParts = namedtuple('ConnectParts', 'DestHost, DestSSHPort, DestSCPPort, DestLogin, DestKey,'
+                                                  'JumpServerHost, JumpServerPort, JumpServerLogin, JumpServerKey')
         try:
             anInstInfo = self.lastReturnedListOfInstances[anInstanceName.InstanceName]
 
@@ -375,43 +389,60 @@ class InstanceInfo:
 
                 if self.keysDirectory:
                     jumpServerKey = self.keysDirectory + "/" + jumpServerInfo["KeyName"] + ".pem"
-                jumpServerPart = " -o ProxyCommand=\"ssh -i " + jumpServerKey + " -W %h:%p -p " + \
-                                 str(jumpServerInfo["PublicPort"]) + " " + jumpServerInfo["UserLogin"] + \
-                                 "@" + jumpServerInfo["PublicIpAddress"] + "\""
+                else:
+                    jumpServerKey = jumpServerInfo["KeyName"]
+
+                #jumpServerPart = "ProxyCommand=\"ssh -i " + jumpServerKey + " -W %h:%p -p " + \
+                #                 str(jumpServerInfo["PublicPort"]) + " " + jumpServerInfo["UserLogin"] + \
+                #                 "@" + jumpServerInfo["PublicIpAddress"] + "\""
+                jumpServerPartHost = jumpServerInfo["PublicIpAddress"]
+                jumpServerPartPort = jumpServerInfo["PublicPort"]
+                jumpServerPartLogin = jumpServerInfo["UserLogin"]
+                jumpServerPartKey = jumpServerKey
 
                 destSSHPort = ""
                 destSCPPort = ""
                 destKey = ""
                 if anInstanceName.PrivatePort:
-                    destSSHPort = " -p " + str(anInstanceName.PrivatePort) + " "
-                    destSCPPort = " -P " + str(anInstanceName.PrivatePort) + " "
+                    destSSHPort = str(anInstanceName.PrivatePort)
+                    destSCPPort = str(anInstanceName.PrivatePort)
 
                 if anInstanceName.DestKey:
-                    destKey = " -i " + anInstanceName.DestKey + " "
+                    destKey = anInstanceName.DestKey
 
+                destLogin = ""
                 if anInstanceName.DestLogin:
-                    destHost = anInstanceName.DestLogin + "@" + anInstanceName.PrivateIpAddress
-                else:
-                    destHost = anInstanceName.PrivateIpAddress
+                    destLogin = anInstanceName.DestLogin
+
+                destHost = anInstanceName.PrivateIpAddress
 
             else:
                 destSSHPort = ""
                 destSCPPort = ""
                 destKey = ""
                 if anInstanceName.PublicPort:
-                    destSSHPort = " -p " + str(anInstanceName.PublicPort) + " "
-                    destSCPPort = " -P " + str(anInstanceName.PublicPort) + " "
+                    destSSHPort = str(anInstanceName.PublicPort)
+                    destSCPPort = str(anInstanceName.PublicPort)
 
                 if anInstanceName.DestKey:
-                    destKey = " -i " + anInstanceName.DestKey + " "
+                    destKey = anInstanceName.DestKey
 
+                destLogin = ""
                 if anInstanceName.DestLogin:
-                    destHost = anInstanceName.DestLogin + "@" + anInstanceName.PublicIpAddress
-                else:
-                    destHost = anInstanceName.PublicIpAddress
+                    destLogin = anInstanceName.DestLogin
+
+                destHost = anInstanceName.PublicIpAddress
+                jumpServerPartHost = None
+                jumpServerPartPort = None
+                jumpServerPartLogin = None
+                jumpServerPartKey = None
 
             retParts = ConnectParts(DestHost=destHost, DestSSHPort=destSSHPort, DestSCPPort=destSCPPort,
-                                    DestKey=destKey, JumpServerPart=jumpServerPart if jumpServerPart else "")
+                                    DestLogin=destLogin, DestKey=destKey,
+                                    JumpServerHost=jumpServerPartHost if jumpServerPartHost else "",
+                                    JumpServerPort=jumpServerPartPort if jumpServerPartPort else "",
+                                    JumpServerLogin=jumpServerPartLogin if jumpServerPartLogin else "",
+                                    JumpServerKey=jumpServerPartKey if jumpServerPartKey else "")
 
         except SystemError as e:
             print("=>{}<=".format(e))
@@ -452,7 +483,7 @@ def checkArgs():
                                                       'tags/filters.  You would have to provide the filter set each '
                                                       'time as the object would go away once the python script ends, '
                                                       'which would be with each invocation of this script.',
-                        choices=['connectParts', 'sshConnect', 'scpConnect', 'listOfIPAddresses', 'listOfKeys', 'gatewayInfo'],
+                        choices=['connectParts', 'listOfIPAddresses', 'listOfKeys', 'gatewayInfo'],
                         required=False)
     args, unknown = parser.parse_known_args()
 
@@ -513,30 +544,10 @@ def main(argv):
             jsonObj = json.dumps(partsList)
             print("{}".format(jsonObj))
 
-        if shellCommand == "sshConnect":
-            if len(listOfIPs) > 1:
-                print("ERROR: Filter list returned more than one result")
-                sys.exit(1)
-            for item in listOfIPs:
-                parts = instances.getConnectString(item)
-                print("ssh " + (parts.JumpServerPart if parts.JumpServerPart else '') + parts.DestSSHPort +
-                      parts.DestKey + parts.DestHost)
-
-        if shellCommand == "scpConnect":
-            if len(listOfIPs) > 1:
-                print("ERROR: Filter list returned more than one result")
-                sys.exit(1)
-            for item in listOfIPs:
-                parts = instances.getConnectString(item)
-                print("scp " + parts.DestSCPPort + parts.DestKey +
-                      (parts.JumpServerPart if parts.JumpServerPart else '') + " REPLACE_WITH_YOUR_FILE " +
-                      parts.DestHost + ":~")
-
         if shellCommand == "listOfIPAddresses":
             import simplejson as json
-            for item in listOfIPs:
-                jsonObj = json.dumps(item)
-                print("{}".format(jsonObj))
+            jsonObj = json.dumps(listOfIPs)
+            print("{}".format(jsonObj))
 
         if shellCommand == "listOfKeys":
             keys = instances.getListOfKeys()
