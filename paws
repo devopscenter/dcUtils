@@ -619,18 +619,18 @@ while [[ ${i} -lt ${numItems} ]]; do
             echo " hostname ${instancePrivateIP}" >> ${TMP_CONFIG}
             # and put the port
             if [[ -z ${instancePrivatePort} ]]; then
-                echo " port 22"
+                echo " port 22" >> ${TMP_CONFIG}
             else
-                echo " port ${instancePrivatePort}"
+                echo " port ${instancePrivatePort}" >> ${TMP_CONFIG}
             fi
         else
             # put the public information
             echo " hostname ${instancePublicIP}" >> ${TMP_CONFIG}
             # and put the port
             if [[ -z ${instancePublicPort} ]]; then
-                echo " port 22"
+                echo " port 22" >> ${TMP_CONFIG}
             else
-                echo " port ${instancePublicPort}"
+                echo " port ${instancePublicPort}" >> ${TMP_CONFIG}
             fi
         fi
         echo " identityfile \"${pathToKey}\"" >> ${TMP_CONFIG}
