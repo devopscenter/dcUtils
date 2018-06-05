@@ -337,8 +337,8 @@ getPathToKey()
             RETVAL="${COMMON_KEY_DIR}/devops.center/keys/${keyName}.pem"
         elif [[ -f "${COMMON_KEY_DIR}/${PROFILE}/devops.center/keys/${keyName}.pem" ]]; then
             RETVAL="${COMMON_KEY_DIR}/${PROFILE}/devops.center/keys/${keyName}.pem"
-        elif [[ -f ~/.ssh/devops.center/${keyName}.pem ]]; then
-            RETVAL="~/.ssh/devops.center/${keyName}.pem"
+        elif [[ -f ${HOME}/.ssh/devops.center/${keyName}.pem ]]; then
+            RETVAL="${HOME}/.ssh/devops.center/${keyName}.pem"
         else
             RETVAL="${COMMON_KEY_DIR}/${PROFILE}/keys/${keyName}.pem"
         fi
@@ -653,7 +653,7 @@ while [[ ${i} -lt ${numItems} ]]; do
 
             jumpServerPathToKey=''
             getPathToKey ${jumpServerKey} jumpServerPathToKey
-            jumpServerCommand="ProxyCommand \"ssh -i ${jumpServerPathToKey} -W %h:%p -p ${jumpServerPort} ${jumpServerLogin}@${jumpServerHost}\""
+            jumpServerCommand="ProxyCommand ssh -i ${jumpServerPathToKey} -W %h:%p -p ${jumpServerPort} ${jumpServerLogin}@${jumpServerHost}"
             echo " ${jumpServerCommand}" >> ${TMP_CONFIG}
         fi
         echo >> ${TMP_CONFIG}
