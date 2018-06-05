@@ -168,7 +168,7 @@ myscp()
             if [[ ${PRINT_OUTPUT} == 'true' ]]; then
                 echo "transferring: ${FIRST_FILE} => $SECOND_HOST:$SECOND_FILE"
             fi
-            scp ${QUIET_OPTION} -F ${TMP_CONFIG} "${FIRST_FILE}" "${SECOND_HOST}:${SECOND_FILE}"
+            scp ${QUIET_OPTION} -F ${TMP_CONFIG} ${FIRST_FILE} ${SECOND_HOST}:${SECOND_FILE}
         fi
     else
         if [[ ${DO_NOT_RUN} == 'true' ]]; then
@@ -177,7 +177,7 @@ myscp()
             if [[ ${PRINT_OUTPUT} == 'true' ]]; then
                 echo "transferring: ${FIRST_FILE} => $SECOND_HOST:$SECOND_FILE"
             fi
-            scp ${QUIET_OPTION} -F ${TMP_CONFIG} "${FIRST_HOST}:${FIRST_FILE}" "${SECOND_FILE}"
+            scp ${QUIET_OPTION} -F ${TMP_CONFIG} ${FIRST_HOST}:${FIRST_FILE} ${SECOND_FILE}
         fi
     fi
 }
