@@ -343,6 +343,12 @@ getPathToKey()
             RETVAL="${HOME}/.ssh/devops.center/${keyName}.pem"
         else
             echo "ERROR: can not find access key: ${keyName}.pem"
+            echo " in any of the directories:"
+            echo "    ${COMMON_KEY_DIR}/devops.center/keys"
+            echo "    ${COMMON_KEY_DIR}/${PROFILE}/devops.center/keys"
+            echo "    ${HOME}/.ssh"
+            echo "    ${HOME}/.ssh/devops.center"
+            exit 1
         fi
         eval "$pathToKey=\"${RETVAL}\""
     fi
