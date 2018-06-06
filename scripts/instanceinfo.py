@@ -583,11 +583,13 @@ def main(argv):
             print("\nInstanceInfo (getInstanceIPs({}))\n=>{}<=".format(tagList, item))
             print("Connect String (getConnectString(InstanceDetails):")
             parts = instances.getConnectString(item)
-            print("For ssh:\nssh " + (parts.JumpServerPart if parts.JumpServerPart else '') + parts.DestSSHPort +
-                  parts.DestKey + parts.DestHost)
-            print("For scp /tmp/foobar to destination home directory:")
-            print("scp " + parts.DestSCPPort + parts.DestKey + (parts.JumpServerPart if parts.JumpServerPart else '') +
-                  " /tmp/foobar " + parts.DestHost + ":~")
+# Commented out since the DestKey is not a list...this needs to be refactored and is not accurate.  The user has
+# to determine how to use the information
+#            print("For ssh:\nssh " + (parts.JumpServerPart if parts.JumpServerPart else '') + parts.DestSSHPort +
+#                  parts.DestKey + parts.DestHost)
+#            print("For scp /tmp/foobar to destination home directory:")
+#            print("scp " + parts.DestSCPPort + parts.DestKey + (parts.JumpServerPart if parts.JumpServerPart else '') +
+#                  " /tmp/foobar " + parts.DestHost + ":~")
 
         print("\n\nList of unique keys (with path) to try:")
         keys = instances.getListOfKeys()
