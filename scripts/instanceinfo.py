@@ -52,9 +52,9 @@ __status__ = "Development"
 
 class InstanceInfo:
 
-    def __init__(self, customerIn, keysDir, regions=None, sharedDir=None):
+    def __init__(self, organization=None, keysDir=None, regions=None, sharedDir=None):
         """Construct an instance of the InstanceInfo class."""
-        self.customer = customerIn
+        self.organization = organization
         self.keysDirectory = keysDir
         self.regionsToSearch = regions
         self.customerRegionsToSearch = []
@@ -74,22 +74,33 @@ class InstanceInfo:
     def getCustomerRegions(self):
         """read the customers shared settings file to get the regions they have instances in."""
         # first get the shard directory from the users specific settings file
+        getCustomerNameFromSettionsJson = False
         if not self.sharedDirectory:
             checkForDCInternal = self.getSettingsValue("dcInternal")
             commonSharedDir = self.getSettingsValue("dcCOMMON_SHARED_DIR")
+
+
             if commonSharedDir:
                 # now we need to check if this is being run internally the common dir will have a customer name
                 # at the end and we need to strip that off and put the customer name from this run there instead.
                 if not checkForDCInternal:
                     commonSharedFile = commonSharedDir + "/devops.center/dcConfig/settings.json"
                 else:
-                    commonSharedFile = os.path.dirname(commonSharedDir) + "/" + self.customer + \
+                    if not self.organization:
+                        # check the personal .dcConfig/settings file for the customer name
+                        self.organization = self.getSettingsValue("CUSTOMER_NAME")
+                        if not self.organization:
+                            print("ERROR: Customer name was not passed in and it can not be determined. Exiting.")
+                            sys.exit(1)
+
+                    commonSharedFile = os.path.dirname(commonSharedDir) + "/" + self.organization + \
                                        "/devops.center/dcConfig/settings.json"
             else:
                 print('The key dcCOMMON_SHARED_DIR was not found in the ~/.dcConfig/settings file.  You can specify '
                       'a shared directory with the --sharedDirectory option.')
                 sys.exit(1)
         else:
+            getCustomerNameFromSettionsJson = True
             commonSharedFile = self.sharedDirectory + "/devops.center/dcConfig/settings.json"
 
         # read in the shared settings file
@@ -97,9 +108,12 @@ class InstanceInfo:
             with open(expanduser(commonSharedFile)) as data_file:
                 settingsRaw = json.load(data_file)
         except IOError as e:
-            print("ERROR trying to read the shared settings file for {}".format(self.customer))
+            print("ERROR trying to read the shared settings file for {}".format(self.organization))
             print("Shared dcConfig settings file error: {}".format(e))
             sys.exit(1)
+
+        if getCustomerNameFromSettionsJson:
+            self.organization = settingsRaw['Customer']['Name']
 
         self.allRegions = settingsRaw['Regions']
 
@@ -110,9 +124,7 @@ class InstanceInfo:
             with open(baseSettingsFile, 'r') as f:
                 lines = [line.rstrip('\n') for line in f]
         except IOError as e:
-            print("ERROR trying to read the personal settings file to get key: {}".format(theKey))
-            print("Personal dcConfig settings file error: {}".format(e))
-            sys.exit(1)
+            return None
 
         retValue = None
         for aLine in lines:
@@ -238,11 +250,11 @@ class InstanceInfo:
             # looping through regions gathering data
             for aRegion in self.customerRegionsToSearch:
                 if aRegion['InstanceType'] == 'AWS':
-                    aSession = boto3.Session(profile_name=self.customer, region_name=aRegion['RegionName'])
+                    aSession = boto3.Session(profile_name=self.organization, region_name=aRegion['RegionName'])
                     self.getInstancesFromAWSForRegion(aSession, filterListToSend)
 
-        elif self.customer:
-            aSession = boto3.Session(profile_name=self.customer)
+        elif self.organization:
+            aSession = boto3.Session(profile_name=self.organization)
             self.getInstancesFromAWSForRegion(aSession, filterListToSend)
         else:
             # Don't know if we will ever have this situation with no customer, but it's here just in case
@@ -279,7 +291,7 @@ class InstanceInfo:
                 if not checkForDCInternal:
                     sharedInstanceInfo = commonSharedDir + "/devops.center/dcConfig/" + configFileName
                 else:
-                    sharedInstanceInfo = os.path.dirname(commonSharedDir) + "/" + self.customer + \
+                    sharedInstanceInfo = os.path.dirname(commonSharedDir) + "/" + self.organization + \
                                        "/devops.center/dcConfig/" + configFileName
         else:
             sharedInstanceInfo = self.sharedDirectory + "/devops.center/dcConfig/" + configFileName
@@ -463,9 +475,9 @@ def checkArgs():
     """Check the command line arguments."""
     parser = argparse.ArgumentParser(
         description=('This script will return a list of instances based upon filters (tags of key=value pairs) '))
-    parser.add_argument('-c', '--customer', help='The customer name, which will also be used as the lookup for the '
-                                                   'profile, if needed',
-                        required=True)
+    parser.add_argument('-o', '--organization', help='The organization name, which will also be used as the lookup for'
+                                                     ' the profile, if needed',
+                        required=False)
     parser.add_argument('-r', '--regions', help='The region(s) to search in for customer instances customer',
                         required=False)
     parser.add_argument('-t', '--tags', help='A list of key=value pairs separated by a space (no space before or after '
@@ -487,9 +499,9 @@ def checkArgs():
                         required=False)
     args, unknown = parser.parse_known_args()
 
-    retCustomer = ''
-    if args.customer:
-        retCustomer = args.customer
+    retOrganization = ''
+    if args.organization:
+        retOrganization = args.organization
 
     retRegions = []
     if args.regions:
@@ -524,14 +536,14 @@ def checkArgs():
     if args.shellCommand:
         retCommand = args.shellCommand
 
-    return(retCustomer, retRegions, retKeysDirectory, retSharedDirectory, retTags, retCommand )
+    return(retOrganization, retRegions, retKeysDirectory, retSharedDirectory, retTags, retCommand )
 
 
 def main(argv):
     """Main code goes here."""
-    (customer, regions, keysDir, sharedDir, tagList, shellCommand) = checkArgs()
+    (organization, regions, keysDir, sharedDir, tagList, shellCommand) = checkArgs()
 
-    instances = InstanceInfo(customer, keysDir, regions, sharedDir)
+    instances = InstanceInfo(organization=organization, keysDir=keysDir, regions=regions, sharedDir=sharedDir)
     listOfIPs = instances.getInstanceInfo(tagList)
     if shellCommand:
         if shellCommand == "connectParts":
