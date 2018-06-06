@@ -84,7 +84,7 @@ callInstanceInfo ()
     local sortKey=$3
 
     # we need to build up the command to run with the provided arguments
-    CMD_TO_RUN="${dcUTILS}/scripts/instanceinfo.py -sc ${shellCommand} -c ${PROFILE}"
+    CMD_TO_RUN="${dcUTILS}/scripts/instanceinfo.py -sc ${shellCommand} -o ${PROFILE}"
 
     if [[ -n ${REGION} ]]; then
         CMD_TO_RUN+=" -r ${REGION} "
