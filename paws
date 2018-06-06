@@ -337,10 +337,12 @@ getPathToKey()
             RETVAL="${COMMON_KEY_DIR}/devops.center/keys/${keyName}.pem"
         elif [[ -f "${COMMON_KEY_DIR}/${PROFILE}/devops.center/keys/${keyName}.pem" ]]; then
             RETVAL="${COMMON_KEY_DIR}/${PROFILE}/devops.center/keys/${keyName}.pem"
+        elif [[ -f ${HOME}/.ssh/${keyName}.pem ]]; then
+            RETVAL="${HOME}/.ssh/${keyName}.pem"
         elif [[ -f ${HOME}/.ssh/devops.center/${keyName}.pem ]]; then
             RETVAL="${HOME}/.ssh/devops.center/${keyName}.pem"
         else
-            RETVAL="${COMMON_KEY_DIR}/${PROFILE}/keys/${keyName}.pem"
+            echo "ERROR: can not find access key: ${keyName}.pem"
         fi
         eval "$pathToKey=\"${RETVAL}\""
     fi
