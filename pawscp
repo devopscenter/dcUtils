@@ -143,6 +143,19 @@ doTheCopy()
     done
 }
 
+#---  FUNCTION  ----------------------------------------------------------------
+#          NAME:  hasASpace
+#   DESCRIPTION:
+#
+#
+#    PARAMETERS:
+#       RETURNS:
+#-------------------------------------------------------------------------------
+hasASpace()
+{
+    [[ "$1" == "${1%[[:space:]]*}" ]] && return 1 || return 0
+}  # -------- end function hasASpace
+
 
 #---  FUNCTION  ----------------------------------------------------------------
 #          NAME:  myscp
@@ -166,9 +179,21 @@ myscp()
             echo "scp -F ${TMP_CONFIG} ${FIRST_FILE} ${SECOND_HOST}:${SECOND_FILE}"
         else
             if [[ ${PRINT_OUTPUT} == 'true' ]]; then
-                echo "transferring: ${FIRST_FILE} => $SECOND_HOST:$SECOND_FILE"
+                echo "transferring: ${FIRST_FILE} => $SECOND_HOST:${SECOND_FILE}"
             fi
-            scp ${QUIET_OPTION} -F ${TMP_CONFIG} ${FIRST_FILE} ${SECOND_HOST}:${SECOND_FILE}
+            # check to see if there are spaces around the FIRST_FILE and SECOND_FILE
+            if hasASpace "$FIRST_FILE"  && hasASpace "$SECOND_FILE"; then
+                scp ${QUIET_OPTION} -F ${TMP_CONFIG} "${FIRST_FILE}" ${SECOND_HOST}:"${SECOND_FILE}"
+
+            elif hasASpace "$FIRST_FILE" && ! hasASpace "$SECOND_FILE"; then
+                scp ${QUIET_OPTION} -F ${TMP_CONFIG} "${FIRST_FILE}" ${SECOND_HOST}:${SECOND_FILE}
+
+            elif ! hasASpace "$FIRST_FILE" &&  hasASpace "$SECOND_FILE"; then
+                scp ${QUIET_OPTION} -F ${TMP_CONFIG} ${FIRST_FILE} ${SECOND_HOST}:"${SECOND_FILE}"
+
+            else
+                scp ${QUIET_OPTION} -F ${TMP_CONFIG} ${FIRST_FILE} ${SECOND_HOST}:${SECOND_FILE}
+            fi
         fi
     else
         if [[ ${DO_NOT_RUN} == 'true' ]]; then
@@ -177,7 +202,19 @@ myscp()
             if [[ ${PRINT_OUTPUT} == 'true' ]]; then
                 echo "transferring: ${FIRST_FILE} => $SECOND_HOST:$SECOND_FILE"
             fi
-            scp ${QUIET_OPTION} -F ${TMP_CONFIG} ${FIRST_HOST}:${FIRST_FILE} ${SECOND_FILE}
+            # check to see if there are spaces in the SECOND_FILE
+            if hasASpace "$FIRST_FILE"  && hasASpace "$SECOND_FILE" ; then
+                scp ${QUIET_OPTION} -F ${TMP_CONFIG} ${FIRST_HOST}:"${FIRST_FILE}" "${SECOND_FILE}"
+
+            elif hasASpace "$FIRST_FILE" && ! hasASpace "$SECOND_FILE" ]]; then
+                scp ${QUIET_OPTION} -F ${TMP_CONFIG} ${FIRST_HOST}:"${FIRST_FILE}" ${SECOND_FILE}
+
+            elif ! hasASpace "$FIRST_FILE" &&  hasASpace "$SECOND_FILE"; then
+                scp ${QUIET_OPTION} -F ${TMP_CONFIG} ${FIRST_HOST}:${FIRST_FILE} "${SECOND_FILE}"
+
+            else
+                scp ${QUIET_OPTION} -F ${TMP_CONFIG} ${FIRST_HOST}:${FIRST_FILE} ${SECOND_FILE}
+            fi
         fi
     fi
 }
