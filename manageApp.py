@@ -60,12 +60,45 @@ __license__ = "GPL"
 __status__ = "Development"
 # ==============================================================================
 
+def getSettingsValue(theKey):
+    """Read the ~/.dcConfig/settings file."""
+    baseSettingsFile = expanduser("~") + "/.dcConfig/settings"
+    try:
+        with open(baseSettingsFile, 'r') as f:
+            lines = [line.rstrip('\n') for line in f]
+    except IOError as e:
+        return None
+
+    retValue = None
+    for aLine in lines:
+        if re.search("^"+theKey+"=", aLine):
+            retValue = aLine.split("=")[1].replace('"', '')
+            break
+
+    return retValue
+
+
+def getCommonSharedDir():
+    """Get the common shard directory."""
+    checkForDCInternal = getSettingsValue("dcInternal")
+    commonSharedDir = getSettingsValue("dcCOMMON_SHARED_DIR")
+    if commonSharedDir:
+        # now we need to check if this is being run internally the common dir will have a customer name
+        # at the end and we need to strip that off and put the customer name from this run there instead.
+        if not checkForDCInternal:
+            return commonSharedDir
+        else:
+            return os.path.dirname(commonSharedDir)
+
+    return None
+
 
 class ManageAppName:
 
     def __init__(self, theAppName, baseDirectory, altName, appPath,
                  sharedUtilsFlag, utilsPath, envList):
         """ManageAppName constructor"""
+        self.organization = None
         self.appName = theAppName
         self.dcAppName = ''
         self.appPath = appPath
@@ -76,9 +109,9 @@ class ManageAppName:
         self.envList = envList
         self.sharedUtilsFlag = sharedUtilsFlag
 
-        self.nameOfCustomer = self.envList["CUSTOMER_NAME"]
+        self.organization = self.envList["CUSTOMER_NAME"]
         if "WORKSPACE_NAME_ORIGINAL" in self.envList:
-            self.nameOfCustomer = self.envList["WORKSPACE_NAME_ORIGINAL"]
+            self.organization = self.envList["WORKSPACE_NAME_ORIGINAL"]
 
         if self.sharedUtilsFlag:
             # set up the defaults for the shared info and check to see if
@@ -86,8 +119,14 @@ class ManageAppName:
             self.sharedUtilsName = "dcShared-utils"
 
             # check to see if the shared config directory exists
-            commonSharedDir = self.envList["dcCOMMON_SHARED_DIR"].replace('"', '')
-            sharedSettingsDir = commonSharedDir + "/devops.center/dcConfig"
+            commonSharedDir = getCommonSharedDir()
+            internalCheck = getSettingsValue("dcInternal")
+
+            if internalCheck:
+                sharedSettingsDir = commonSharedDir + "/" + self.organization + "/devops.center/dcConfig"
+            else:
+                sharedSettingsDir = commonSharedDir + "/devops.center/dcConfig"
+
             if not os.path.exists(sharedSettingsDir):
                 print("ERROR: the directory for the shared settings file was not found:\n"
                       + sharedSettingsDir +
@@ -114,7 +153,6 @@ class ManageAppName:
         if not os.path.exists(baseConfigDir):
             os.makedirs(baseConfigDir)
         baseConfigFile = baseConfigDir + "/baseDirectory"
-        adjustedBaseDir = self.baseDir[:-1]
 
         if not os.path.isfile(baseConfigFile):
             try:
@@ -131,10 +169,10 @@ class ManageAppName:
 
                 if self.altName:
                     strToWrite = "_" + self.altName + \
-                        "_BASE_CUSTOMER_DIR=" + adjustedBaseDir + "\n"
+                        "_BASE_CUSTOMER_DIR=" + self.baseDir + "\n"
                 else:
                     strToWrite = "_DEFAULT_BASE_CUSTOMER_DIR=" + \
-                        adjustedBaseDir + "\n"
+                        self.baseDir + "\n"
                 fileHandle.write(strToWrite)
 
                 strToWrite = "##### BASE DIR CONSTRUCTION NO TOUCH ######\n"
@@ -158,12 +196,12 @@ class ManageAppName:
             if self.altName:
                 # the file exists and they are adding a new base directory
                 self.insertIntoBaseDirectoryFile(
-                    baseConfigFile, adjustedBaseDir, self.altName)
+                    baseConfigFile, self.baseDir, self.altName)
             else:
                 # file exists and there is no altname so the workspace to be
                 # created is a default one
                 self.insertIntoBaseDirectoryFile(
-                    baseConfigFile, adjustedBaseDir, "DEFAULT")
+                    baseConfigFile, self.baseDir, "DEFAULT")
 
     def insertIntoBaseDirectoryFile(self, baseConfigFile, adjustedBaseDir,
                                     nameToUse):
@@ -1201,7 +1239,7 @@ class ManageAppName:
         # the shared settings file (created upon RUN-ME_FIRST.SH run by the
         # first person of a new customer.)
         gitServiceName = "github"
-        gitAccountName = self.nameOfCustomer
+        gitAccountName = self.organization
 
         retRepoURL = None
         if os.path.isfile(self.sharedSettingsFile):
@@ -1231,7 +1269,7 @@ class ManageAppName:
                     '/dcShared-utils.git'
 
         else:
-            retRepoURL = ("git@github.com:" + self.nameOfCustomer +
+            retRepoURL = ("git@github.com:" + self.organization +
                           "/dcShared-utils.git\n")
 
         return retRepoURL
@@ -1313,7 +1351,7 @@ def checkBaseDirectory(baseDirectory, envList):
     return newBaseDir
 
 
-def getBaseDirectory():
+def getBaseDirectory(workspaceName=None):
     # read the ~/.dcConfig/settings
     baseSettingsDir = expanduser("~") + "/.dcConfig"
     if not os.path.exists(baseSettingsDir):
@@ -1325,34 +1363,33 @@ def getBaseDirectory():
         sys.exit(1)
 
     if os.path.isfile(baseSettingsDir + "/baseDirectory"):
-        # TODO check to see if they have entered a --workspace option
-        #      otherwise  take the base directory from the current  workspace
         with open(baseSettingsDir + "/baseDirectory") as f:
             lines = [line.rstrip('\n') for line in f]
-        workspaceName = ''
-        for item in lines:
-            if "CURRENT_WORKSPACE" in item:
-                lineArray = item.split('=')
-                workspaceName = '_' + lineArray[1] + '_BASE_CUSTOMER_DIR'
 
-            if workspaceName in item:
-                anotherLineArray = item.split('=')
-                developmentBaseDir = anotherLineArray[1] + '/'
-                return(developmentBaseDir)
+        if not workspaceName:
+            for item in lines:
+                if "CURRENT_WORKSPACE" in item:
+                    lineArray = item.split('=')
+                    workspaceName = '_' + lineArray[1] + '_BASE_CUSTOMER_DIR'
+
+                if workspaceName in item:
+                    anotherLineArray = item.split('=')
+                    developmentBaseDir = anotherLineArray[1] + '/'
+                    return(developmentBaseDir)
 
     if os.path.isfile(baseSettingsDir + "/settings"):
         # get the base directory from the settings file
-        with open(baseSettingsDir + "/settings") as f:
-            lines = [line.rstrip('\n') for line in f]
-        for item in lines:
-            if "DEV_BASE_DIR" in item:
-                lineArray = item.split('=')
-                developmentBaseDir = lineArray[1] + '/'
-                return(developmentBaseDir)
+        devBaseDir = getSettingsValue("DEV_BASE_DIR")
+
+        if devBaseDir:
+            return devBaseDir
+        else:
+            print("Could not find the DEV_BASE_DIR in the ~/.dcConfig/settings file. ")
+            print("You will need to re-run this command with the -d option to specify the base directory to continue.")
+            sys.exit(1)
 
     else:
-        print("You will need to re-run this command with the -d option to"
-              "specify the base directory to continue.")
+        print("You will need to re-run this command with the -d option to specify the base directory to continue.")
         sys.exit(1)
 
 
@@ -1452,17 +1489,6 @@ def checkArgs():
 
     retEnvList = pythonGetEnv(initialCreate=True)
 
-    # before going further we need to check whether there is a slash at the
-    # end of the value in destinationDir
-    if args.baseDirectory:
-        retBaseDir = checkBaseDirectory(args.baseDirectory, retEnvList)
-    else:
-        retBaseDir = getBaseDirectory()
-        if not retBaseDir:
-            print("Could not determine the baseDirectory, you will need to "
-                  "re-run this script and provide the -d option.")
-            sys.exit(1)
-
     if "CUSTOMER_APP_NAME" in retEnvList:
         retAppName = retEnvList["CUSTOMER_APP_NAME"]
     retCommand = args.command
@@ -1478,6 +1504,18 @@ def checkArgs():
         retWorkspaceName = retEnvList["WORKSPACE_NAME"]
     else:
         retWorkspaceName = ''
+
+    # before going further we need to check whether there is a slash at the
+    # end of the value in destinationDir
+    if args.baseDirectory:
+        retBaseDir = checkBaseDirectory(args.baseDirectory, retEnvList)
+    else:
+        bareBaseDir = getBaseDirectory(retWorkspaceName)
+        retBaseDir = checkBaseDirectory(bareBaseDir, retEnvList)
+        if not retBaseDir:
+            print("Could not determine the baseDirectory, you will need to "
+                  "re-run this script and provide the -d option.")
+            sys.exit(1)
 
     # if we get here then the
     return (retAppName, retBaseDir, retWorkspaceName, retCommand, retAppURL,
