@@ -544,8 +544,13 @@ fi
 #-------------------------------------------------------------------------------
 # go get the specific information for the selected HOST
 #-------------------------------------------------------------------------------
-callInstanceInfo "listOfIPAddresses" "Name=${HOST}"
-DESCRIBE_ALL=${INST_INFO_OUTPUT}
+if [[ -n ${HOST} ]]; then
+    callInstanceInfo "listOfIPAddresses" "Name=${HOST}"
+    DESCRIBE_ALL=${INST_INFO_OUTPUT}
+else
+    callInstanceInfo "listOfIPAddresses" "${TAG}" "InstanceName"
+    DESCRIBE_ALL=${INST_INFO_OUTPUT}
+fi
 
 #-------------------------------------------------------------------------------
 # create .ssh directory if it doesn't exist
