@@ -480,8 +480,11 @@ determineHosts()
         fi
 
         # need to add the name
-        # TODO test this to see if we want to add to the tag or replace it
-        TAG+="Name=${HOST_TO_USE}"
+        if [[ -z ${TAG} ]]; then
+            TAG+="Name=${HOST_TO_USE}"
+        else
+            TAG+=" Name=${HOST_TO_USE}"
+        fi
         callInstanceInfo "listOfIPAddresses" "${TAG}" "InstanceName"
         DESCRIBE_ALL=${INST_INFO_OUTPUT}
 
