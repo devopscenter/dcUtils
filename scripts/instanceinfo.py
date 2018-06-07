@@ -172,26 +172,32 @@ class InstanceInfo:
             anInst = self.lastReturnedListOfInstances[theInstanceName]
 
             # prepend the path if we have it.  And if so, then the key doesn't have the extension either so add it
-            theKey = anInst["KeyName"]
-            if self.keysDirectory:
-                theKey = self.keysDirectory + "/" + anInst["KeyName"] + ".pem"
+            if anInst["KeyName"]:
+                for aKey in anInst["KeyName"]:
+                    if self.keysDirectory:
+                        theKey = self.keysDirectory + "/" + aKey + ".pem"
+                    else:
+                        theKey = str(aKey)
 
-            # store these away if needed later
-            self.lastReturnedListOfKeyAndPaths.append(theKey)
+                    # store these away if needed later
+                    self.lastReturnedListOfKeyAndPaths.append(theKey)
 
-            # and see if this instance has a jumpserver associated with it and add that jump servers keyName to the
-            # list
+            # and see if this instance has a jumpserver associated with it and add that jump servers
+            # keyName to the list
             if "JumpServer" in anInst:
                 jumpServerInfo = self.getJumpServerInfo(theInstanceName)
 
                 if jumpServerInfo:
-                    if self.keysDirectory:
-                        jumpServerKey = self.keysDirectory + "/" + jumpServerInfo['KeyName'] + ".pem"
-                    else:
-                        jumpServerKey = jumpServerInfo['KeyName']
+                    for aJumpServerKey in jumpServerInfo["KeyName"]:
+                        if self.keysDirectory:
+                            jumpServerKey = self.keysDirectory + "/" + aJumpServerKey + ".pem"
+                        else:
+                            jumpServerKey = str(aJumpServerKey)
 
-                    # and store this away if needed later
-                    self.lastReturnedListOfKeyAndPaths.append(jumpServerKey)
+                        # and store this away if needed later
+                        self.lastReturnedListOfKeyAndPaths.append(jumpServerKey)
+
+            retListKeys = self.getListOfKeys()
 
             # create a named tuple to return
             InstanceDetails = namedtuple('InstanceDetails', 'PublicIpAddress, PublicDnsName, PublicPort, '
@@ -209,7 +215,7 @@ class InstanceInfo:
                 Gateway=(anInst["JumpServer"] if "JumpServer" in anInst else ''),
                 InstanceName=anInst["TagsDict"]["Name"],
                 DestLogin=anInst["UserLogin"] if "UserLogin" in anInst else '',
-                DestKey=theKey,
+                DestKey=retListKeys,
                 Shard=anInst["TagsDict"]["Shard"] if "Shard" in anInst["TagsDict"] else '',
                 Tags=anInst["TagsDict"]))
 
@@ -315,6 +321,8 @@ class InstanceInfo:
 
             instance["TagsDict"] = tagsDict
             instanceName = tagsDict["Name"]
+            if type(instance["KeyName"]) != list:
+                instance["KeyName"] = [instance["KeyName"]]
             self.allInstances[instanceName] = instance.copy()
 
     def checkInstanceForTags(self, anInstance, filterList):
@@ -577,11 +585,13 @@ def main(argv):
             print("\nInstanceInfo (getInstanceIPs({}))\n=>{}<=".format(tagList, item))
             print("Connect String (getConnectString(InstanceDetails):")
             parts = instances.getConnectString(item)
-            print("For ssh:\nssh " + (parts.JumpServerPart if parts.JumpServerPart else '') + parts.DestSSHPort +
-                  parts.DestKey + parts.DestHost)
-            print("For scp /tmp/foobar to destination home directory:")
-            print("scp " + parts.DestSCPPort + parts.DestKey + (parts.JumpServerPart if parts.JumpServerPart else '') +
-                  " /tmp/foobar " + parts.DestHost + ":~")
+# Commented out since the DestKey is not a list...this needs to be refactored and is not accurate.  The user has
+# to determine how to use the information
+#            print("For ssh:\nssh " + (parts.JumpServerPart if parts.JumpServerPart else '') + parts.DestSSHPort +
+#                  parts.DestKey + parts.DestHost)
+#            print("For scp /tmp/foobar to destination home directory:")
+#            print("scp " + parts.DestSCPPort + parts.DestKey + (parts.JumpServerPart if parts.JumpServerPart else '') +
+#                  " /tmp/foobar " + parts.DestHost + ":~")
 
         print("\n\nList of unique keys (with path) to try:")
         keys = instances.getListOfKeys()

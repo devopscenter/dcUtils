@@ -23,7 +23,7 @@
 
 # NOTE: requires pdsh and aws-cli
 
-PROFILE="default"
+ORGANIZATION="default"
 
 function usage
 {
@@ -31,7 +31,7 @@ function usage
     echo -e "    paws is a tool that makes it easier to connect to and work with AWS EC2 instances.    First, it uses the aws cli tool to query an account for running ec2-instances.    Next, it either returns a list of instances, connects to an individual instance, or runs commands on one or more of them.\n\n    Caution is advised!    (A good sanity check before running any command is using the -l option to see which hosts you're targeting).\n"
     echo -e "Usage:"
     echo -e "    Optional arguments that can be used with any other combination of arguments:"
-    echo -e "    [-p PROFILE] [-r REGION]\n"
+    echo -e "    [-o organization] [-r REGION]\n"
     echo -e "    List all instances, or instances and their tags:"
     echo -e "    paws {-l | -L}"
     echo -e "        -l\tno argument, returns a list of all instances"
@@ -51,7 +51,7 @@ function usage
     echo -e "    Run a command on all instances in parallel:"
     echo -e "    paws '<COMMAND>'\n"
     echo -e "    Check host access, report any failures and add any new authoritization requests"
-    echo -e "    paws -p PROFILE [-r REGION} -x\n"
+    echo -e "    paws -o organization [-r REGION} -x\n"
     echo -e "Examples:"
     echo -e "    List tags for all instances for the default account:    paws -L"
     echo -e "    Interactively connect to an instance for the client1 account in the us-west-2 region:    paws -p client1 -r us-west-2 -c"
@@ -84,7 +84,7 @@ callInstanceInfo ()
     local sortKey=$3
 
     # we need to build up the command to run with the provided arguments
-    CMD_TO_RUN="${dcUTILS}/scripts/instanceinfo.py -sc ${shellCommand} -o ${PROFILE}"
+    CMD_TO_RUN="${dcUTILS}/scripts/instanceinfo.py -sc ${shellCommand} -o ${ORGANIZATION}"
 
     if [[ -n ${REGION} ]]; then
         CMD_TO_RUN+=" -r ${REGION} "
@@ -274,41 +274,15 @@ checkHostAccess()
 
 
 #---  FUNCTION  ----------------------------------------------------------------
-#          NAME:  cleanUpPathList
-#   DESCRIPTION:
-#
-#    PARAMETERS:
-#       RETURNS:
-#-------------------------------------------------------------------------------
-cleanUpPathList()
-{
-    local pathsToKey="${1}"
-    retVal=$2
-
-    numPaths=${#pathsToKey[@]}
-    if [[ numPaths -ne 0 ]]; then
-        retPath=""
-       c=0
-       while [[ ${c} -lt ${numPaths} ]]; do
-            if [[ "${pathsToKey[${c}]}" != *"Permission denied"* ]] && [[ "${pathsToKey[${c}]}" != *"find:"* ]]; then
-                eval "$retVal=\"${pathsToKey[${c}]}\""
-                return
-            fi
-            c=$(($c+1))
-       done
-
-    else
-        echo "ERROR: No access key file ($keyName.pem) for this instance: $HOST could be found"
-        rm -f ${TMP_CONFIG}
-        exit 1
-    fi
-}
-
-
-#---  FUNCTION  ----------------------------------------------------------------
 #          NAME:  getPathToKey
-#   DESCRIPTION:
-#
+#   DESCRIPTION: This function will take the keyName list passed in and go through
+#                a set of directories where the private keys could be starting with
+#                the most likely and finishing with shared keys directories.  THis
+#                uses find in each of the directories to make the search a bit quicker
+#                and it starts at the personal .ssh directories as we should default
+#                to using the personal keys first and the personal keys are in the list
+#                then it will get over to the shared keys directories and picks up the
+#                first private one to match and then use it.
 #    PARAMETERS:
 #       RETURNS:
 #-------------------------------------------------------------------------------
@@ -317,41 +291,54 @@ getPathToKey()
     local keyName=$1
     pathToKey=$2
 
-    if [[ ${dcDEFAULT_APP_NAME} ]]; then
-        # check the appUtils keys first
-        pathsToKey=($(find ${BASE_CUSTOMER_DIR}/${dcDEFAULT_APP_NAME}/${CUSTOMER_APP_UTILS} -name "$keyName.pem"))
-        numPaths=${#pathsToKey[@]}
-        if [[ numPaths -ne 0 ]]; then
-            RETVAL=''
-            cleanUpPathList "${pathsToKey[@]}" RETVAL
-            eval "$pathToKey=\"${RETVAL}\""
-        else
-            # not there so lets check the pool
-            pathsToKey="$(find ${COMMON_KEY_DIR} -path "*/devops.center/keys/${keyName}.pem" 2>&1)"
-            RETVAL=''
-            cleanUpPathList "${pathsToKey[@]}" RETVAL
-            eval "$pathToKey=\"${RETVAL}\""
+    #-------------------------------------------------------------------------------
+    # first we set up the search paths in a specific order
+    #-------------------------------------------------------------------------------
+    declare -a SEARCH_PATHS=(
+        "${HOME}/.ssh"
+        "${HOME}/.ssh/devops.center"
+        "${COMMON_KEY_DIR}/devops.center/keys"
+        "${COMMON_KEY_DIR}/${ORGANIZATION}/devops.center/keys"
+    )
+
+    #-------------------------------------------------------------------------------
+    # make an array of strings for the keys
+    #-------------------------------------------------------------------------------
+    local q=0
+    local numItems=$(echo ${keyName} | jq -c 'length')
+    declare -a keyNameList
+    while [[ ${q} -lt ${numItems} ]]; do
+        keyNameList+=($(echo ${keyName} |  jq -r ".[$q]"))
+        q=$((q+1))
+    done
+
+    #-------------------------------------------------------------------------------
+    # now run through the list of search paths in order and look for a key from the keys
+    # passed in to match.  Then proceed to the other paths and return when one is found
+    #-------------------------------------------------------------------------------
+    for aSearchPath in ${SEARCH_PATHS[@]}
+    do
+        if [[ -d "${aSearchPath}" ]]; then
+            for aKeyName in ${keyNameList[@]}
+            do
+                RETVAL=$(find "${aSearchPath}" -maxdepth 1 -name "$aKeyName".pem)
+                if [[ -n "${RETVAL}" ]]; then
+                    eval "$pathToKey=\"${RETVAL}\""
+                    return
+                fi
+            done
         fi
-    else
-        if [[ -f "${COMMON_KEY_DIR}/devops.center/keys/${keyName}.pem" ]]; then
-            RETVAL="${COMMON_KEY_DIR}/devops.center/keys/${keyName}.pem"
-        elif [[ -f "${COMMON_KEY_DIR}/${PROFILE}/devops.center/keys/${keyName}.pem" ]]; then
-            RETVAL="${COMMON_KEY_DIR}/${PROFILE}/devops.center/keys/${keyName}.pem"
-        elif [[ -f ${HOME}/.ssh/${keyName}.pem ]]; then
-            RETVAL="${HOME}/.ssh/${keyName}.pem"
-        elif [[ -f ${HOME}/.ssh/devops.center/${keyName}.pem ]]; then
-            RETVAL="${HOME}/.ssh/devops.center/${keyName}.pem"
-        else
-            echo "ERROR: can not find access key: ${keyName}.pem"
-            echo " in any of the directories:"
-            echo "    ${COMMON_KEY_DIR}/devops.center/keys"
-            echo "    ${COMMON_KEY_DIR}/${PROFILE}/devops.center/keys"
-            echo "    ${HOME}/.ssh"
-            echo "    ${HOME}/.ssh/devops.center"
-            exit 1
-        fi
-        eval "$pathToKey=\"${RETVAL}\""
-    fi
+    done
+
+    #-------------------------------------------------------------------------------
+    # if we get here a suitable private key was not found
+    #-------------------------------------------------------------------------------
+    echo "ERROR: can not find a suitable access key to access the host in any of the directories:"
+    echo "    ${COMMON_KEY_DIR}/devops.center/keys"
+    echo "    ${COMMON_KEY_DIR}/${ORGANIZATION}/devops.center/keys"
+    echo "    ${HOME}/.ssh"
+    echo "    ${HOME}/.ssh/devops.center"
+    exit 1
 }
 
 #-------------------- end of function definitions ------------------------------
@@ -362,8 +349,12 @@ WORKSPACENAME=''
 DO_NOT_RUN='false'
 while [[ $# -gt 0 ]]; do
     case $1 in
+        -o ) shift
+                ORGANIZATION=$1
+                ;;
+        # an for legacy we offer the -p but at some point it should go away
         -p ) shift
-                PROFILE=$1
+                ORGANIZATION=$1
                 ;;
         -r ) shift
                 REGION=$1
@@ -385,11 +376,6 @@ while [[ $# -gt 0 ]]; do
                  ;;
         -L ) LIST_NAMES='true'
              LIST_ALL='true'
-                 ;;
-        -a | --appName) shift
-             APPNAME=$1
-             dcDEFAULT_APP_NAME=$1
-             NEW_CMD_LINE="${NEW_CMD_LINE} --appName $APPNAME"
                  ;;
         --workspaceName) shift
              NEW_CMD_LINE="${NEW_CMD_LINE} --workspaceName $1"
@@ -544,7 +530,15 @@ if [[ -z "${HOST+x}" ]] && [[ "$CONNECT" ]]; then
             HOST=$(echo -e "$line"|awk '{print $2}')
         fi
     done < <(echo -e "$NUMBERED_LIST")
+
 fi
+
+
+#-------------------------------------------------------------------------------
+# go get the specific information for the selected HOST
+#-------------------------------------------------------------------------------
+callInstanceInfo "listOfIPAddresses" "Name=${HOST}"
+DESCRIBE_ALL=${INST_INFO_OUTPUT}
 
 #-------------------------------------------------------------------------------
 # create .ssh directory if it doesn't exist
@@ -571,7 +565,7 @@ while [[ ${i} -lt ${numItems} ]]; do
 
     # now get the path to the key
     pathToKey=''
-    getPathToKey ${keyName} pathToKey
+    getPathToKey "${keyName}" pathToKey
 
     # get the login if there is one
     destLogin=$(echo ${DESCRIBE_ALL} | jq -r ".[${i}].DestLogin")
@@ -617,7 +611,7 @@ while [[ ${i} -lt ${numItems} ]]; do
                 jumpServerKey=$(echo ${gatewayInfo} | jq -r ".[].JumpServerKey")
 
                 jumpServerPathToKey=''
-                getPathToKey ${jumpServerKey} jumpServerPathToKey
+                getPathToKey "${jumpServerKey}" jumpServerPathToKey
                 jumpServerCommand="ProxyCommand ssh -i ${jumpServerPathToKey} -W %h:%p -p ${jumpServerPort} ${jumpServerLogin}@${jumpServerHost}"
                 echo " ${jumpServerCommand}" >> ${TMP_CONFIG}
             fi
@@ -660,7 +654,7 @@ while [[ ${i} -lt ${numItems} ]]; do
             jumpServerKey=$(echo ${gatewayInfo} | jq -r ".[].JumpServerKey")
 
             jumpServerPathToKey=''
-            getPathToKey ${jumpServerKey} jumpServerPathToKey
+            getPathToKey "${jumpServerKey}" jumpServerPathToKey
             jumpServerCommand="ProxyCommand ssh -i ${jumpServerPathToKey} -W %h:%p -p ${jumpServerPort} ${jumpServerLogin}@${jumpServerHost}"
             echo " ${jumpServerCommand}" >> ${TMP_CONFIG}
         fi
@@ -674,7 +668,7 @@ done
 #-------------------------------------------------------------------------------
 if [[ "$HOST" ]] || [[ ${CHECK_HOST_ACCESS} == 'true' ]]; then
     if [[ ${CHECK_HOST_ACCESS} == 'true' ]]; then
-        # run the function that will itereate over all the hosts
+        # run the function that will iterate over all the hosts
         checkHostAccess
     else
         # connect to the single host
