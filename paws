@@ -23,7 +23,7 @@
 
 # NOTE: requires pdsh and aws-cli
 
-PROFILE="default"
+ORGANIZATION="default"
 
 function usage
 {
@@ -31,7 +31,7 @@ function usage
     echo -e "    paws is a tool that makes it easier to connect to and work with AWS EC2 instances.    First, it uses the aws cli tool to query an account for running ec2-instances.    Next, it either returns a list of instances, connects to an individual instance, or runs commands on one or more of them.\n\n    Caution is advised!    (A good sanity check before running any command is using the -l option to see which hosts you're targeting).\n"
     echo -e "Usage:"
     echo -e "    Optional arguments that can be used with any other combination of arguments:"
-    echo -e "    [-p PROFILE] [-r REGION]\n"
+    echo -e "    [-o organization] [-r REGION]\n"
     echo -e "    List all instances, or instances and their tags:"
     echo -e "    paws {-l | -L}"
     echo -e "        -l\tno argument, returns a list of all instances"
@@ -51,7 +51,7 @@ function usage
     echo -e "    Run a command on all instances in parallel:"
     echo -e "    paws '<COMMAND>'\n"
     echo -e "    Check host access, report any failures and add any new authoritization requests"
-    echo -e "    paws -p PROFILE [-r REGION} -x\n"
+    echo -e "    paws -o organization [-r REGION} -x\n"
     echo -e "Examples:"
     echo -e "    List tags for all instances for the default account:    paws -L"
     echo -e "    Interactively connect to an instance for the client1 account in the us-west-2 region:    paws -p client1 -r us-west-2 -c"
@@ -84,7 +84,7 @@ callInstanceInfo ()
     local sortKey=$3
 
     # we need to build up the command to run with the provided arguments
-    CMD_TO_RUN="${dcUTILS}/scripts/instanceinfo.py -sc ${shellCommand} -o ${PROFILE}"
+    CMD_TO_RUN="${dcUTILS}/scripts/instanceinfo.py -sc ${shellCommand} -o ${ORGANIZATION}"
 
     if [[ -n ${REGION} ]]; then
         CMD_TO_RUN+=" -r ${REGION} "
@@ -274,38 +274,6 @@ checkHostAccess()
 
 
 #---  FUNCTION  ----------------------------------------------------------------
-#          NAME:  cleanUpPathList
-#   DESCRIPTION:
-#
-#    PARAMETERS:
-#       RETURNS:
-#-------------------------------------------------------------------------------
-cleanUpPathList()
-{
-    local pathsToKey="${1}"
-    retVal=$2
-
-    numPaths=${#pathsToKey[@]}
-    if [[ numPaths -ne 0 ]]; then
-        retPath=""
-       c=0
-       while [[ ${c} -lt ${numPaths} ]]; do
-            if [[ "${pathsToKey[${c}]}" != *"Permission denied"* ]] && [[ "${pathsToKey[${c}]}" != *"find:"* ]]; then
-                eval "$retVal=\"${pathsToKey[${c}]}\""
-                return
-            fi
-            c=$(($c+1))
-       done
-
-    else
-        echo "ERROR: No access key file ($keyName.pem) for this instance: $HOST could be found"
-        rm -f ${TMP_CONFIG}
-        exit 1
-    fi
-}
-
-
-#---  FUNCTION  ----------------------------------------------------------------
 #          NAME:  getPathToKey
 #   DESCRIPTION:
 #
@@ -317,33 +285,31 @@ getPathToKey()
     local keyName=$1
     pathToKey=$2
 
-    if [[ ${dcDEFAULT_APP_NAME} ]]; then
-        # check the appUtils keys first
-        pathsToKey=($(find ${BASE_CUSTOMER_DIR}/${dcDEFAULT_APP_NAME}/${CUSTOMER_APP_UTILS} -name "$keyName.pem"))
-        numPaths=${#pathsToKey[@]}
-        if [[ numPaths -ne 0 ]]; then
-            RETVAL=''
-            cleanUpPathList "${pathsToKey[@]}" RETVAL
-            eval "$pathToKey=\"${RETVAL}\""
-        else
-            # not there so lets check the pool
-            pathsToKey="$(find ${COMMON_KEY_DIR} -path "*/devops.center/keys/${keyName}.pem" 2>&1)"
-            RETVAL=''
-            cleanUpPathList "${pathsToKey[@]}" RETVAL
-            eval "$pathToKey=\"${RETVAL}\""
+    local q=0
+    local numItems=$(echo ${keyName} | jq -c 'length')
+    local foundKeyPath="false"
+    while [[ ${q} -lt ${numItems} ]]; do
+        aKeyName=$(echo ${keyName} |  jq -r ".[$q]")
+
+        if [[ -f "${COMMON_KEY_DIR}/devops.center/keys/${aKeyName}.pem" ]]; then
+            RETVAL="${COMMON_KEY_DIR}/devops.center/keys/${aKeyName}.pem"
+            foundKeyPath="true"
+        elif [[ -f "${COMMON_KEY_DIR}/${ORGANIZATION}/devops.center/keys/${aKeyName}.pem" ]]; then
+            RETVAL="${COMMON_KEY_DIR}/${ORGANIZATION}/devops.center/keys/${aKeyName}.pem"
+            foundKeyPath="true"
+        elif [[ -f ${HOME}/.ssh/devops.center/${aKeyName}.pem ]]; then
+            RETVAL="${HOME}/.ssh/devops.center/${aKeyName}.pem"
+            foundKeyPath="true"
         fi
-    else
-        if [[ -f "${COMMON_KEY_DIR}/devops.center/keys/${keyName}.pem" ]]; then
-            RETVAL="${COMMON_KEY_DIR}/devops.center/keys/${keyName}.pem"
-        elif [[ -f "${COMMON_KEY_DIR}/${PROFILE}/devops.center/keys/${keyName}.pem" ]]; then
-            RETVAL="${COMMON_KEY_DIR}/${PROFILE}/devops.center/keys/${keyName}.pem"
-        elif [[ -f ${HOME}/.ssh/devops.center/${keyName}.pem ]]; then
-            RETVAL="${HOME}/.ssh/devops.center/${keyName}.pem"
-        else
-            RETVAL="${COMMON_KEY_DIR}/${PROFILE}/keys/${keyName}.pem"
+
+        if [[ ${foundKeyPath} == "true" ]]; then
+            break
         fi
-        eval "$pathToKey=\"${RETVAL}\""
-    fi
+
+        q=$((q+1))
+    done
+
+    eval "$pathToKey=\"${RETVAL}\""
 }
 
 #-------------------- end of function definitions ------------------------------
@@ -354,8 +320,8 @@ WORKSPACENAME=''
 DO_NOT_RUN='false'
 while [[ $# -gt 0 ]]; do
     case $1 in
-        -p ) shift
-                PROFILE=$1
+        -o ) shift
+                ORGANIZATION=$1
                 ;;
         -r ) shift
                 REGION=$1
@@ -377,11 +343,6 @@ while [[ $# -gt 0 ]]; do
                  ;;
         -L ) LIST_NAMES='true'
              LIST_ALL='true'
-                 ;;
-        -a | --appName) shift
-             APPNAME=$1
-             dcDEFAULT_APP_NAME=$1
-             NEW_CMD_LINE="${NEW_CMD_LINE} --appName $APPNAME"
                  ;;
         --workspaceName) shift
              NEW_CMD_LINE="${NEW_CMD_LINE} --workspaceName $1"
@@ -563,7 +524,7 @@ while [[ ${i} -lt ${numItems} ]]; do
 
     # now get the path to the key
     pathToKey=''
-    getPathToKey ${keyName} pathToKey
+    getPathToKey "${keyName}" pathToKey
 
     # get the login if there is one
     destLogin=$(echo ${DESCRIBE_ALL} | jq -r ".[${i}].DestLogin")
@@ -609,7 +570,7 @@ while [[ ${i} -lt ${numItems} ]]; do
                 jumpServerKey=$(echo ${gatewayInfo} | jq -r ".[].JumpServerKey")
 
                 jumpServerPathToKey=''
-                getPathToKey ${jumpServerKey} jumpServerPathToKey
+                getPathToKey "${jumpServerKey}" jumpServerPathToKey
                 jumpServerCommand="ProxyCommand ssh -i ${jumpServerPathToKey} -W %h:%p -p ${jumpServerPort} ${jumpServerLogin}@${jumpServerHost}"
                 echo " ${jumpServerCommand}" >> ${TMP_CONFIG}
             fi
@@ -652,7 +613,7 @@ while [[ ${i} -lt ${numItems} ]]; do
             jumpServerKey=$(echo ${gatewayInfo} | jq -r ".[].JumpServerKey")
 
             jumpServerPathToKey=''
-            getPathToKey ${jumpServerKey} jumpServerPathToKey
+            getPathToKey "${jumpServerKey}" jumpServerPathToKey
             jumpServerCommand="ProxyCommand ssh -i ${jumpServerPathToKey} -W %h:%p -p ${jumpServerPort} ${jumpServerLogin}@${jumpServerHost}"
             echo " ${jumpServerCommand}" >> ${TMP_CONFIG}
         fi
