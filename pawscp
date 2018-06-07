@@ -23,7 +23,6 @@
 
 # NOTE: requires pdsh and aws-cli
 
-ORGANIZATION="default"
 SOURCE_DIR=$HOME
 declare -a NEW_SSH_CONFIG_VARS
 DO_NOT_RUN='false'
@@ -619,6 +618,15 @@ while [[ $# -gt 0 ]]; do
     esac
     shift
 done
+
+# check to see if an organization was passed and if not use the customer name from ~/.dcConfig/settings
+if [[ -z ${ORGANIZATION} ]]; then
+    ORGANIZATION=$(getValueFromSettings "CUSTOMER_NAME")
+    if [[ -z ${ORGANIZATION} ]]; then
+        echo "ERROR: No organization was provided and the default CUSTOMER_NAME was not found in the ~/.dcConfig/settings"
+        exit 1
+    fi
+fi
 
 # determine the key dir
 getKeyDir
