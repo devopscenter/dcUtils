@@ -328,7 +328,7 @@ getPathToKey()
     # now run through the list of search paths in order and look for a key from the keys
     # passed in to match.  Then proceed to the other paths and return when one is found
     #-------------------------------------------------------------------------------
-    for aSearchPath in ${SEARCH_PATHS[@]}
+    for aSearchPath in "${SEARCH_PATHS[@]}"
     do
         if [[ -d "${aSearchPath}" ]]; then
             for aKeyName in ${keyNameList[@]}
