@@ -275,8 +275,14 @@ checkHostAccess()
 
 #---  FUNCTION  ----------------------------------------------------------------
 #          NAME:  getPathToKey
-#   DESCRIPTION:
-#
+#   DESCRIPTION: This function will take the keyName list passed in and go through
+#                a set of directories where the private keys could be starting with
+#                the most likely and finishing with shared keys directories.  THis
+#                uses find in each of the directories to make the search a bit quicker
+#                and it starts at the personal .ssh directories as we should default
+#                to using the personal keys first and the personal keys are in the list
+#                then it will get over to the shared keys directories and picks up the
+#                first private one to match and then use it.
 #    PARAMETERS:
 #       RETURNS:
 #-------------------------------------------------------------------------------
@@ -285,44 +291,54 @@ getPathToKey()
     local keyName=$1
     pathToKey=$2
 
+    #-------------------------------------------------------------------------------
+    # first we set up the search paths in a specific order
+    #-------------------------------------------------------------------------------
+    declare -a SEARCH_PATHS=(
+        "${HOME}/.ssh"
+        "${HOME}/.ssh/devops.center"
+        "${COMMON_KEY_DIR}/devops.center/keys"
+        "${COMMON_KEY_DIR}/${ORGANIZATION}/devops.center/keys"
+    )
+
+    #-------------------------------------------------------------------------------
+    # make an array of strings for the keys
+    #-------------------------------------------------------------------------------
     local q=0
     local numItems=$(echo ${keyName} | jq -c 'length')
-    local foundKeyPath="false"
+    declare -a keyNameList
     while [[ ${q} -lt ${numItems} ]]; do
-        aKeyName=$(echo ${keyName} |  jq -r ".[$q]")
-
-        if [[ -f "${COMMON_KEY_DIR}/devops.center/keys/${aKeyName}.pem" ]]; then
-            RETVAL="${COMMON_KEY_DIR}/devops.center/keys/${aKeyName}.pem"
-            foundKeyPath="true"
-        elif [[ -f "${COMMON_KEY_DIR}/${ORGANIZATION}/devops.center/keys/${aKeyName}.pem" ]]; then
-            RETVAL="${COMMON_KEY_DIR}/${ORGANIZATION}/devops.center/keys/${aKeyName}.pem"
-            foundKeyPath="true"
-        elif [[ -f ${HOME}/.ssh/${keyName}.pem ]]; then
-            RETVAL="${HOME}/.ssh/${keyName}.pem"
-            foundKeyPath="true"
-        elif [[ -f ${HOME}/.ssh/devops.center/${aKeyName}.pem ]]; then
-            RETVAL="${HOME}/.ssh/devops.center/${aKeyName}.pem"
-            foundKeyPath="true"
-        fi
-
-        if [[ ${foundKeyPath} == "true" ]]; then
-            break
-        fi
-
+        keyNameList+=($(echo ${keyName} |  jq -r ".[$q]"))
         q=$((q+1))
     done
 
-    if [[ ${foundKeyPath} == "true" ]]; then
-        eval "$pathToKey=\"${RETVAL}\""
-    else
-        echo "ERROR: can not find an access key in any of the directories:"
-        echo "    ${COMMON_KEY_DIR}/devops.center/keys"
-        echo "    ${COMMON_KEY_DIR}/${PROFILE}/devops.center/keys"
-        echo "    ${HOME}/.ssh"
-        echo "    ${HOME}/.ssh/devops.center"
-        exit 1
-    fi
+    #-------------------------------------------------------------------------------
+    # now run through the list of search paths in order and look for a key from the keys
+    # passed in to match.  Then proceed to the other paths and return when one is found
+    #-------------------------------------------------------------------------------
+    for aSearchPath in ${SEARCH_PATHS[@]}
+    do
+        if [[ -d "${aSearchPath}" ]]; then
+            for aKeyName in ${keyNameList[@]}
+            do
+                RETVAL=$(find "${aSearchPath}" -maxdepth 1 -name "$aKeyName".pem)
+                if [[ -n "${RETVAL}" ]]; then
+                    eval "$pathToKey=\"${RETVAL}\""
+                    return
+                fi
+            done
+        fi
+    done
 
+    #-------------------------------------------------------------------------------
+    # if we get here a suitable private key was not found
+    #-------------------------------------------------------------------------------
+    echo "ERROR: can not find a suitable access key to access the host in any of the directories:"
+    echo "    ${COMMON_KEY_DIR}/devops.center/keys"
+    echo "    ${COMMON_KEY_DIR}/${ORGANIZATION}/devops.center/keys"
+    echo "    ${HOME}/.ssh"
+    echo "    ${HOME}/.ssh/devops.center"
+    exit 1
 }
 
 #-------------------- end of function definitions ------------------------------
@@ -514,7 +530,15 @@ if [[ -z "${HOST+x}" ]] && [[ "$CONNECT" ]]; then
             HOST=$(echo -e "$line"|awk '{print $2}')
         fi
     done < <(echo -e "$NUMBERED_LIST")
+
 fi
+
+
+#-------------------------------------------------------------------------------
+# go get the specific information for the selected HOST
+#-------------------------------------------------------------------------------
+callInstanceInfo "listOfIPAddresses" "Name=${HOST}"
+DESCRIBE_ALL=${INST_INFO_OUTPUT}
 
 #-------------------------------------------------------------------------------
 # create .ssh directory if it doesn't exist
@@ -644,7 +668,7 @@ done
 #-------------------------------------------------------------------------------
 if [[ "$HOST" ]] || [[ ${CHECK_HOST_ACCESS} == 'true' ]]; then
     if [[ ${CHECK_HOST_ACCESS} == 'true' ]]; then
-        # run the function that will itereate over all the hosts
+        # run the function that will iterate over all the hosts
         checkHostAccess
     else
         # connect to the single host
