@@ -464,17 +464,16 @@ fi
 SOURCE_DIR=$HOME
 #
 
-
-#-------------------------------------------------------------------------------
-# get full description of running instances from api and filter data using jq
-#-------------------------------------------------------------------------------
-callInstanceInfo "listOfIPAddresses" "${TAG}" "InstanceName"
-DESCRIBE_ALL=${INST_INFO_OUTPUT}
-
 #-------------------------------------------------------------------------------
 # LIST ONLY
 #-------------------------------------------------------------------------------
 if [[ "$LIST_NAMES" == 'true' ]] || [[ "$CONNECT" == 'true' ]]; then
+
+    #-------------------------------------------------------------------------------
+    # get full description of running instances from api and filter data using jq
+    #-------------------------------------------------------------------------------
+    callInstanceInfo "listOfIPAddresses" "${TAG}" "InstanceName"
+    DESCRIBE_ALL=${INST_INFO_OUTPUT}
 
     i=0
     numItems=$(echo ${DESCRIBE_ALL} | jq -c 'length')
@@ -522,7 +521,7 @@ fi
 #-------------------------------------------------------------------------------
 # for -c but no host specified, so prompt for input
 #-------------------------------------------------------------------------------
-if [[ -z "${HOST+x}" ]] && [[ "$CONNECT" ]]; then
+if [[ -z "${HOST}" ]] && [[ "$CONNECT" ]]; then
     echo -e "$NUMBERED_LIST"
     echo "enter selection number (return to quit)"
     read -r number
