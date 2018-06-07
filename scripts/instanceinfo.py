@@ -172,12 +172,14 @@ class InstanceInfo:
             anInst = self.lastReturnedListOfInstances[theInstanceName]
 
             # prepend the path if we have it.  And if so, then the key doesn't have the extension either so add it
+            retKeyList = []
             if anInst["KeyName"]:
                 for aKey in anInst["KeyName"]:
                     if self.keysDirectory:
                         theKey = self.keysDirectory + "/" + aKey + ".pem"
                     else:
                         theKey = str(aKey)
+                    retKeyList.append(theKey)
 
                     # store these away if needed later
                     self.lastReturnedListOfKeyAndPaths.append(theKey)
@@ -197,7 +199,7 @@ class InstanceInfo:
                         # and store this away if needed later
                         self.lastReturnedListOfKeyAndPaths.append(jumpServerKey)
 
-            retListKeys = self.getListOfKeys()
+            # retListKeys = self.getListOfKeys()
 
             # create a named tuple to return
             InstanceDetails = namedtuple('InstanceDetails', 'PublicIpAddress, PublicDnsName, PublicPort, '
@@ -215,7 +217,7 @@ class InstanceInfo:
                 Gateway=(anInst["JumpServer"] if "JumpServer" in anInst else ''),
                 InstanceName=anInst["TagsDict"]["Name"],
                 DestLogin=anInst["UserLogin"] if "UserLogin" in anInst else '',
-                DestKey=retListKeys,
+                DestKey=retKeyList,
                 Shard=anInst["TagsDict"]["Shard"] if "Shard" in anInst["TagsDict"] else '',
                 Tags=anInst["TagsDict"]))
 
