@@ -177,7 +177,7 @@ class InstanceInfo:
                     if self.keysDirectory:
                         theKey = self.keysDirectory + "/" + aKey + ".pem"
                     else:
-                        theKey = aKey
+                        theKey = str(aKey)
 
                     # store these away if needed later
                     self.lastReturnedListOfKeyAndPaths.append(theKey)
@@ -192,7 +192,7 @@ class InstanceInfo:
                         if self.keysDirectory:
                             jumpServerKey = self.keysDirectory + "/" + aJumpServerKey + ".pem"
                         else:
-                            jumpServerKey = aJumpServerKey
+                            jumpServerKey = str(aJumpServerKey)
 
                         # and store this away if needed later
                         self.lastReturnedListOfKeyAndPaths.append(jumpServerKey)
@@ -321,6 +321,8 @@ class InstanceInfo:
 
             instance["TagsDict"] = tagsDict
             instanceName = tagsDict["Name"]
+            if type(instance["KeyName"]) != list:
+                instance["KeyName"] = [instance["KeyName"]]
             self.allInstances[instanceName] = instance.copy()
 
     def checkInstanceForTags(self, anInstance, filterList):
