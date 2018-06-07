@@ -297,6 +297,9 @@ getPathToKey()
         elif [[ -f "${COMMON_KEY_DIR}/${ORGANIZATION}/devops.center/keys/${aKeyName}.pem" ]]; then
             RETVAL="${COMMON_KEY_DIR}/${ORGANIZATION}/devops.center/keys/${aKeyName}.pem"
             foundKeyPath="true"
+        elif [[ -f ${HOME}/.ssh/${keyName}.pem ]]; then
+            RETVAL="${HOME}/.ssh/${keyName}.pem"
+            foundKeyPath="true"
         elif [[ -f ${HOME}/.ssh/devops.center/${aKeyName}.pem ]]; then
             RETVAL="${HOME}/.ssh/devops.center/${aKeyName}.pem"
             foundKeyPath="true"
@@ -309,7 +312,17 @@ getPathToKey()
         q=$((q+1))
     done
 
-    eval "$pathToKey=\"${RETVAL}\""
+    if [[ ${foundKeyPath} == "true" ]]; then
+        eval "$pathToKey=\"${RETVAL}\""
+    else
+        echo "ERROR: can not find an access key in any of the directories:"
+        echo "    ${COMMON_KEY_DIR}/devops.center/keys"
+        echo "    ${COMMON_KEY_DIR}/${PROFILE}/devops.center/keys"
+        echo "    ${HOME}/.ssh"
+        echo "    ${HOME}/.ssh/devops.center"
+        exit 1
+    fi
+
 }
 
 #-------------------- end of function definitions ------------------------------
@@ -321,6 +334,10 @@ DO_NOT_RUN='false'
 while [[ $# -gt 0 ]]; do
     case $1 in
         -o ) shift
+                ORGANIZATION=$1
+                ;;
+        # an for legacy we offer the -p but at some point it should go away
+        -p ) shift
                 ORGANIZATION=$1
                 ;;
         -r ) shift
