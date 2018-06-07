@@ -23,7 +23,7 @@
 
 # NOTE: requires pdsh and aws-cli
 
-PROFILE="default"
+ORGANIZATION="default"
 SOURCE_DIR=$HOME
 declare -a NEW_SSH_CONFIG_VARS
 DO_NOT_RUN='false'
@@ -34,17 +34,17 @@ function usage
     echo -e "    pawscp is a tool that makes it easier to transfer files to and from and AWS EC2 instances.   \n"
     echo -e "Usage:"
     echo -e "    Optional arguments that can be used with any other combination of arguments:"
-    echo -e "    [-p PROFILE] [-r REGION] [--quiet] [-t \"TAG=VALUE OTHERTAG=OTHERVALUE\"]\n"
+    echo -e "    [-p ORGANIZATION] [-r REGION] [--quiet] [-t \"TAG=VALUE OTHERTAG=OTHERVALUE\"]\n"
     echo -e "    [host/all]:file1 [host/all]:file2"
     echo 
     echo -e "  NOTE: the file1 and file2 arguments need to be the last two arguments"
     echo 
     echo -e "    The gist of this is to be able to copy a file from the local machine to a remote instance (host) or to all the "
-    echo -e "    hosts for a given PROFILE and REGION. Hence, the following scenarios are supported: "
+    echo -e "    hosts for a given ORGANIZATION and REGION. Hence, the following scenarios are supported: "
     echo -e "    if one of the files has just has a colon and no host then that file is either a directory or file name "
     echo -e "        that will receive the other file"
     echo -e "    if both of the files has have a colon and no host prepended to the file, then that is an error."
-   # echo -e "    If there is no 'host:' or 'all:' -  it will take file1 and transfer it to all hosts found for PROFILE and REGION"
+   # echo -e "    If there is no 'host:' or 'all:' -  it will take file1 and transfer it to all hosts found for ORGANIZATION and REGION"
    # echo -e "        at the file2 location"
     echo -e "    If host is missing from either and each has a colon: that's an error since it doesn't know where to put it"
     echo -e "    By default it will express what is being transferred to where, good from the command line to see what"
@@ -54,10 +54,10 @@ function usage
     echo -e "    copy a file from the local machine to a specific destination host and put the file in the home directory."
     echo -e "    pawscp -p devops.center ~/filetotransfer destHost:~"
     echo
-    echo -e "    copy a file from the local machine to all instances available for the PROFILE and REGION host and put the file in the home directory."
+    echo -e "    copy a file from the local machine to all instances available for the ORGANIZATION and REGION host and put the file in the home directory."
     echo -e "    pawscp -p devops.center -r us-west-2 ~/filetotransfer :~"
     echo
-    echo -e "    copy a file from the local machine to all instances available for the PROFILE and REGION with the given tag and put the file in the home directory."
+    echo -e "    copy a file from the local machine to all instances available for the ORGANIZATION and REGION with the given tag and put the file in the home directory."
     echo -e "    pawscp -p devops.center -r us-west-2 -t "App=dcDemoBlog" ~/filetotransfer :~"
 }
 
@@ -287,42 +287,70 @@ cleanUpPathList()
 
 #---  FUNCTION  ----------------------------------------------------------------
 #          NAME:  getPathToKey
-#   DESCRIPTION:  
-#    PARAMETERS:  
-#       RETURNS:  
+#   DESCRIPTION: This function will take the keyName list passed in and go through
+#                a set of directories where the private keys could be starting with
+#                the most likely and finishing with shared keys directories.  THis
+#                uses find in each of the directories to make the search a bit quicker
+#                and it starts at the personal .ssh directories as we should default
+#                to using the personal keys first and the personal keys are in the list
+#                then it will get over to the shared keys directories and picks up the
+#                first private one to match and then use it.
+#    PARAMETERS:
+#       RETURNS:
 #-------------------------------------------------------------------------------
 getPathToKey()
 {
     local keyName=$1
     pathToKey=$2
 
-    if [[ ${dcDEFAULT_APP_NAME} ]]; then
-        # check the appUtils keys first
-        pathsToKey=($(find ${BASE_CUSTOMER_DIR}/${dcDEFAULT_APP_NAME}/${CUSTOMER_APP_UTILS} -name "$keyName.pem"))
-        numPaths=${#pathsToKey[@]}
-        if [[ numPaths -ne 0 ]]; then
-            RETVAL=''
-            cleanUpPathList "${pathsToKey[@]}" RETVAL
-            eval "$pathToKey=\"${RETVAL}\""
-        else
-            # not there so lets check the pool
-            pathsToKey="$(find ${COMMON_KEY_DIR} -path "*/devops.center/keys/${keyName}.pem" 2>&1)"
-            RETVAL=''
-            cleanUpPathList "${pathsToKey[@]}" RETVAL
-            eval "$pathToKey=\"${RETVAL}\""
+    #-------------------------------------------------------------------------------
+    # first we set up the search paths in a specific order
+    #-------------------------------------------------------------------------------
+    declare -a SEARCH_PATHS=(
+        "${HOME}/.ssh"
+        "${HOME}/.ssh/devops.center"
+        "${COMMON_KEY_DIR}/devops.center/keys"
+        "${COMMON_KEY_DIR}/${ORGANIZATION}/devops.center/keys"
+    )
+
+    #-------------------------------------------------------------------------------
+    # make an array of strings for the keys
+    #-------------------------------------------------------------------------------
+    local q=0
+    local numItems=$(echo ${keyName} | jq -c 'length')
+    declare -a keyNameList
+    while [[ ${q} -lt ${numItems} ]]; do
+        keyNameList+=($(echo ${keyName} |  jq -r ".[$q]"))
+        q=$((q+1))
+    done
+
+    #-------------------------------------------------------------------------------
+    # now run through the list of search paths in order and look for a key from the keys
+    # passed in to match.  Then proceed to the other paths and return when one is found
+    #-------------------------------------------------------------------------------
+    for aSearchPath in ${SEARCH_PATHS[@]}
+    do
+        if [[ -d "${aSearchPath}" ]]; then
+            for aKeyName in ${keyNameList[@]}
+            do
+                RETVAL=$(find "${aSearchPath}" -maxdepth 1 -name "$aKeyName".pem)
+                if [[ -n "${RETVAL}" ]]; then
+                    eval "$pathToKey=\"${RETVAL}\""
+                    return
+                fi
+            done
         fi
-    else
-        if [[ -f "${COMMON_KEY_DIR}/devops.center/keys/${keyName}.pem" ]]; then
-            RETVAL="${COMMON_KEY_DIR}/devops.center/keys/${keyName}.pem"
-        elif [[ -f "${COMMON_KEY_DIR}/${PROFILE}/devops.center/keys/${keyName}.pem" ]]; then
-            RETVAL="${COMMON_KEY_DIR}/${PROFILE}/devops.center/keys/${keyName}.pem"
-        elif [[ -f ${HOME}/.ssh/devops.center/${keyName}.pem ]]; then
-            RETVAL="${HOME}/.ssh/devops.center/${keyName}.pem"
-        else
-            RETVAL="${COMMON_KEY_DIR}/${PROFILE}/keys/${keyName}.pem"
-        fi
-        eval "$pathToKey=\"${RETVAL}\""
-    fi
+    done
+
+    #-------------------------------------------------------------------------------
+    # if we get here a suitable private key was not found
+    #-------------------------------------------------------------------------------
+    echo "ERROR: can not find a suitable access key to access the host in any of the directories:"
+    echo "    ${COMMON_KEY_DIR}/devops.center/keys"
+    echo "    ${COMMON_KEY_DIR}/${ORGANIZATION}/devops.center/keys"
+    echo "    ${HOME}/.ssh"
+    echo "    ${HOME}/.ssh/devops.center"
+    exit 1
 }
 
 
@@ -343,7 +371,7 @@ callInstanceInfo ()
     local sortKey=$3
 
     # we need to build up the command to run with the provided arguments
-    CMD_TO_RUN="${dcUTILS}/scripts/instanceinfo.py -sc ${shellCommand} -o ${PROFILE}"
+    CMD_TO_RUN="${dcUTILS}/scripts/instanceinfo.py -sc ${shellCommand} -o ${ORGANIZATION}"
 
     if [[ -n ${REGION} ]]; then
         CMD_TO_RUN+=" -r ${REGION} "
@@ -495,7 +523,7 @@ createSSHConfigFile()
 
         # now get the path to the key
         pathToKey=''
-        getPathToKey ${keyName} pathToKey
+        getPathToKey "${keyName}" pathToKey
 
         # get the login if there is one
         destLogin=$(echo ${DESCRIBE_ALL} | jq -r ".[${i}].DestLogin")
@@ -537,7 +565,7 @@ createSSHConfigFile()
             jumpServerKey=$(echo ${gatewayInfo} | jq -r ".[].JumpServerKey")
 
             jumpServerPathToKey=''
-            getPathToKey ${jumpServerKey} jumpServerPathToKey
+            getPathToKey "${jumpServerKey}" jumpServerPathToKey
             jumpServerCommand="ProxyCommand ssh -i ${jumpServerPathToKey} -W %h:%p -p ${jumpServerPort} ${jumpServerLogin}@${jumpServerHost}"
             echo " ${jumpServerCommand}" >> ${TMP_CONFIG}
         fi
@@ -558,8 +586,12 @@ NEW_CMD_LINE=''
 PRINT_OUTPUT='true'
 while [[ $# -gt 0 ]]; do
     case $1 in
+        -o ) shift
+                ORGANIZATION=$1
+                ;;
+        # an for legacy we offer the -p but at some point it should go away
         -p ) shift
-                PROFILE=$1
+                ORGANIZATION=$1
                 ;;
         -r ) shift
                 REGION=$1
