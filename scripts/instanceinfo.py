@@ -84,7 +84,8 @@ class InstanceInfo:
                 # now we need to check if this is being run internally the common dir will have a customer name
                 # at the end and we need to strip that off and put the customer name from this run there instead.
                 if not checkForDCInternal:
-                    commonSharedFile = commonSharedDir + "/devops.center/dcConfig/settings.json"
+                    self.sharedDirectory = commonSharedDir
+                    commonSharedFile = self.sharedDirectory + "/devops.center/dcConfig/settings.json"
                 else:
                     if not self.organization:
                         # check the personal .dcConfig/settings file for the customer name
@@ -93,8 +94,8 @@ class InstanceInfo:
                             print("ERROR: Customer name was not passed in and it can not be determined. Exiting.")
                             sys.exit(1)
 
-                    commonSharedFile = os.path.dirname(commonSharedDir) + "/" + self.organization + \
-                                       "/devops.center/dcConfig/settings.json"
+                    self.sharedDirectory = os.path.dirname(commonSharedDir) + "/" + self.organization
+                    commonSharedFile = self.sharedDirectory + "/devops.center/dcConfig/settings.json"
             else:
                 print('The key dcCOMMON_SHARED_DIR was not found in the ~/.dcConfig/settings file.  You can specify '
                       'a shared directory with the --sharedDirectory option.')
@@ -166,7 +167,7 @@ class InstanceInfo:
             else:
                 print("Error: Unknown InstanceType({}) for region: {}".format(regionInfo['InstanceType'],
                                                                               regionInfo['RegionName']),
-                      regionInfo['RegionName'])
+                                                                              regionInfo['RegionName'])
 
         for theInstanceName in self.lastReturnedListOfInstances:
             anInst = self.lastReturnedListOfInstances[theInstanceName]
@@ -175,14 +176,10 @@ class InstanceInfo:
             retKeyList = []
             if anInst["KeyName"]:
                 for aKey in anInst["KeyName"]:
-                    if self.keysDirectory:
-                        theKey = self.keysDirectory + "/" + aKey + ".pem"
-                    else:
-                        theKey = str(aKey)
-                    retKeyList.append(theKey)
+                    retKeyList.append(str(aKey))
 
                     # store these away if needed later
-                    self.lastReturnedListOfKeyAndPaths.append(theKey)
+                    self.lastReturnedListOfKeyAndPaths.append(str(aKey))
 
             # and see if this instance has a jumpserver associated with it and add that jump servers
             # keyName to the list
@@ -190,16 +187,11 @@ class InstanceInfo:
                 jumpServerInfo = self.getJumpServerInfo(theInstanceName)
 
                 if jumpServerInfo:
-                    for aJumpServerKey in jumpServerInfo["KeyName"]:
-                        if self.keysDirectory:
-                            jumpServerKey = self.keysDirectory + "/" + aJumpServerKey + ".pem"
-                        else:
-                            jumpServerKey = str(aJumpServerKey)
-
+                    for tmpKey in jumpServerInfo["KeyName"]:
                         # and store this away if needed later
-                        self.lastReturnedListOfKeyAndPaths.append(jumpServerKey)
+                        self.lastReturnedListOfKeyAndPaths.append(str(tmpKey))
 
-            # retListKeys = self.getListOfKeys()
+            retKeyList = self.determineWhereKeyExists(retKeyList, self.keysDirectory)
 
             # create a named tuple to return
             InstanceDetails = namedtuple('InstanceDetails', 'PublicIpAddress, PublicDnsName, PublicPort, '
@@ -220,6 +212,7 @@ class InstanceInfo:
                 DestKey=retKeyList,
                 Shard=anInst["TagsDict"]["Shard"] if "Shard" in anInst["TagsDict"] else '',
                 Tags=anInst["TagsDict"]))
+
 
         return self.lastReturnedListOfIPAddresses
 
@@ -324,7 +317,7 @@ class InstanceInfo:
             instance["TagsDict"] = tagsDict
             instanceName = tagsDict["Name"]
             if type(instance["KeyName"]) != list:
-                instance["KeyName"] = [instance["KeyName"]]
+                instance["KeyName"] = [str(instance["KeyName"])]
             self.allInstances[instanceName] = instance.copy()
 
     def checkInstanceForTags(self, anInstance, filterList):
@@ -409,10 +402,17 @@ class InstanceInfo:
                 # TODO: determine if we want to support that if they provide a directory for the keys that both the
                 # jumpserver key and the instance key will be in the same directory.
 
+                jumpServerKey = []
                 if self.keysDirectory:
-                    jumpServerKey = self.keysDirectory + "/" + jumpServerInfo["KeyName"] + ".pem"
+                    if type(jumpServerInfo["KeyName"]) == list:
+                        for tmpKey in jumpServerInfo["KeyName"]:
+                            jumpServerKey.append(self.keysDirectory + "/" + tmpKey + ".pem")
+                    else:
+                        jumpServerKey = self.keysDirectory + "/" + jumpServerInfo["KeyName"] + ".pem"
                 else:
                     jumpServerKey = jumpServerInfo["KeyName"]
+
+                jumpServerKeysAndPath = self.determineWhereKeyExists(jumpServerKey, self.keysDirectory)
 
                 #jumpServerPart = "ProxyCommand=\"ssh -i " + jumpServerKey + " -W %h:%p -p " + \
                 #                 str(jumpServerInfo["PublicPort"]) + " " + jumpServerInfo["UserLogin"] + \
@@ -420,7 +420,7 @@ class InstanceInfo:
                 jumpServerPartHost = jumpServerInfo["PublicIpAddress"]
                 jumpServerPartPort = jumpServerInfo["PublicPort"]
                 jumpServerPartLogin = jumpServerInfo["UserLogin"]
-                jumpServerPartKey = jumpServerKey
+                jumpServerPartKey = jumpServerKeysAndPath
 
                 destSSHPort = ""
                 destSCPPort = ""
@@ -478,7 +478,49 @@ class InstanceInfo:
         # or is list comprehension more efficient...?
         retList = []
         [retList.append(item) for item in self.lastReturnedListOfKeyAndPaths if item not in retList]
+
+        # and now go through the list and see where the keys can be found on this system
+        retList = self.determineWhereKeyExists(retList, self.keysDirectory)
+
         return retList
+
+    def determineWhereKeyExists(self, keyList, additionalSearchPath=None):
+        """Search through a list of directories for each key passed in and see where the key exists"""
+        retList = []
+        searchPaths = [
+            "~/.ssh",
+            self.sharedDirectory + "/devops.center/keys"
+        ]
+
+        # if there is an additional path prepend it to the search list
+        if additionalSearchPath:
+            if type(additionalSearchPath) == list:
+                searchPaths = additionalSearchPath + searchPaths
+            else:
+                searchPaths.insert(0, additionalSearchPath)
+
+        for aPath in searchPaths:
+            if "~" in aPath:
+                aPath = expanduser(aPath)
+
+
+            keysToRemove = []
+            for keyToFind in keyList:
+                # get just the key name stripping off any paths
+                strippedKeyToFind = os.path.basename(keyToFind)
+
+                # check to see that the extension is on the keyname
+                if not re.match(".pem$", strippedKeyToFind):
+                    strippedKeyToFind = strippedKeyToFind + ".pem"
+
+                tmpKeyPath = aPath + "/" + strippedKeyToFind
+                if os.path.exists(tmpKeyPath):
+                    retList.append(tmpKeyPath)
+                    keysToRemove.append(keyToFind)
+
+            keyList = [x for x in keyList if x not in keysToRemove]
+
+        return retList or None
 
 
 def checkArgs():
@@ -599,7 +641,6 @@ def main(argv):
         keys = instances.getListOfKeys()
         for aKey in keys:
             print("{}".format(aKey))
-        print("THE END")
 
 
 if __name__ == "__main__":
