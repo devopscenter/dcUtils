@@ -234,7 +234,7 @@ getKeyDir()
         # we will be using the common key directory so we need to get the base name which is under
         # the Google Drive.  Since it could be named something else or just because it has a space in
         # the name, we need to expand it once so that we can use it below when finding the key.
-        # dcCOMMON_SHARED_DIR is set when dcUtils is installed and put into the environmnet.
+        # dcCOMMON_SHARED_DIR is set when dcUtils is installed and put into the environment.
         dcCOMMON_SHARED_DIR=$(getValueFromSettings "dcCOMMON_SHARED_DIR")
 
         if [[ -z ${dcCOMMON_SHARED_DIR} ]]; then
@@ -284,73 +284,6 @@ cleanUpPathList()
 }
 
 
-#---  FUNCTION  ----------------------------------------------------------------
-#          NAME:  getPathToKey
-#   DESCRIPTION: This function will take the keyName list passed in and go through
-#                a set of directories where the private keys could be starting with
-#                the most likely and finishing with shared keys directories.  THis
-#                uses find in each of the directories to make the search a bit quicker
-#                and it starts at the personal .ssh directories as we should default
-#                to using the personal keys first and the personal keys are in the list
-#                then it will get over to the shared keys directories and picks up the
-#                first private one to match and then use it.
-#    PARAMETERS:
-#       RETURNS:
-#-------------------------------------------------------------------------------
-getPathToKey()
-{
-    local keyName=$1
-    pathToKey=$2
-
-    #-------------------------------------------------------------------------------
-    # first we set up the search paths in a specific order
-    #-------------------------------------------------------------------------------
-    declare -a SEARCH_PATHS=(
-        "${HOME}/.ssh"
-        "${HOME}/.ssh/devops.center"
-        "${COMMON_KEY_DIR}/devops.center/keys"
-        "${COMMON_KEY_DIR}/${ORGANIZATION}/devops.center/keys"
-    )
-
-    #-------------------------------------------------------------------------------
-    # make an array of strings for the keys
-    #-------------------------------------------------------------------------------
-    local q=0
-    local numItems=$(echo ${keyName} | jq -c 'length')
-    declare -a keyNameList
-    while [[ ${q} -lt ${numItems} ]]; do
-        keyNameList+=($(echo ${keyName} |  jq -r ".[$q]"))
-        q=$((q+1))
-    done
-
-    #-------------------------------------------------------------------------------
-    # now run through the list of search paths in order and look for a key from the keys
-    # passed in to match.  Then proceed to the other paths and return when one is found
-    #-------------------------------------------------------------------------------
-    for aSearchPath in "${SEARCH_PATHS[@]}"
-    do
-        if [[ -d "${aSearchPath}" ]]; then
-            for aKeyName in ${keyNameList[@]}
-            do
-                RETVAL=$(find "${aSearchPath}" -maxdepth 1 -name "$aKeyName".pem)
-                if [[ -n "${RETVAL}" ]]; then
-                    eval "$pathToKey=\"${RETVAL}\""
-                    return
-                fi
-            done
-        fi
-    done
-
-    #-------------------------------------------------------------------------------
-    # if we get here a suitable private key was not found
-    #-------------------------------------------------------------------------------
-    echo "ERROR: can not find a suitable access key to access the host in any of the directories:"
-    echo "    ${COMMON_KEY_DIR}/devops.center/keys"
-    echo "    ${COMMON_KEY_DIR}/${ORGANIZATION}/devops.center/keys"
-    echo "    ${HOME}/.ssh"
-    echo "    ${HOME}/.ssh/devops.center"
-    exit 1
-}
 
 
 #---  FUNCTION  ----------------------------------------------------------------
@@ -524,8 +457,7 @@ createSSHConfigFile()
         gateway=$(echo ${DESCRIBE_ALL} | jq -r ".[${i}].Gateway")
 
         # now get the path to the key
-        pathToKey=''
-        getPathToKey "${keyName}" pathToKey
+        pathToKey=$(echo "${keyName}" |  jq -r ".[0]")
 
         # get the login if there is one
         destLogin=$(echo ${DESCRIBE_ALL} | jq -r ".[${i}].DestLogin")
@@ -566,8 +498,7 @@ createSSHConfigFile()
             jumpServerLogin=$(echo ${gatewayInfo} | jq -r ".[].JumpServerLogin")
             jumpServerKey=$(echo ${gatewayInfo} | jq -r ".[].JumpServerKey")
 
-            jumpServerPathToKey=''
-            getPathToKey "${jumpServerKey}" jumpServerPathToKey
+            jumpServerPathToKey=$(echo "${jumpServerKey}" |  jq -r ".[0]")
             jumpServerCommand="ProxyCommand ssh -i ${jumpServerPathToKey} -W %h:%p -p ${jumpServerPort} ${jumpServerLogin}@${jumpServerHost}"
             echo " ${jumpServerCommand}" >> ${TMP_CONFIG}
         fi
