@@ -335,6 +335,10 @@ fi
 OSNAME=$(uname -s)
 setupNetwork
 
+# if the CONTAINER_TAG is available use it for the dcSTACK_VERSION
+if [[ -n ${CONTAINER_TAG} ]]; then
+    dcSTACK_VERSION=${CONTAINER_TAG}
+fi
 
 if [[ ${SERVICE_TO_START} ]]; then
     CMDTORUN="docker-compose -f ${DOCKER_COMPOSE_FILE} -p ${dcDEFAULT_APP_NAME} start ${SERVICE_TO_START}"

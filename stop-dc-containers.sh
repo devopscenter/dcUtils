@@ -306,6 +306,11 @@ fi
 OSNAME=$(uname -s)
 setupNetwork
 
+# if the CONTAINER_TAG is available use it for the dcSTACK_VERSION
+if [[ -n ${CONTAINER_TAG} ]]; then
+    dcSTACK_VERSION=${CONTAINER_TAG}
+fi
+
 # check to see if we are running a multiple apps stacks and if they are on MacOS we need to remove the containers before
 # stopping the containers.
 if [[ ${OSNAME} == "Darwin" ]]; then
