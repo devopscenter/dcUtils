@@ -47,16 +47,12 @@
 #-------------------------------------------------------------------------------
 usage ()
 {
-    echo -e "Usage: switchWorkspace.sh -n newWorkspaceName [-x]"
+    echo -e "Usage: switchWorkspace.sh -n newWorkspaceName"
     echo
     echo -e "This script will switch the workspace to the new workspacename"
     echo -e "    if it exists in the $HOME/.dcConfig/baseDirectory"
     echo -e "NOTE: use 'default' if the workspace is unknown.  This can be "
     echo -e "    checked by looking at the $HOME/.dcConfig/baseDirectory file"
-#    echo -e "-x  is optional argument that when present will change the customer"
-#    echo -e "    name in the ~/dcConfig/settings file.  This would be benificial"
-#    echo -e "    if you need to run one of the dcUtils scripts as if it was being"
-#    echo -e "    run by that customer. "
     echo
     CURRENT=$(grep "CURRENT_WORKSPACE=" ${HOME}/.dcConfig/baseDirectory)
     echo -e "Current workspace is: ${CURRENT#CURRENT_WORKSPACE=}"
@@ -87,15 +83,11 @@ fi
 # Loop through the arguments and assign input args with the appropriate variables
 #-------------------------------------------------------------------------------
 NEW_WORKSPACE_NAME=""
-CHANGE_CUSTOMER_NAME="FALSE"
 
 while [[ $# -gt 0 ]]; do
     case ${1} in
       "-n" )   shift
              A_WORKSPACE_NAME=$1
-             ;;
-      "-x" )   
-             CHANGE_CUSTOMER_NAME="TRUE"
              ;;
       * )    usage
              exit 1
@@ -140,9 +132,11 @@ fi
 #-------------------------------------------------------------------------------
 sed -i -e "s/CURRENT_WORKSPACE=.*/CURRENT_WORKSPACE=${NEW_WORKSPACE_NAME}/" "${CONFIG_FILE}"
 
-if [[ ${CHANGE_CUSTOMER_NAME} == "TRUE" ]]; then
-    newCustomerName=${FILE_EXISTS##*/}
-    sed -i -e "s/CUSTOMER_NAME=.*/CUSTOMER_NAME=${newCustomerName,,}/" ~/.dcConfig/settings
-    sed -i -e "s/PROFILE=.*/PROFILE=${newCustomerName,,}/" ~/.dcConfig/settings
-    sed -i -e "/dcCOMMON_SHARED_DIR/s/=\"\(.*\/\).*\"/=\"\1${newCustomerName,,}\"/" ~/.dcConfig/settings
-fi
+
+#-------------------------------------------------------------------------------
+# Since they are using workspaces there a couple other places that will need to be changed in the ~/.dcConfig/settings
+#-------------------------------------------------------------------------------
+newCustomerName=${FILE_EXISTS##*/}
+sed -i -e "s/CUSTOMER_NAME=.*/CUSTOMER_NAME=${newCustomerName,,}/" ~/.dcConfig/settings
+sed -i -e "s/PROFILE=.*/PROFILE=${newCustomerName,,}/" ~/.dcConfig/settings
+sed -i -e "/dcCOMMON_SHARED_DIR/s/=\"\(.*\/\).*\"/=\"\1${newCustomerName,,}\"/" ~/.dcConfig/settings
