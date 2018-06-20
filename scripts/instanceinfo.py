@@ -74,7 +74,6 @@ class InstanceInfo:
     def getCustomerRegions(self):
         """read the customers shared settings file to get the regions they have instances in."""
         # first get the shard directory from the users specific settings file
-        getCustomerNameFromSettionsJson = False
         if not self.sharedDirectory:
             checkForDCInternal = self.getSettingsValue("dcInternal")
             commonSharedDir = self.getSettingsValue("dcCOMMON_SHARED_DIR")
@@ -101,7 +100,6 @@ class InstanceInfo:
                       'a shared directory with the --sharedDirectory option.')
                 sys.exit(1)
         else:
-            getCustomerNameFromSettionsJson = True
             commonSharedFile = self.sharedDirectory + "/devops.center/dcConfig/settings.json"
 
         # read in the shared settings file
@@ -113,8 +111,8 @@ class InstanceInfo:
             print("Shared dcConfig settings file error: {}".format(e))
             sys.exit(1)
 
-        if getCustomerNameFromSettionsJson:
-            self.organization = settingsRaw['Customer']['Name']
+        if not self.organization:
+            self.organization = self.getSettingsValue('PROFILE')
 
         self.allRegions = settingsRaw['Regions']
 
@@ -251,14 +249,19 @@ class InstanceInfo:
             # looping through regions gathering data
             for aRegion in self.customerRegionsToSearch:
                 if aRegion['InstanceType'] == 'AWS':
-                    aSession = boto3.Session(profile_name=self.organization, region_name=aRegion['RegionName'])
+                    if self.organization:
+                        aSession = boto3.Session(profile_name=self.organization, region_name=aRegion['RegionName'])
+                    else:
+                        aSession = boto3.Session(region_name=aRegion['RegionName'])
+
                     self.getInstancesFromAWSForRegion(aSession, filterListToSend)
 
         elif self.organization:
             aSession = boto3.Session(profile_name=self.organization)
             self.getInstancesFromAWSForRegion(aSession, filterListToSend)
         else:
-            # Don't know if we will ever have this situation with no customer, but it's here just in case
+            # this is when it is running on an AWS that has the IAM rule to be able to access a customers instances
+            # without a ~/.aws/{config|credentials}
             aSession = boto3.Session()
             self.getInstancesFromAWSForRegion(aSession, filterListToSend)
 
