@@ -554,7 +554,7 @@ while [[ ${i} -lt ${numItems} ]]; do
                 jumpServerKey=$(echo ${gatewayInfo} | jq -r ".[].JumpServerKey")
 
                 jumpServerPathToKey=$(echo "${jumpServerKey}" |  jq -r ".[0]")
-                jumpServerCommand="ProxyCommand ssh -i ${jumpServerPathToKey} -W %h:%p -p ${jumpServerPort} ${jumpServerLogin}@${jumpServerHost}"
+                jumpServerCommand="ProxyCommand ssh -i \"${jumpServerPathToKey}\" -W %h:%p -p ${jumpServerPort} ${jumpServerLogin}@${jumpServerHost}"
                 echo " ${jumpServerCommand}" >> ${TMP_CONFIG}
             fi
             echo >> ${TMP_CONFIG}
@@ -596,7 +596,7 @@ while [[ ${i} -lt ${numItems} ]]; do
             jumpServerKey=$(echo ${gatewayInfo} | jq -r ".[].JumpServerKey")
 
             jumpServerPathToKey=$(echo "${jumpServerKey}" |  jq -r ".[0]")
-            jumpServerCommand="ProxyCommand ssh -i ${jumpServerPathToKey} -W %h:%p -p ${jumpServerPort} ${jumpServerLogin}@${jumpServerHost}"
+            jumpServerCommand="ProxyCommand ssh -i \"${jumpServerPathToKey}\" -W %h:%p -p ${jumpServerPort} ${jumpServerLogin}@${jumpServerHost}"
             echo " ${jumpServerCommand}" >> ${TMP_CONFIG}
         fi
         echo >> ${TMP_CONFIG}
