@@ -322,7 +322,7 @@ fi
 if [[ ${SERVICE_TO_STOP} ]]; then
     CMDTORUN="docker-compose -f ${DOCKER_COMPOSE_FILE} -p ${dcDEFAULT_APP_NAME} stop ${SERVICE_TO_STOP}"
 else
-    CMDTORUN="docker-compose -f ${DOCKER_COMPOSE_FILE} -p ${dcDEFAULT_APP_NAME} stop"
+    CMDTORUN="docker-compose -f ${DOCKER_COMPOSE_FILE} -p ${dcDEFAULT_APP_NAME} stop -t 0"
 fi
 # and bring it all down
 dcLog  "${CMDTORUN}"
