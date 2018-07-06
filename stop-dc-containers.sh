@@ -88,6 +88,7 @@ setupNetwork()
     export DOCKER_SYSLOG_IP="${SUBNET_TO_USE}.2"
     export DOCKER_PGMASTER_IP="${SUBNET_TO_USE}.4"
     export DOCKER_MONGODB_IP="${SUBNET_TO_USE}.5"
+    export DOCKER_MYSQLMASTER_IP="${SUBNET_TO_USE}.6"
     export DOCKER_WEB_1_IP="${SUBNET_TO_USE}.10"
     export DOCKER_WEB_2_IP="${SUBNET_TO_USE}.11"
     export DOCKER_WORKER_1_IP="${SUBNET_TO_USE}.20"
@@ -111,15 +112,20 @@ setupNetwork()
         export DOCKER_WEB_2_PORT_443="${DOCKER_WEB_2_IP}:443:443"
 
         # worker 1
-        export DOCKER_WORKER_1_PORT_5555="${DOCKER_WEB_1_IP}:5555:5555"
+        export DOCKER_WORKER_1_PORT_80="${DOCKER_WORKER_1_IP}:80:80"
+        export DOCKER_WORKER_1_PORT_5555="${DOCKER_WORKER_1_IP}:5555:5555"
         # worker 2
-        export DOCKER_WORKER_2_PORT_5555="${DOCKER_WEB_2_IP}:5555:5555"
+        export DOCKER_WORKER_2_PORT_80="${DOCKER_WORKER_2_IP}:80:80"
+        export DOCKER_WORKER_2_PORT_5555="${DOCKER_WORKER_2_IP}:5555:5555"
 
         # postgres
         export DOCKER_PGMASTER_PORT_5432="${DOCKER_PGMASTER_IP}:5432:5432"
 
         # mongodb
         export DOCKER_MONGODB_PORT_27017="${DOCKER_MONGODB_IP}:27017:27017"
+
+        # mysql
+        export DOCKER_MYSQL_PORT_3306="${DOCKER_MYSQLMASTER_IP}:3306:3306"
 
         # redis
         export DOCKER_REDIS_PORT_6379="${DOCKER_REDIS_IP}:6379:6379"
@@ -137,9 +143,11 @@ setupNetwork()
         export DOCKER_WEB_2_PORT_443="443"
 
         # worker
+        export DOCKER_WORKER_1_PORT_80="80"
         export DOCKER_WORKER_1_PORT_5555="5555"
 
         # worker 2
+        export DOCKER_WORKER_2_PORT_80="80"
         export DOCKER_WORKER_2_PORT_5555="5555"
 
         # postgres
@@ -147,6 +155,9 @@ setupNetwork()
 
         # mongodb
         export DOCKER_MONGODB_PORT_27017="27017"
+
+        # mysql
+        export DOCKER_MYSQL_PORT_3306="3306"
 
         # redis
         export DOCKER_REDIS_PORT_6379="6379"
@@ -181,6 +192,7 @@ tearDownNetwork()
     export DOCKER_REDIS_IP="${SUBNET_TO_USE}.3"
     export DOCKER_PGMASTER_IP="${SUBNET_TO_USE}.4"
     export DOCKER_MONGODB_IP="${SUBNET_TO_USE}.5"
+    export DOCKER_MYSQLMASTER_IP="${SUBNET_TO_USE}.6"
     export DOCKER_WEB_1_IP="${SUBNET_TO_USE}.10"
 #    export DOCKER_WEB_2_IP="${SUBNET_TO_USE}.11"     # if needed
     export DOCKER_WORKER_1_IP="${SUBNET_TO_USE}.20"
@@ -207,6 +219,10 @@ tearDownNetwork()
         interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_MONGODB_IP} ")
         if [[ ${interfaceOutput} ]]; then
             sudo ifconfig lo0 -alias "${DOCKER_MONGODB_IP} "
+        fi
+        interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_MYSQLMASTER_IP} ")
+        if [[ ${interfaceOutput} ]]; then
+            sudo ifconfig lo0 -alias "${DOCKER_MYSQLMASTER_IP} "
         fi
         interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_WEB_1_IP} ")
         if [[ ${interfaceOutput} ]]; then
