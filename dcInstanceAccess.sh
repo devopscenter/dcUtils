@@ -79,7 +79,11 @@ getValueFromSettings()
 {
     keyToFind=$1
     aKeyValue=$(grep "^${keyToFind}" ~/.dcConfig/settings)
-    echo ${aKeyValue#*=}
+    justTheValue=${aKeyValue#*=}
+    # remove any double quotes around the value
+    var1=${justTheValue#*\"}
+    unquotedVar=${var1%\"}
+    echo "${unquotedVar#*=}"
 }	# ----------  end of function getValueFromSettings  ----------
 
 
