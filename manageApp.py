@@ -282,8 +282,11 @@ class ManageAppName:
             print(self.getUniqueStackID())
             sys.exit(1)
 
-        if self.sharedUtilsFlag:
-            self.writeToSharedSettings()
+# TODO come back to this when implementing the shared settings
+# during the create app.  This will need to utilize the class
+# SharedSettings
+#        if self.sharedUtilsFlag:
+#            self.writeToSharedSettings()
 
     def parseOptions(self, options):
         """options is string of comma separate key=value pairs. If there is
