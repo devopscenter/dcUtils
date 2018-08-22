@@ -831,6 +831,7 @@ class ManageAppName:
         if self.sharedUtilsFlag and theType == "utils":
             # the basePath includes the standard shared repo named
             # directory
+            print("joinWithGit for utils, basePath is: {}").format(basePath)
             if os.path.exists(basePath):
                 # then we need to be in that directory to do the pull
                 originalDir = os.getcwd()
