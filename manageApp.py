@@ -831,20 +831,19 @@ class ManageAppName:
         if self.sharedUtilsFlag and theType == "utils":
             # the basePath includes the standard shared repo named
             # directory
-            print("joinWithGit for utils, basePath is: {}").format(basePath)
             if os.path.exists(basePath + "/dcShared-utils"):
                 # then we need to be in that directory to do the pull
                 originalDir = os.getcwd()
                 os.chdir(basePath + '/dcShared-utils')
                 flagToChangeBackToOriginalDir = True
-                print("Cloning: " + theURL)
+                print("Pulling: " + theURL)
+                cloneOrPull = " pull "
+                cloneOrPullString = "pulling"
             else:
                 flagToChangeBackToOriginalDir = True
                 originalDir = os.getcwd()
                 os.chdir(self.baseDir)
-                print("Pulling: " + theURL)
-                cloneOrPull = " pull "
-                cloneOrPullString = "pulling"
+                print("Cloning: " + theURL)
         else:
             print("Cloning: " + theURL)
 
