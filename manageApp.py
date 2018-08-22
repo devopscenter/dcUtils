@@ -36,6 +36,7 @@
 
 # flake8: noqa
 import os
+import fnmatch
 from os.path import expanduser
 import shutil
 import sys
@@ -144,7 +145,7 @@ class ManageAppName:
                     " will assist with correcting this.")
             sys.exit(1)
 
-        # need to get the information from the shared settings about the 
+        # need to get the information from the shared settings about the
         # application VCS (git) URL(s) and the utilities URL.  This was
         # created when the application was created
         self.theSharedSettings = SharedSettings(self.sharedSettingsFile)
@@ -327,7 +328,7 @@ class ManageAppName:
 
         # get the app-utils
         self.joinWithGit(basePath, "utils", self.theSharedSettings.getUtilitiesRepo(self.appName))
-        
+
         # and the environments directory
         envDir = basePath + "/" + self.utilsDirName + "/environments"
         if not os.path.exists(envDir):
@@ -349,8 +350,17 @@ class ManageAppName:
             os.makedirs(generatedEnvDir, 0o755)
             open(generatedEnvDir + "/.keep", 'a').close()
 
-        # TODO need to ensure any keys that are pulled down have the correct
-        # permissions
+        # need to ensure any keys that are pulled down have the correct permissions
+        privateKeyFileList = []
+        keysDir = basePath + '/' + self.utilsDirName + '/keys'
+
+        for root, dirnames, filenames in os.walk(keysDir):
+            for filename in fnmatch.filter(filenames, '*.pem'):
+                privateKeyFileList.append(os.path.join(root, filename))
+
+        # now go through the list and chmod them
+        for keyFile in privateKeyFileList:
+            os.chmod(keyFile, 0400)
 
         print("Completed successfully\n")
 
@@ -708,7 +718,7 @@ class ManageAppName:
             strToWrite = (
                 "# some app env vars specific to the environment\n"
                 "dcHOME=~/" + self.appName + "\n"
-                "dcTempDir=/media/data/tmp\n"                             
+                "dcTempDir=/media/data/tmp\n"
                 "\n#\n"
                 "# Papertrail settings\n"
                 "#\n"
