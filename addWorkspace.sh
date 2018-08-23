@@ -126,7 +126,9 @@ fi
 
 echo "NOTE: adding workspace ${A_WORKSPACE_NAME} to ${DEST_DIR}"
 
+#-------------------------------------------------------------------------------
 # make sure the workspace nane is uppercase
+#-------------------------------------------------------------------------------
 WORKSPACE_NAME_UPPERCASE=${A_WORKSPACE_NAME^^}
 #echo ${WORKSPACE_NAME_UPPERCASE}
 #echo "${DEST_DIR}"
@@ -136,6 +138,9 @@ dirToAdd="${DEST_DIR}/${A_WORKSPACE_NAME}"
 lineToAdd="${varToAdd}${dirToAdd}"
 theFile=$HOME/.dcConfig/baseDirectory
 
+#-------------------------------------------------------------------------------
+# change $HOME/.dcConfig/baseDirectory
+#-------------------------------------------------------------------------------
 # see if it exists maybe this is the first time 
 if [[ ! -f "${theFile}" ]]; then
     # create it and make sure that this workspace is the current workspace
@@ -148,39 +153,67 @@ if [[ ! -f "${theFile}" ]]; then
 else
     # check to see if there is a value by that name already in the file
     if [[ ! $(grep -c ${varToAdd} ${theFile}) ]];then
-        echo "A workspace with the same name exists: ${A_WORKSPACE_NAME}"
-        exit 1
+        echo "Not added, a workspace with the same name exists in ${theFile}: ${A_WORKSPACE_NAME}"
+    else
+        # need to add a line into that file and we need to do it in a way that will
+        # work for both linux and osx, since we can rely on the verion of sed they have
+        cp "${theFile}" "${theFile}.ORIG"
+        writeNewEntry="false"
+        # we'll put all the new lines into a new file so we don't screw up the file 
+        # we are reading
+        while read aLine; do
+            if [[ $aLine == "CURRENT_WORKSPACE"* ]]; then
+                echo "CURRENT_WORKSPACE=${WORKSPACE_NAME_UPPERCASE}" > "${theFile}.NEW"
+                continue
+            fi
+            if [[ ${aLine} == "##### WORKSPACES ####"* ]]; then
+                writeNewEntry="true"
+            fi 
+            echo "${aLine}" >> "${theFile}.NEW"
+            if [[ ${writeNewEntry} == "true" ]]; then
+                echo ${lineToAdd} >> "${theFile}.NEW"
+                writeNewEntry="false"
+            fi
+        done < "${theFile}"
+        # and now do some house cleaning
+        mv "${theFile}.NEW" "${theFile}"
+        rm "${theFile}.ORIG"
     fi
-    
-    # need to add a line into that file and we need to do it in a way that will
-    # work for both linux and osx, since we can rely on the verion of sed they have
-    cp "${theFile}" "${theFile}.ORIG"
-    writeNewEntry="false"
-    # we'll put all the new lines into a new file so we don't screw up the file 
-    # we are reading
-    while read aLine; do
-        if [[ $aLine == "CURRENT_WORKSPACE"* ]]; then
-            echo "CURRENT_WORKSPACE=${WORKSPACE_NAME_UPPERCASE}" > "${theFile}.NEW"
-            continue
-        fi
-        if [[ ${aLine} == "##### WORKSPACES ####"* ]]; then
-            writeNewEntry="true"
-        fi 
-        echo "${aLine}" >> $HOME/.dcConfig/baseDirectory.NEW
-        if [[ ${writeNewEntry} == "true" ]]; then
-            echo ${lineToAdd} >> "${theFile}.NEW"
-            writeNewEntry="false"
-        fi
-    done < "${theFile}"
-    # and now do some house cleaning
-    mv "${theFile}.NEW" "${theFile}"
-    rm "${theFile}.ORIG"
 fi
 
+#-------------------------------------------------------------------------------
 # and now make the new directory in the location specified
+#-------------------------------------------------------------------------------
 if [[ ! -d "${dirToAdd}" ]]; then
     mkdir -p "${dirToAdd}"
 fi 
 
+#-------------------------------------------------------------------------------
+# and change ~/.dcConfig/settings to put the WORKSPACE variable 
+# in there with the current workspace
+#-------------------------------------------------------------------------------
+settingsFile=~/.dcConfig/settings
+if [[ ! $(grep -c CURRENT_WORKSPACE "${settingsFile}") ]]; then
+    cp "${settingsFile}" "${settingsFile}.ORIG"
+    writeNewEntry="false"
+    # we'll put all the new lines into a new file so we don't screw up the file 
+    # we are reading
+    while read aLine; do
+        if [[ ${aLine} == "DEV_BASE_DIR="* ]]; then
+            writeNewEntry="true"
+        fi 
+        echo "${aLine}" >> "${settingsFile}.NEW"
+        if [[ ${writeNewEntry} == "true" ]]; then
+            echo "CURRENT_WORKSPACE=${A_WORKSPACE_NAME}" >> "${settingsFile}.NEW"
+            writeNewEntry="false"
+        fi
+    done < "${settingsFile}"
+    # and now do some house cleaning
+    mv "${settingsFile}.NEW" "${settingsFile}"
+    rm "${settingsFile}.ORIG"
+fi
+
+#-------------------------------------------------------------------------------
 # and finally we need to switch workspaces over to this new one
+#-------------------------------------------------------------------------------
 switchWorkspace.sh -n ${A_WORKSPACE_NAME}
