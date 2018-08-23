@@ -62,15 +62,35 @@ usage ()
     echo -e "Required arguments:"
     echo -e "-n  This is the name of the new workspace that you want to add"
     echo -e "    NOTE: do not put spaces in the name."
-    echo -e "-d  This is the base directory where the parent directory with "
+    echo -e "-d  [OPTIONAL] This is the base directory where the parent directory with "
     echo -e "    the name of the workspace will be created."
+    echo -e "    If not given it will take the value of DEV_BASE_DIR from ~/.dcConfig/settings"
+
     echo
 }
+
+
+#---  FUNCTION  ----------------------------------------------------------------
+#          NAME:  getValueFromSettings
+#   DESCRIPTION:  will get the value of the key passed in from ~/.dcConfig/settings
+#    PARAMETERS:  the key to look for
+#       RETURNS:  the value of the key once it's found
+#-------------------------------------------------------------------------------
+getValueFromSettings()
+{
+    keyToFind=$1
+    aKeyValue=$(grep "^${keyToFind}" ~/.dcConfig/settings)
+    justTheValue=${aKeyValue#*=}
+    # remove any double quotes around the value
+    var1=${justTheValue#*\"}
+    unquotedVar=${var1%\"}
+    echo "${unquotedVar#*=}"
+}       # ----------  end of function getValueFromSettings  ----------
 
 #-------------------------------------------------------------------------------
 # Make sure there are the exact number of arguments
 #-------------------------------------------------------------------------------
-if [[ $# -ne 4 ]]; then
+if [[ $# -lt 2 ]]; then
     usage
     exit 1
 fi
@@ -80,6 +100,7 @@ fi
 #-------------------------------------------------------------------------------
 NEW_WORKSPACE_NAME=""
 
+DEST_DIR=''
 while [[ $# -gt 0 ]]; do
     case ${1} in
       "-n" )   shift
@@ -98,6 +119,12 @@ if [[ "${A_WORKSPACE_NAME}" == *[[:space:]]* ]]; then
     echo "Error: The workspace name can not contains spaces: ${A_WORKSPACE_NAME}"
     exit 1
 fi
+
+if [[ ! ${DEST_DIR} ]]; then
+    DEST_DIR=$(getValueFromSettings "DEV_BASE_DIR")
+fi
+
+echo "NOTE: adding workspace ${A_WORKSPACE_NAME} to ${DEST_DIR}"
 
 # make sure the workspace nane is uppercase
 WORKSPACE_NAME_UPPERCASE=${A_WORKSPACE_NAME^^}
