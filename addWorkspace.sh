@@ -177,3 +177,7 @@ else
     rm "${theFile}.ORIG"
 fi
 
+# and finally make the new directory in the location specified
+if [[ ! -d "${dirToAdd}" ]]; then
+    mkdir -p "${dirToAdd}"
+fi 
