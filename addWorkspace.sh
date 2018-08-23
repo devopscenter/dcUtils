@@ -61,7 +61,7 @@ usage ()
     echo
     echo -e "Required arguments:"
     echo -e "-n  This is the name of the new workspace that you want to add"
-    echo -e "    NOTE: do not put spaces in the name."
+    echo -e "    NOTE: do not put spaces in the name and all letters should be lowercase."
     echo -e "-d  [OPTIONAL] This is the base directory where the parent directory with "
     echo -e "    the name of the workspace will be created."
     echo -e "    If not given it will take the value of DEV_BASE_DIR from ~/.dcConfig/settings"
@@ -134,7 +134,7 @@ WORKSPACE_NAME_UPPERCASE=${A_WORKSPACE_NAME^^}
 #echo "${DEST_DIR}"
 
 varToAdd="_${WORKSPACE_NAME_UPPERCASE}_BASE_CUSTOMER_DIR="
-dirToAdd="${DEST_DIR}/${A_WORKSPACE_NAME}"
+dirToAdd="${DEST_DIR}/${A_WORKSPACE_NAME,,}"
 lineToAdd="${varToAdd}${dirToAdd}"
 theFile=$HOME/.dcConfig/baseDirectory
 
@@ -194,6 +194,8 @@ fi
 #-------------------------------------------------------------------------------
 settingsFile=~/.dcConfig/settings
 if [[ ! $(grep -c CURRENT_WORKSPACE "${settingsFile}") ]]; then
+    sed -i -e "s/CURRENT_WORKSPACE=.*/CURRENT_WORKSPACE=${A_WORKSPACE_NAME,,}/" "${settingsFile}"
+else
     cp "${settingsFile}" "${settingsFile}.ORIG"
     writeNewEntry="false"
     # we'll put all the new lines into a new file so we don't screw up the file 
