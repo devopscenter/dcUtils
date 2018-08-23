@@ -163,7 +163,7 @@ else
             echo "CURRENT_WORKSPACE=${WORKSPACE_NAME_UPPERCASE}" > "${theFile}.NEW"
             continue
         fi
-        if [[ ${aLine} == "##### WORKSPACES ######"* ]]; then
+        if [[ ${aLine} == "##### WORKSPACES ####"* ]]; then
             writeNewEntry="true"
         fi 
         echo "${aLine}" >> $HOME/.dcConfig/baseDirectory.NEW
