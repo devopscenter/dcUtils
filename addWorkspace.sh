@@ -177,7 +177,10 @@ else
     rm "${theFile}.ORIG"
 fi
 
-# and finally make the new directory in the location specified
+# and now make the new directory in the location specified
 if [[ ! -d "${dirToAdd}" ]]; then
     mkdir -p "${dirToAdd}"
 fi 
+
+# and finally we need to switch workspaces over to this new one
+switchWorkspace.sh -n ${A_WORKSPACE_NAME}
