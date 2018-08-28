@@ -130,8 +130,11 @@ class SharedSettings:
     def isShared(self, app):
         """Return where this app is using shared utilizies."""
         anItem = self.getApplicationInfo(app)
-        if anItem["shared"] == "true":
-            return True
+        if anItem:
+            if anItem["shared"] == "true":
+                return True
+            else:
+                return False
         else:
             return False
     
