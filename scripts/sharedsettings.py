@@ -136,7 +136,8 @@ class SharedSettings:
             else:
                 return False
         else:
-            return False
+            # by default we want to create a shared app-utilities
+            return True
     
     def getVCSServiceName(self, app=None):
         """Return the version control system service name for this application."""
