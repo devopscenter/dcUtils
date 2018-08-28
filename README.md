@@ -431,33 +431,34 @@ delete or change it.
 
 ### Multiple base directories - Work Spaces
 By default the idea of working with the devops.center environment is that there is
-one default workspace named: default.  This default workspace has a directory
+one workspace that has the name of the customer.  This workspace has a directory
 associated with it, and one or more applications would reside side by side in this
 directory.  By doing this, it is easier to automate setting up environment variables
 specific to an application.  The framework knows this because the information is
 written in: $HOME/.dcConfig/baseDirectory.  When you create your first application
 this file will be constructed and the directory will placed into the file with the
-workspace name set to 'default'.  
+workspace name set to name of the customer (lowercase and no spaces in the name).  
 
 If you have the need or desire to support multiple workspaces (say you have two
-customers or you just want to keep two or more applications separate), you can use
-the --workspaceName (-w) option on any of the scripts and specify the workspace you
-want to reference.  The script will read the $HOME/.dcConfig/baseDirectory file and
-determine the base path for that name and use it appropriately.  You will need to
-use the --baseDirectory (-d) option when building a new application with manageApp.py
-and will also need the --workspaceName option.  This should be the only time you
-would need to add the --baseDirectory option with manageApp.py
+customers or you just want to keep two or more applications separate), you would
+use the addWorkspace.sh script to create a new workspace.  This script will set up
+a new directory using the directory defined by the DEV_BASE_DIR key in 
+$HOME/.dcConfig/settings.  If you want it in a different base directory provide
+the -d option.  
+You will need to use the --workspaceName (-w) option when building or joining 
+a new application with manageApp.py in order to specify where you want to place
+the applicaiton.  You can use the workspace option with other scripts to direct
+the focus of the script you are running on that workspace.
 
-Also, if you are going to be doing a lot of work in this workspace you can use the
-switchWorkspace.sh script to change the default workspace to this name.  Then you
-would not have to give the --workspaceName option each time you execute a script.
-To set the default to the new workspaceName execute:
+Also, if you have more then one workspace you can switch between them using the
+switchWorkspace.sh script.  Then you would not have to give the --workspaceName
+ption each time you execute a script. To switch the workspace to a new workspaceName
+ execute:
 
     switchWorkspace.sh -n new-name
 
 If you don't provide an option it will give you a help message and show you what the
 current default workspace name is along with any other workspaces you have defined.
-If you want to go back to the default unnamed workspace, enter the word "default" as the new name.
 
 
 ## Contributing
