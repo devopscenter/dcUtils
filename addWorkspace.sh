@@ -51,7 +51,7 @@
 #-------------------------------------------------------------------------------
 usage ()
 {
-    echo -e "Usage: addWorkspace.sh -n newWorkspaceName -d destinationDirectory"
+    echo -e "Usage: addWorkspace.sh -n newWorkspaceName -d baseDirectory"
     echo
     echo -e "This script will add a workspace that you can use to separate an"
     echo -e "application from other applications.  This will create a parent"
