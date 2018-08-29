@@ -139,4 +139,11 @@ sed -i -e "s/CURRENT_WORKSPACE=.*/CURRENT_WORKSPACE=${NEW_WORKSPACE_NAME}/" "${C
 newCustomerName=${FILE_EXISTS##*/}
 sed -i -e "s/CUSTOMER_NAME=.*/CUSTOMER_NAME=${newCustomerName,,}/" ~/.dcConfig/settings
 sed -i -e "s/PROFILE=.*/PROFILE=${newCustomerName,,}/" ~/.dcConfig/settings
-sed -i -e "/dcCOMMON_SHARED_DIR/s/=\"\(.*\/\).*\"/=\"\1${newCustomerName,,}\"/" ~/.dcConfig/settings
+sed -i -e "s/CURRENT_WORKSPACE=.*/CURRENT_WORKSPACE=${newCustomerName,,}/" ~/.dcConfig/settings
+if [[ $(grep -c "dcCOMMON_SHARED_DIR=\"" ~/.dcConfig/settings) -eq 0 ]]; then
+    # and this one is for when there are no quotes
+    sed -i -e "/dcCOMMON_SHARED_DIR/s/=\(.*\/\).*/=\1${newCustomerName,,}/" ~/.dcConfig/settings
+else
+    # this one is if there are quotes around the directory
+    sed -i -e "/dcCOMMON_SHARED_DIR/s/=\"\(.*\/\).*\"/=\"\1${newCustomerName,,}\"/" ~/.dcConfig/settings
+fi

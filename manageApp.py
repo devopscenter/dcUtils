@@ -36,6 +36,7 @@
 
 # flake8: noqa
 import os
+import fnmatch
 from os.path import expanduser
 import shutil
 import sys
@@ -46,6 +47,7 @@ from time import time
 import fileinput
 import re
 from scripts.process_dc_env import pythonGetEnv
+from scripts.sharedsettings import SharedSettings
 # ==============================================================================
 """
 This script provides an administrative interface to a customers application set
@@ -95,56 +97,59 @@ def getCommonSharedDir():
 
 class ManageAppName:
 
-    def __init__(self, theAppName, baseDirectory, altName, appPath,
-                 sharedUtilsFlag, utilsPath, envList):
+    def __init__(self, theAppName, baseDirectory, altName, envList, appPath=None):
         """ManageAppName constructor"""
         self.organization = None
         self.appName = theAppName
         self.dcAppName = ''
         self.appPath = appPath
-        self.utilsPath = utilsPath
         self.baseDir = baseDirectory
         self.altName = altName.upper()
         self.dcUtils = os.environ["dcUTILS"]
         self.envList = envList
-        self.sharedUtilsFlag = sharedUtilsFlag
+
 
         self.organization = self.envList["CUSTOMER_NAME"]
         if "WORKSPACE_NAME_ORIGINAL" in self.envList:
             self.organization = self.envList["WORKSPACE_NAME_ORIGINAL"]
 
-        if self.sharedUtilsFlag:
-            # set up the defaults for the shared info and check to see if
-            # we are using a shared environment for this app
-            self.sharedUtilsName = "dcShared-utils"
+        # set up the defaults for the shared info and check to see if
+        # we are using a shared environment for this app
+        self.sharedUtilsName = "dcShared-utils"
 
-            # check to see if the shared config directory exists
-            commonSharedDir = getCommonSharedDir()
-            internalCheck = getSettingsValue("dcInternal")
+        # check to see if the shared config directory exists
+        commonSharedDir = getCommonSharedDir()
+        internalCheck = getSettingsValue("dcInternal")
 
-            if internalCheck:
-                sharedSettingsDir = commonSharedDir + "/" + self.organization + "/devops.center/dcConfig"
-            else:
-                sharedSettingsDir = commonSharedDir + "/devops.center/dcConfig"
+        if internalCheck:
+            sharedSettingsDir = commonSharedDir + "/" + self.organization + "/devops.center/dcConfig"
+        else:
+            sharedSettingsDir = commonSharedDir + "/devops.center/dcConfig"
 
-            if not os.path.exists(sharedSettingsDir):
-                print("ERROR: the directory for the shared settings file was not found:\n"
-                      + sharedSettingsDir +
-                      "Please let the devops.center engineers know and they"
-                      " will assist with correcting this.")
-                sys.exit(1)
-            else:
-                self.sharedSettingsPath = sharedSettingsDir
+        if not os.path.exists(sharedSettingsDir):
+            print("ERROR: the directory for the shared settings file was not found:\n"
+                    + sharedSettingsDir +
+                    "Please let the devops.center engineers know and they"
+                    " will assist with correcting this.")
+            sys.exit(1)
+        else:
+            self.sharedSettingsPath = sharedSettingsDir
 
-            self.sharedSettingsFile = self.sharedSettingsPath + "/settings"
-            if not os.path.isfile(self.sharedSettingsFile):
-                print("ERROR: the shared settings file was not found:\n"
-                      + self.sharedSettingsFile +
-                      "\nEither you do not have the shared directory "
-                      "or the settings file has not been created.\n"
-                      "Please let the devops.center engineers know and they"
-                      " will assist with correcting this.")
-                sys.exit(1)
+        self.sharedSettingsFile = self.sharedSettingsPath + "/settings.json"
+        if not os.path.isfile(self.sharedSettingsFile):
+            print("ERROR: the shared settings file was not found:\n"
+                    + self.sharedSettingsFile +
+                    "\nEither you do not have the shared directory "
+                    "or the settings file has not been created.\n"
+                    "Please let the devops.center engineers know and they"
+                    " will assist with correcting this.")
+            sys.exit(1)
+
+        # need to get the information from the shared settings about the
+        # application VCS (git) URL(s) and the utilities URL.  This was
+        # created when the application was created
+        self.theSharedSettings = SharedSettings(self.sharedSettingsFile)
+        self.sharedUtilsFlag = self.theSharedSettings.isShared(self.appName)
 
         # put the baseDirectory path in the users $HOME/.dcConfig/baseDirectory
         # file so that subsequent scripts can use it as a base to work
@@ -277,8 +282,11 @@ class ManageAppName:
             print(self.getUniqueStackID())
             sys.exit(1)
 
-        if self.sharedUtilsFlag:
-            self.writeToSharedSettings()
+# TODO come back to this when implementing the shared settings
+# during the create app.  This will need to utilize the class
+# SharedSettings
+#        if self.sharedUtilsFlag:
+#            self.writeToSharedSettings()
 
     def parseOptions(self, options):
         """options is string of comma separate key=value pairs. If there is
@@ -302,11 +310,6 @@ class ManageAppName:
         NOTE: the pound noqa after the method name will turn off the warning
         that the method is to complex."""
 
-        if (not self.appPath):
-            print("ERROR: you must provide at the minimum the option --appPath"
-                  " to join and existing application.")
-            sys.exit(1)
-
         # create the dataload directory...this is a placeholder and can
         # be a link to somewhere else with more diskspace.  But that is
         # currently up to the user.
@@ -318,72 +321,16 @@ class ManageAppName:
         # change to the baseDirectory
         os.chdir(basePath)
 
-        if re.match("http", self.appPath) or re.search(".git$", self.appPath):
-            # they have entered a git repo for the existing front end directory
-            self.joinWithGit(basePath, "web", self.appPath)
-        else:
+        if self.appPath:
             # they have entered a path to an existing front end directory
             self.joinWithPath(basePath, "web", self.appPath)
-
-        if self.sharedUtilsFlag:
-            # lets check for the existance of this app in the dcShared-utils
-            # if it''s not there then there is no sense in continuing
-            strToSearch = self.appName + "-utils=shared"
-            if strToSearch not in open(self.sharedSettingsFile).read():
-                print('This app does not appear to have been created or shared '
-                      'as it is not in the\n' + self.sharedSettingsFile + '\n'
-                      'as a result it will not be in the dcShared-utils repo. '
-                      'Check to see if this app has been created and if it was '
-                      'supposed to be shared. Exiting ...')
-                sys.exit(1)
-
-        if self.sharedUtilsFlag:
-            gitUtilsPath = None
-            try:
-                with open(self.sharedSettingsFile) as fp:
-                    for aLine in fp:
-                        strippedLine = aLine.strip()
-                        if "SHARED_APP_REPO" in strippedLine:
-                            gitUtilsPath = strippedLine.split("=")[1]
-                            break
-                if gitUtilsPath:
-                    # since this is a shared repo for the app-utils it resides
-                    # in a different place (peer to the app directories in
-                    # the baseDir) hence we need to pass this path on to the
-                    # next methods and they will do the right thing in the
-                    # right place (ie they will clone if the directory
-                    # doesn't exist, otherwise it will do a pull)
-                    basePath = self.baseDir + self.sharedUtilsName
-                    if re.match("http", gitUtilsPath) or \
-                            re.search(".git$", gitUtilsPath):
-                            # they have entered a git repo for the existing
-                            # utilities directory
-                        self.joinWithGit(basePath, "utils", gitUtilsPath)
-                    else:
-                        # TODO need to remove the app-web that was pulled down
-                        # if we get to here.
-                        print('ERROR: the URL for the shared app-utils '
-                              'repository '
-                              ' is invalid or unsupported: ' + gitUtilsPath +
-                              '\n You will need retry this command after '
-                              'that is corrected.')
-            except IOError:
-                print('Error: trying to get the shared file that contains the '
-                      'respository that has this\napplications devops.center '
-                      'utilities could not be found. \nThis could either be '
-                      'because this application hasnt been created yet or '
-                      'you\ndont have acces to the share drive that contians '
-                      'the file.')
-                sys.exit(1)
         else:
-            if re.match("http", self.utilsPath) or \
-                    re.search(".git$", self.utilsPath):
-                # they have entered a git repo for the existing utilities
-                # directory
-                self.joinWithGit(basePath, "utils", self.utilsPath)
-            else:
-                # they have entered a path to an existing utilies directory
-                self.joinWithPath(basePath, "utils", self.utilsPath)
+            appSrcList = self.theSharedSettings.getApplicationRepoList(self.appName)
+            for aURL in appSrcList:
+                self.joinWithGit(basePath, "web", aURL)
+
+        # get the app-utils
+        self.joinWithGit(basePath, "utils", self.theSharedSettings.getUtilitiesRepo(self.appName))
 
         # and the environments directory
         envDir = basePath + "/" + self.utilsDirName + "/environments"
@@ -406,8 +353,17 @@ class ManageAppName:
             os.makedirs(generatedEnvDir, 0o755)
             open(generatedEnvDir + "/.keep", 'a').close()
 
-        # TODO need to ensure any keys that are pulled down have the correct
-        # permissions
+        # need to ensure any keys that are pulled down have the correct permissions
+        privateKeyFileList = []
+        keysDir = basePath + '/' + self.utilsDirName + '/keys'
+
+        for root, dirnames, filenames in os.walk(keysDir):
+            for filename in fnmatch.filter(filenames, '*.pem'):
+                privateKeyFileList.append(os.path.join(root, filename))
+
+        # now go through the list and chmod them
+        for keyFile in privateKeyFileList:
+            os.chmod(keyFile, 0400)
 
         print("Completed successfully\n")
 
@@ -421,13 +377,6 @@ class ManageAppName:
         self.createDockerComposeFiles()
         print("\n\nDone")
         # self.createStackDirectory()
-        # self.createAWSProfile()
-
-        # TODO need to decide if there is a git init at the top level
-        # of do it in each of the sub directories (ie, appName-utils,
-        # appName-web, and uniqueID-stack).  I think it should be the separate
-        # ones. So the .gitignore may need to be down in the appropriate sub
-        # directory.
 
     def createBaseDirectories(self):
         basePath = self.baseDir + self.appName
@@ -658,7 +607,7 @@ class ManageAppName:
             fileHandle.close()
         except IOError:
             print("NOTE: There is a file that needs to be created: \n" +
-                  self.basedir + self.appName + "/.dcDirMap.cnf and "
+                  self.baseDir + self.appName + "/.dcDirMap.cnf and "
                   "could not be written. \n"
                   "Please report this issue to the devops.center admins.")
 
@@ -755,6 +704,9 @@ class ManageAppName:
                     name + "\n"
                     "APP_UTILS_KEYS=${dcHOME}/" + appUtilsDir + "/keys/" +
                     name + "\n"
+                    "#\n"
+                    "dcEnv=" + name + "\n"
+                    "#\n"
                     "#\n")
                 fileHandle.write(strToWrite)
             except IOError:
@@ -769,6 +721,7 @@ class ManageAppName:
             strToWrite = (
                 "# some app env vars specific to the environment\n"
                 "dcHOME=~/" + self.appName + "\n"
+                "dcTempDir=/media/data/tmp\n"
                 "\n#\n"
                 "# Papertrail settings\n"
                 "#\n"
@@ -795,6 +748,9 @@ class ManageAppName:
                 "# some app env vars specific to the environment\n"
                 "APP_UTILS_CONFIG=${dcHOME}/" + appUtilsDir + "config/local\n"
                 "APP_UTILS_KEYS=${dcHOME}/" + appUtilsDir + "keys\n"
+                "#\n"
+                "dcEnv=local\n"
+                "#\n"
                 "\n#\n"
                 "# Papertrail settings\n"
                 "#\n"
@@ -815,69 +771,6 @@ class ManageAppName:
 
         # and now for the personal.env file
         self.createPersonalEnv(envDir)
-
-    def createAWSProfile(self):
-        """This method will create the necessary skeleton in the .aws directory
-        for the new appName which will be used as the profile name"""
-
-        # TODO determine if this is a good thing to do...By doing this the
-        # .aws config and credentials could be set up and then the user would
-        # have to fill it in.  But the region wouldn't be known and the keys
-        # would not be known.  The reason for doing this is that if the user
-        # goes through the aws configure steps and doesn't do the profile or
-        # gives a different profile name than the appName then things wont
-        # work right.
-
-        # first check for the existance of the .aws directory
-        configFileWriteFlag = 'w'
-        credentialFileWriteFlag = 'w'
-        awsBaseDir = expanduser("~") + "/.aws"
-        if os.path.exists(awsBaseDir):
-            # and then check for the existance of the config and credentials
-            # files
-            if os.path.isfile(awsBaseDir + "/config"):
-                configFileWriteFlag = 'a'
-            if os.path.isfile(awsBaseDir + "/credentials"):
-                credentialFileWriteFlag = 'a'
-        else:
-            # create the directory
-            if not os.path.exists(awsBaseDir):
-                os.makedirs(awsBaseDir)
-
-        # now add the necessary entries in config
-        awsConfigFile = awsBaseDir + "/config"
-        try:
-            fileHandle = open(awsConfigFile, configFileWriteFlag)
-            strToWrite = ("[profile " + self.appName + "]\n"
-                          "output = json\n"
-                          "region = us-west-2\n")
-            fileHandle.write(strToWrite)
-            fileHandle.close()
-        except IOError:
-            print("NOTE: There is a file that needs to be created: \n"
-                  "$HOME/.aws/config and could not be written. \n"
-                  "Please report this issue to the devops.center admins.")
-
-        # now add the necessary entries in credentials
-        awsCredentialsFile = awsBaseDir + "/credentials"
-        try:
-            fileHandle = open(awsCredentialsFile, credentialFileWriteFlag)
-            strToWrite = "[" + self.appName + "]\n" + \
-                "aws_access_key_id = YOUR_ACCESS_KEY_ID_HERE\n" + \
-                "aws_secret_access_key = YOUR_SECRET_ACCESS_KEY_HERE\n"
-            fileHandle.write(strToWrite)
-            fileHandle.close()
-        except IOError:
-            print("NOTE: There is a file that needs to be created: \n"
-                  "$HOME/.aws/credentials and could not be written. \n"
-                  "Please report this issue to the devops.center admins.")
-
-        print("\nYou will need to add your AWS access and secret key to \n"
-              "the ~/.aws/credentials file and will need to check the \n"
-              "region in the ~/.aws/config file to ensure it is set to  \n"
-              "correct AWS region that your instances are created in.\n"
-              "Look for these entries under the profile name: \n" +
-              self.appName + "\n\n")
 
     def createDockerComposeFiles(self):
         """This method will create the Dockerfile(s) as necessary for this
@@ -951,10 +844,10 @@ class ManageAppName:
         if self.sharedUtilsFlag and theType == "utils":
             # the basePath includes the standard shared repo named
             # directory
-            if os.path.exists(basePath):
+            if os.path.exists(basePath + "/dcShared-utils"):
                 # then we need to be in that directory to do the pull
                 originalDir = os.getcwd()
-                os.chdir(basePath)
+                os.chdir(basePath + '/dcShared-utils')
                 flagToChangeBackToOriginalDir = True
                 print("Pulling: " + theURL)
                 cloneOrPull = " pull "
@@ -1014,7 +907,7 @@ class ManageAppName:
                 fileHandle.close()
             except IOError:
                 print("NOTE: There is a file that needs to be "
-                      "created: \n" + self.basedir + self.appName +
+                      "created: \n" + self.baseDir + self.appName +
                       "/.dcDirMap.cnf and could not be written. \n"
                       "Please report this issue to the devops.center "
                       "admins.")
@@ -1075,7 +968,7 @@ class ManageAppName:
             fileHandle.close()
         except IOError:
             print("NOTE: There is a file that needs to be "
-                  "created: \n" + self.basedir + self.appName +
+                  "created: \n" + self.baseDir + self.appName +
                   "/.dcDirMap.cnf and could not be written. \n"
                   "Please report this issue to the devops.center "
                   "admins.")
@@ -1238,7 +1131,7 @@ class ManageAppName:
         # the git service name and the git account should be stored in
         # the shared settings file (created upon RUN-ME_FIRST.SH run by the
         # first person of a new customer.)
-        gitServiceName = "github"
+        gitServiceName = self.theSharedSettings.getVCSServiceName()
         gitAccountName = self.organization
 
         retRepoURL = None
@@ -1256,16 +1149,11 @@ class ManageAppName:
                 retRepoURL = "git@github.com:" + gitAccountName + \
                     '/dcShared-utils.git'
 
-            # TODO this repo name is probably not correct and needs to
-            # be updated
             elif gitServiceName == "assembla":
                 retRepoURL = "git@gassembla.com:" + gitAccountName + \
                     '/dcShared-utils.git'
-
-            # TODO this repo name is probably not correct and needs to
-            # be updated
             elif gitServiceName == "bitbucket":
-                retRepoURL = 'gituser@bitbucket.com:' + gitAccountName + \
+                retRepoURL = 'git@bitbucket.org:' + gitAccountName + \
                     '/dcShared-utils.git'
 
         else:
@@ -1428,8 +1316,7 @@ def checkArgs():
         'Example command line to join with an application:\n'
         './manageApp.py --appName YourApp\n'
         '            --command join\n'
-        '            --appPath git@git.assembla.com:website.git \n'
-        '            --utilsPath https://zsoqe@bitbucket.org/team/appUtils.git'
+        '\n ... or you can leave the command off as the default is to join.\n'
         '\n\n'
         'Example cmd line to update an application with a new environment:\n'
         './manageApp.py --appName YourApp\n'
@@ -1437,13 +1324,15 @@ def checkArgs():
         '            --option "newEnv=UAT"\n',
 
         formatter_class=RawDescriptionHelpFormatter)
-    parser.add_argument('-d', '--baseDirectory', help='The base directory '
+    parser.add_argument('-d', '--baseDirectory', help='[OPTIONAL] The base directory '
                         'to be used to access the appName. This needs to be '
                         'an absolute path unless the first part of the path '
-                        'is a tilde or $HOME.   This option is not required '
-                        'but is needed when using the workspaceName option.',
+                        'is a tilde or $HOME.   This option is '
+                        'needed when using the workspaceName option '
+                        'and reads from the personal settings in '
+                        '$HOME/.dcConfig/settings',
                         required=False)
-    parser.add_argument('-c', '--command', help='Command to execute' +
+    parser.add_argument('-c', '--command', help='[OPTIONAL] Command to execute' +
                         'on the appName. Default [join]',
                         choices=["join",
                                  "create",
@@ -1452,32 +1341,20 @@ def checkArgs():
                                  "getUniqueID"],
                         default='join',
                         required=False)
-    parser.add_argument('-p', '--appPath', help='The customer application '
-                        'repo URL or a path to an existing directory that '
-                        'houses the application front end. If you provide a '
-                        'path it should be an the full absolute path as it '
-                        'will be symobolically linked to the base directory '
-                        'given in this command. NOTE: tilde(~) or $HOME will '
-                        'be expanded appropriately',
-                        default='',
-                        required=False)
-    parser.add_argument('-u', '--utilsPath', help='The customer utils '
-                        'repo URL or a path to an existing directory that '
-                        'houses the application utilities. If you provide a '
-                        'path it should be an the full absolute path as it '
-                        'will be symobolically linked to the base directory '
-                        'given or into the app directory if the --sharedUtils'
-                        ' option is given. NOTE: tilde(~) or $HOME will '
-                        'be expanded appropriately',
+    parser.add_argument('-p', '--appPath', help='[OPTIONAL] This is the path to an existing '
+                        'application source code directory (rather then pulling it '
+                        'down from a VCS again, hence duplicating code) that '
+                        'houses the front end source code. The '
+                        'path it should be the full absolute path as it '
+                        'will be symobolically linked to the base directory. '
+                        'NOTE: tilde(~) or $HOME will be expanded appropriately',
                         default='',
                         required=False)
     parser.add_argument('-o', '--cmdOptions', help='Options for the '
-                        'command arg',
+                        'command arg.  Currently, this is used for creating a '
+                        'new environment othere then; dev, staging, local or prod.'
+                        'see the example above for the format.',
                         default='',
-                        required=False)
-    parser.add_argument('-s', '--separateUtils', help='Flag to determine that '
-                        'you do NOT want to to use a shared application utils. ',
-                        action="store_true",
                         required=False)
 
     retAppName = None
@@ -1493,12 +1370,9 @@ def checkArgs():
         retAppName = retEnvList["CUSTOMER_APP_NAME"]
     retCommand = args.command
     retOptions = args.cmdOptions
-    retAppURL = args.appPath
-    retUtilsURL = args.utilsPath
-
-    retSharedUtils = True
-    if args.separateUtils:
-        retSharedUtils = False
+    retAppPath = None
+    if args.appPath:
+        retAppPath = args.appPath
 
     if "WORKSPACE_NAME" in retEnvList:
         retWorkspaceName = retEnvList["WORKSPACE_NAME"]
@@ -1518,16 +1392,13 @@ def checkArgs():
             sys.exit(1)
 
     # if we get here then the
-    return (retAppName, retBaseDir, retWorkspaceName, retCommand, retAppURL,
-            retUtilsURL, retSharedUtils, retEnvList,  retOptions)
+    return (retAppName, retBaseDir, retWorkspaceName, retCommand, retAppPath, retEnvList, retOptions)
 
 
 def main(argv):
-    (appName, baseDir, workspaceName, command, appPath, utilsPath,
-     sharedUtilsFlag, envList, options) = checkArgs()
+    (appName, baseDir, workspaceName, command, appPath, envList, options) = checkArgs()
 
-    customerApp = ManageAppName(appName, baseDir, workspaceName, appPath,
-                                sharedUtilsFlag, utilsPath, envList)
+    customerApp = ManageAppName(appName, baseDir, workspaceName, envList, appPath)
     customerApp.run(command, options)
 
 
