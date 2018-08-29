@@ -33,7 +33,7 @@ function usage
     echo -e "    pawscp is a tool that makes it easier to transfer files to and from and AWS EC2 instances.   \n"
     echo -e "Usage:"
     echo -e "    Optional arguments that can be used with any other combination of arguments:"
-    echo -e "    [-p ORGANIZATION] [-r REGION] [--quiet] [-t \"TAG=VALUE OTHERTAG=OTHERVALUE\"]\n"
+    echo -e "    [-o ORGANIZATION] [-r REGION] [--quiet] [-t \"TAG=VALUE OTHERTAG=OTHERVALUE\"]\n"
     echo -e "    [host/all]:file1 [host/all]:file2"
     echo 
     echo -e "  NOTE: the file1 and file2 arguments need to be the last two arguments"
@@ -51,13 +51,13 @@ function usage
     echo -e "       an option -q|--quiet to suppress that output."
     echo -e "Examples:"
     echo -e "    copy a file from the local machine to a specific destination host and put the file in the home directory."
-    echo -e "    pawscp -p devops.center ~/filetotransfer destHost:~"
+    echo -e "    pawscp -o devops.center ~/filetotransfer destHost:~"
     echo
     echo -e "    copy a file from the local machine to all instances available for the ORGANIZATION and REGION host and put the file in the home directory."
-    echo -e "    pawscp -p devops.center -r us-west-2 ~/filetotransfer :~"
+    echo -e "    pawscp -o devops.center -r us-west-2 ~/filetotransfer :~"
     echo
     echo -e "    copy a file from the local machine to all instances available for the ORGANIZATION and REGION with the given tag and put the file in the home directory."
-    echo -e "    pawscp -p devops.center -r us-west-2 -t "App=dcDemoBlog" ~/filetotransfer :~"
+    echo -e "    pawscp -o devops.center -r us-west-2 -t "App=dcDemoBlog" ~/filetotransfer :~"
 }
 
 if [[ -z $1 ]]; then
@@ -523,7 +523,7 @@ while [[ $# -gt 0 ]]; do
                 ORGANIZATION=$1
                 ;;
         # an for legacy we offer the -p but at some point it should go away
-        -p ) shift
+        -p|-o ) shift
                 ORGANIZATION=$1
                 ;;
         -r ) shift

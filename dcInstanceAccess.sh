@@ -51,11 +51,11 @@ cat << EOF
 This script will allow secure access to a cloud based server via ssh or via an application
 using a specific port. 
 
-Usage: $0 -c create|delete [-p PROFILE] [-r REGION] [-t timeToUseConnection] 
+Usage: $0 -c create|delete [-o ORGANIZATION] [-r REGION] [-t timeToUseConnection] 
                            [-i authenticationServerName] targetInstanceName [port]
 
     -c create|delete  - This is the command to perform to either create the port opening or delete it   
-    -p PROFILE  - optional option allows one to override the value in the devops.center settings
+    -o ORGANIZATION  - optional option allows one to override the value in the devops.center settings
     -r REGION   - optional option allows one to override the value in the devops.center settings
     -t timeToUseConnection - This is the amount of time you plan to use the connection (in seconds)
                              This might be good if you know you only need the connection for a few
@@ -97,7 +97,7 @@ getAddressForAuthorizationServer ()
 {
     AUTHENTICATION_SERVER_NAME=${1:-"dcAuthorization"}
 
-    AUTHENTICATION_SERVER_IP=$(aws ec2 --profile "${PROFILE}" --region ${REGION} describe-instances --filter "Name=tag-value,Values=${AUTHENTICATION_SERVER_NAME}" "Name=tag-value,Values=service" "Name=instance-state-name,Values=running" | jq -r '.Reservations[].Instances[].PublicIpAddress')
+    AUTHENTICATION_SERVER_IP=$(aws ec2 --profile "${ORGANIZATION}" --region ${REGION} describe-instances --filter "Name=tag-value,Values=${AUTHENTICATION_SERVER_NAME}" "Name=tag-value,Values=service" "Name=instance-state-name,Values=running" | jq -r '.Reservations[].Instances[].PublicIpAddress')
     # now check to make sure we have an IP
     # TODO probably need to see if there is more then one returned...at some point...maybe
     if [[ -z ${AUTHENTICATION_SERVER_IP} ]]; then
@@ -129,8 +129,8 @@ while [[ $# -gt 0 ]]; do
                 # lowercase the string
                 COMMAND=${1,,}
                 ;;
-        -p ) shift
-                PROFILE=$1
+        -p|-o ) shift
+                ORGANIZATION=$1
                 ;;
         -r ) shift
                 REGION=$1
@@ -187,9 +187,9 @@ fi
 # main process
 #-------------------------------------------------------------------------------
 
-# get the PROFILE REGION CUSTOMER_NAME USER_NAME from the ~/.dcConfig/settings
-if [[ -z ${PROFILE} ]]; then
-    PROFILE=$(getValueFromSettings "PROFILE")
+# get the ORGANIZATION REGION CUSTOMER_NAME USER_NAME from the ~/.dcConfig/settings
+if [[ -z ${ORGANIZATION} ]]; then
+    ORGANIZATION=$(getValueFromSettings "PROFILE")
 fi
 if [[ -z ${REGION} ]]; then
     REGION=$(getValueFromSettings "REGION")
@@ -208,7 +208,7 @@ if [[ -z ${AUTH_SERVER_KEY} ]]; then
 fi
 
 # use these credentials to authenticate to devops.center
-#echo "PROFILE=${PROFILE}"
+#echo "ORGANIZATION=${ORGANIZATION}"
 #echo "REGION=${REGION}"
 ##echo "CUSTOMER_NAME=${CUSTOMER_NAME}"
 #echo "USER_NAME=${USER_NAME}"
@@ -218,8 +218,8 @@ ACCESS_IP=$(curl -s -4 icanhazip.com)
 #echo ${ACCESS_IP}
 
 # check all arguments ... terminate if any are missing
-if [[ -z ${PROFILE} ]]; then
-    echo "PROFILE does not appear to be set and is required, exiting..."
+if [[ -z ${ORGANIZATION} ]]; then
+    echo "ORGANIZATION does not appear to be set and is required, exiting..."
     exit 1
 fi
 if [[ -z ${REGION} ]]; then
@@ -263,12 +263,12 @@ echo "Checking ${COMMAND} access for user: ${USER_NAME}"
 
 if [[ ${COMMAND} == "create" ]]; then
     # using port 62422 is what was used for containers...doesn't work for instances
-    #SSH_RESULTS=$(ssh -o PasswordAuthentication=no -p 62422 -i ${AUTH_SERVER_KEY} ${USER_NAME}@${AUTHENTICATION_SERVER_IP} "create-access -p ${PROFILE} -r ${REGION} -a ${ACCESS_IP} -u ${USER_NAME} -s ${SERVER_NAME} --port ${PORT} -d ${DEVICE_FOR_ACCESS} -t ${REQUESTED_TIME}" 2>&1 >>/dev/null)
-    SSH_RESULTS=$(ssh -o PasswordAuthentication=no -p 22 -i ${AUTH_SERVER_KEY} ${USER_NAME}@${AUTHENTICATION_SERVER_IP} "create-access -p ${PROFILE} -r ${REGION} -a ${ACCESS_IP} -u ${USER_NAME} -s ${SERVER_NAME} --port ${PORT} -d ${DEVICE_FOR_ACCESS} -t ${REQUESTED_TIME}" 2>&1 >>/dev/null)
+    #SSH_RESULTS=$(ssh -o PasswordAuthentication=no -p 62422 -i ${AUTH_SERVER_KEY} ${USER_NAME}@${AUTHENTICATION_SERVER_IP} "create-access -p ${ORGANIZATION} -r ${REGION} -a ${ACCESS_IP} -u ${USER_NAME} -s ${SERVER_NAME} --port ${PORT} -d ${DEVICE_FOR_ACCESS} -t ${REQUESTED_TIME}" 2>&1 >>/dev/null)
+    SSH_RESULTS=$(ssh -o PasswordAuthentication=no -p 22 -i ${AUTH_SERVER_KEY} ${USER_NAME}@${AUTHENTICATION_SERVER_IP} "create-access -p ${ORGANIZATION} -r ${REGION} -a ${ACCESS_IP} -u ${USER_NAME} -s ${SERVER_NAME} --port ${PORT} -d ${DEVICE_FOR_ACCESS} -t ${REQUESTED_TIME}" 2>&1 >>/dev/null)
 else
     # using port 62422 is what was used for containers...doesn't work for instances
-    #SSH_RESULTS=$(ssh -o PasswordAuthentication=no -p 62422 -i ${AUTH_SERVER_KEY} ${USER_NAME}@${AUTHENTICATION_SERVER_IP} "delete-access -p ${PROFILE} -r ${REGION} -a ${ACCESS_IP} -u ${USER_NAME} -s ${SERVER_NAME} --port ${PORT} -d ${DEVICE_FOR_ACCESS} -t ${REQUESTED_TIME}" 2>&1 >>/dev/null)
-    SSH_RESULTS=$(ssh -o PasswordAuthentication=no -p 22 -i ${AUTH_SERVER_KEY} ${USER_NAME}@${AUTHENTICATION_SERVER_IP} "delete-access -p ${PROFILE} -r ${REGION} -a ${ACCESS_IP} -u ${USER_NAME} -s ${SERVER_NAME} --port ${PORT} -d ${DEVICE_FOR_ACCESS} -t ${REQUESTED_TIME}" 2>&1 >>/dev/null)
+    #SSH_RESULTS=$(ssh -o PasswordAuthentication=no -p 62422 -i ${AUTH_SERVER_KEY} ${USER_NAME}@${AUTHENTICATION_SERVER_IP} "delete-access -p ${ORGANIZATION} -r ${REGION} -a ${ACCESS_IP} -u ${USER_NAME} -s ${SERVER_NAME} --port ${PORT} -d ${DEVICE_FOR_ACCESS} -t ${REQUESTED_TIME}" 2>&1 >>/dev/null)
+    SSH_RESULTS=$(ssh -o PasswordAuthentication=no -p 22 -i ${AUTH_SERVER_KEY} ${USER_NAME}@${AUTHENTICATION_SERVER_IP} "delete-access -p ${ORGANIZATION} -r ${REGION} -a ${ACCESS_IP} -u ${USER_NAME} -s ${SERVER_NAME} --port ${PORT} -d ${DEVICE_FOR_ACCESS} -t ${REQUESTED_TIME}" 2>&1 >>/dev/null)
 fi
 
 if [[ "${SSH_RESULTS}" == *"success" ]]; then
