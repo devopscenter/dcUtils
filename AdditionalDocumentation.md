@@ -3,7 +3,7 @@ This file contains additional documenation regarding the devops.center framework
 about the environment and the commands that interact with it.
 
 #### RUN-ME-FIRST.sh
-What RUN-ME-FIRST.sh, initialization script to set up the devops.center environment to support the framework.
+What RUN-ME-FIRST.sh, initialization script to set up the devops.center environment to support the framework.  This will set up the .dcConfig in the developers home directory and contains the settings file.  The items in the settings file are used by the scripts to identify where certain other scripts and files are located on the personal machine.  This script will also set up a set of directories that will house the applications and the devops.center utilities (ie, dcUtils).  
 
 #### manageApp.py
 To create or join an application.
