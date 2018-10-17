@@ -57,7 +57,7 @@ No arguments are necessary, the script will go out and search for the containers
 Once you have instances running (ie, not the local development enviroment), paws
 will allow you to log into the instance.  This script is a wrapper around ssh 
 that provides options to select an instance from a set of instances, or it can be used to execute a command on a set of instances that are grouped by certain tags.
-There is a paws-README.md in this directory that provides more details about this script.
+There is a [paws-README.md](paws-README.md) in this directory that provides more details about this script.
 
 
 #### pawscp
