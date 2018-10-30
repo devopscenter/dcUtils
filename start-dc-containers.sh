@@ -113,11 +113,13 @@ setupNetwork()
         export DOCKER_WEB_1_PORT_80="${DOCKER_WEB_1_IP}:80:80"
         export DOCKER_WEB_1_PORT_8000="${DOCKER_WEB_1_IP}:8000:8000"
         export DOCKER_WEB_1_PORT_3000="${DOCKER_WEB_1_IP}:3000:3000"
+        export DOCKER_WEB_1_PORT_8125="${DOCKER_WEB_1_IP}:8125:8125"
         export DOCKER_WEB_1_PORT_443="${DOCKER_WEB_1_IP}:443:443"
         # container web 2
         export DOCKER_WEB_2_PORT_80="${DOCKER_WEB_2_IP}:80:80"
         export DOCKER_WEB_2_PORT_8000="${DOCKER_WEB_2_IP}:8000:8000"
         export DOCKER_WEB_2_PORT_3000="${DOCKER_WEB_2_IP}:3000:3000"
+        export DOCKER_WEB_2_PORT_8125="${DOCKER_WEB_2_IP}:8125:8125"
         export DOCKER_WEB_2_PORT_443="${DOCKER_WEB_2_IP}:443:443"
 
         # worker 1
@@ -201,12 +203,14 @@ setupNetwork()
         export DOCKER_WEB_1_PORT_80="80"
         export DOCKER_WEB_1_PORT_8000="8000"
         export DOCKER_WEB_1_PORT_3000="3000"
+        export DOCKER_WEB_1_PORT_8125="8125"
         export DOCKER_WEB_1_PORT_443="443"
 
         # web 2
         export DOCKER_WEB_2_PORT_80="80"
         export DOCKER_WEB_2_PORT_8000="8000"
         export DOCKER_WEB_2_PORT_3000="3000"
+        export DOCKER_WEB_2_PORT_8125="8125"
         export DOCKER_WEB_2_PORT_443="443"
 
         # worker
@@ -399,7 +403,8 @@ SERVICES=($(docker-compose -f ${DOCKER_COMPOSE_FILE} config --services))
 for service in ${SERVICES[@]}
 do
     CONTAINER_NAME=$(findContainerName $service)
-    myNetworkName=${dcDEFAULT_APP_NAME}_local_network
+    aNetworkName=${dcDEFAULT_APP_NAME}_local_network
+    myNetworkName=${aNetworkName,,}
     serviceIP=$(docker inspect -f "{{.NetworkSettings.Networks.${myNetworkName}.IPAddress}}" ${CONTAINER_NAME})
     hostEntry=$(grep ${CONTAINER_NAME} /etc/hosts)
 
