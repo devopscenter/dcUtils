@@ -106,6 +106,8 @@ setupNetwork()
     export DOCKER_REDIS_USER_3_IP="${SUBNET_TO_USE}.33"
     export DOCKER_REDIS_USER_4_IP="${SUBNET_TO_USE}.34"
 
+# TODO Need to refactor this code about opening ports to env variables, MORE DYNAMIC!! not hardcoded...doesn't scale
+
     # need to set up the exposed port differently between OSX and Linux.  With OSX the syntax is IP:PORT:PORT where as with
     # linux the only thing needed is just the port number
     if [[ ${OSNAME} == "Darwin" ]]; then
@@ -114,12 +116,20 @@ setupNetwork()
         export DOCKER_WEB_1_PORT_8000="${DOCKER_WEB_1_IP}:8000:8000"
         export DOCKER_WEB_1_PORT_3000="${DOCKER_WEB_1_IP}:3000:3000"
         export DOCKER_WEB_1_PORT_8125="${DOCKER_WEB_1_IP}:8125:8125"
+        export DOCKER_WEB_1_PORT_2003="${DOCKER_WEB_1_IP}:2003:2003"
+        export DOCKER_WEB_1_PORT_2004="${DOCKER_WEB_1_IP}:2004:2004"
+        export DOCKER_WEB_1_PORT_2023="${DOCKER_WEB_1_IP}:2023:2023"
+        export DOCKER_WEB_1_PORT_2024="${DOCKER_WEB_1_IP}:2024:2024"
         export DOCKER_WEB_1_PORT_443="${DOCKER_WEB_1_IP}:443:443"
         # container web 2
         export DOCKER_WEB_2_PORT_80="${DOCKER_WEB_2_IP}:80:80"
         export DOCKER_WEB_2_PORT_8000="${DOCKER_WEB_2_IP}:8000:8000"
         export DOCKER_WEB_2_PORT_3000="${DOCKER_WEB_2_IP}:3000:3000"
         export DOCKER_WEB_2_PORT_8125="${DOCKER_WEB_2_IP}:8125:8125"
+        export DOCKER_WEB_2_PORT_2003="${DOCKER_WEB_2_IP}:2003:2003"
+        export DOCKER_WEB_2_PORT_2004="${DOCKER_WEB_2_IP}:2004:2004"
+        export DOCKER_WEB_2_PORT_2023="${DOCKER_WEB_2_IP}:2023:2023"
+        export DOCKER_WEB_2_PORT_2024="${DOCKER_WEB_2_IP}:2024:2024"
         export DOCKER_WEB_2_PORT_443="${DOCKER_WEB_2_IP}:443:443"
 
         # worker 1
@@ -204,6 +214,10 @@ setupNetwork()
         export DOCKER_WEB_1_PORT_8000="8000"
         export DOCKER_WEB_1_PORT_3000="3000"
         export DOCKER_WEB_1_PORT_8125="8125"
+        export DOCKER_WEB_1_PORT_2003="2003"
+        export DOCKER_WEB_1_PORT_2004="2004"
+        export DOCKER_WEB_1_PORT_2023="2023"
+        export DOCKER_WEB_1_PORT_2024="2024"
         export DOCKER_WEB_1_PORT_443="443"
 
         # web 2
@@ -211,6 +225,10 @@ setupNetwork()
         export DOCKER_WEB_2_PORT_8000="8000"
         export DOCKER_WEB_2_PORT_3000="3000"
         export DOCKER_WEB_2_PORT_8125="8125"
+        export DOCKER_WEB_2_PORT_2003="2003"
+        export DOCKER_WEB_2_PORT_2004="2004"
+        export DOCKER_WEB_2_PORT_2023="2023"
+        export DOCKER_WEB_2_PORT_2024="2024"
         export DOCKER_WEB_2_PORT_443="443"
 
         # worker
@@ -318,7 +336,7 @@ dcStartLog "Docker containers for application: ${dcDEFAULT_APP_NAME} env: ${ENV}
 # at the same time.  The ports will collide and the db container will not start.
 #-------------------------------------------------------------------------------
 
-if [[ -z $SERVICE_TO_START} ]]; then
+if [[ -z ${SERVICE_TO_START} ]]; then
     postgres=$(ps -ef|grep postgres | grep -v grep)
     set -e
     if [ -n "$postgres" ]; then
