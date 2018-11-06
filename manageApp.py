@@ -1268,7 +1268,10 @@ def getBaseDirectory(workspaceName=None):
 
                 if workspaceName in item:
                     anotherLineArray = item.split('=')
-                    developmentBaseDir = anotherLineArray[1] + '/'
+                    if anotherLineArray[1][-1] == '/':
+                        developmentBaseDir = anotherLineArray[1]
+                    else:
+                        developmentBaseDir = anotherLineArray[1] + '/'
                     return(developmentBaseDir)
 
     if os.path.isfile(baseSettingsDir + "/settings"):
