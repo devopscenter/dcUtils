@@ -331,10 +331,10 @@ class ManageAppName:
 
         # get the app-utils
         utilsUrl = self.theSharedSettings.getUtilitiesRepo(self.appName)
-        if "dcShared-utils" in utils Url:
+        if "dcShared-utils" in utilsUrl:
             self.joinWithGit(self.baseDir, "utils", utilsUrl)
         else:
-            self.joinWithGit(basePath, "utils", utilsUr)
+            self.joinWithGit(basePath, "utils", utilsUrl)
 
 
         # and the environments directory
