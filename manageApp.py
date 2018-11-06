@@ -883,7 +883,8 @@ class ManageAppName:
                     aName
                 print("Doing a symlink of source=>{} to destination=>{}".format(
                     sourceUtilsDir, targetUtilsDir))
-                os.symlink(sourceUtilsDir, targetUtilsDir)
+                if not os.path.exists(targetUtilsDir):
+                    os.symlink(sourceUtilsDir, targetUtilsDir)
             else:
                 # get the newly created directory and put it in the
                 # appropriate ENV variable in the dcDirMap.cnf
