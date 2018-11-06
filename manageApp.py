@@ -330,7 +330,12 @@ class ManageAppName:
                 self.joinWithGit(basePath, "web", aURL)
 
         # get the app-utils
-        self.joinWithGit(basePath, "utils", self.theSharedSettings.getUtilitiesRepo(self.appName))
+        utilsUrl = self.theSharedSettings.getUtilitiesRepo(self.appName)
+        if "dcShared-utils" in utils Url:
+            self.joinWithGit(self.baseDir, "utils", utilsUrl)
+        else:
+            self.joinWithGit(basePath, "utils", utilsUr)
+
 
         # and the environments directory
         envDir = basePath + "/" + self.utilsDirName + "/environments"
