@@ -151,60 +151,66 @@ setupNetwork()
         # redis
         export DOCKER_REDIS_PORT_6379="${DOCKER_REDIS_IP}:6379:6379"
 
+        IFCONFIG=${IFCCONFIG_CMD:=/sbin/ifconfig}
+        if [[ ! -x ${IFCONFIG} ]]; then
+            echo "ERROR: the command ifconfig is not available, set the environment"
+            echo "variable IFCONFIG_CMD to a usable ifconfig including it's path."
+            exit 1
+        fi
         # since this operating system is OSX then we have to set up an alias on lo0 (the interface
         # that docker talks on) to set up a connection to the container
         # in linux the bridge is created with an interface that the host can access
-        interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_SYSLOG_IP}")
+        interfaceOutput=$(${IFCONFIG} lo0 | grep "${DOCKER_SYSLOG_IP}")
         if [[ -z ${interfaceOutput} ]]; then
-            sudo ifconfig lo0 alias "${DOCKER_SYSLOG_IP}"
+            sudo ${IFCONFIG} lo0 alias "${DOCKER_SYSLOG_IP}"
         fi
-        interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_REDIS_IP}")
+        interfaceOutput=$(${IFCONFIG} lo0 | grep "${DOCKER_REDIS_IP}")
         if [[ -z ${interfaceOutput} ]]; then
-            sudo ifconfig lo0 alias "${DOCKER_REDIS_IP}"
+            sudo ${IFCONFIG} lo0 alias "${DOCKER_REDIS_IP}"
         fi
-        interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_REDIS_USER_1_IP}")
+        interfaceOutput=$(${IFCONFIG} lo0 | grep "${DOCKER_REDIS_USER_1_IP}")
         if [[ -z ${interfaceOutput} ]]; then
-            sudo ifconfig lo0 alias "${DOCKER_REDIS_USER_1_IP}"
+            sudo ${IFCONFIG} lo0 alias "${DOCKER_REDIS_USER_1_IP}"
         fi
-#        interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_REDIS_USER_2_IP}")
+#        interfaceOutput=$(${IFCONFIG} lo0 | grep "${DOCKER_REDIS_USER_2_IP}")
 #        if [[ -z ${interfaceOutput} ]]; then
-#            sudo ifconfig lo0 alias "${DOCKER_REDIS_USER_2_IP}"
+#            sudo ${IFCONFIG} lo0 alias "${DOCKER_REDIS_USER_2_IP}"
 #        fi
-#        interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_REDIS_USER_3_IP}")
+#        interfaceOutput=$(${IFCONFIG} lo0 | grep "${DOCKER_REDIS_USER_3_IP}")
 #        if [[ -z ${interfaceOutput} ]]; then
-#            sudo ifconfig lo0 alias "${DOCKER_REDIS_USER_3_IP}"
+#            sudo ${IFCONFIG} lo0 alias "${DOCKER_REDIS_USER_3_IP}"
 #        fi
-#        interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_REDIS_USER_4_IP}")
+#        interfaceOutput=$(${IFCONFIG} lo0 | grep "${DOCKER_REDIS_USER_4_IP}")
 #        if [[ -z ${interfaceOutput} ]]; then
-#            sudo ifconfig lo0 alias "${DOCKER_REDIS_USER_4_IP}"
+#            sudo ${IFCONFIG} lo0 alias "${DOCKER_REDIS_USER_4_IP}"
 #        fi
-        interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_PGMASTER_IP}")
+        interfaceOutput=$(${IFCONFIG} lo0 | grep "${DOCKER_PGMASTER_IP}")
         if [[ -z ${interfaceOutput} ]]; then
-            sudo ifconfig lo0 alias "${DOCKER_PGMASTER_IP}"
+            sudo ${IFCONFIG} lo0 alias "${DOCKER_PGMASTER_IP}"
         fi
-        interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_MONGODB_IP}")
+        interfaceOutput=$(${IFCONFIG} lo0 | grep "${DOCKER_MONGODB_IP}")
         if [[ -z ${interfaceOutput} ]]; then
-            sudo ifconfig lo0 alias "${DOCKER_MONGODB_IP}"
+            sudo ${IFCONFIG} lo0 alias "${DOCKER_MONGODB_IP}"
         fi
-        interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_MYSQLMASTER_IP}")
+        interfaceOutput=$(${IFCONFIG} lo0 | grep "${DOCKER_MYSQLMASTER_IP}")
         if [[ -z ${interfaceOutput} ]]; then
-            sudo ifconfig lo0 alias "${DOCKER_MYSQLMASTER_IP}"
+            sudo ${IFCONFIG} lo0 alias "${DOCKER_MYSQLMASTER_IP}"
         fi
-        interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_WEB_1_IP}")
+        interfaceOutput=$(${IFCONFIG} lo0 | grep "${DOCKER_WEB_1_IP}")
         if [[ -z ${interfaceOutput} ]]; then
-            sudo ifconfig lo0 alias "${DOCKER_WEB_1_IP}"
+            sudo ${IFCONFIG} lo0 alias "${DOCKER_WEB_1_IP}"
         fi
-#        interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_WEB_2_IP}")
+#        interfaceOutput=$(${IFCONFIG} lo0 | grep "${DOCKER_WEB_2_IP}")
 #        if [[ -z ${interfaceOutput} ]]; then
-#            sudo ifconfig lo0 alias "${DOCKER_WEB_2_IP}"
+#            sudo ${IFCONFIG} lo0 alias "${DOCKER_WEB_2_IP}"
 #        fi
-        interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_WORKER_1_IP}")
+        interfaceOutput=$(${IFCONFIG} lo0 | grep "${DOCKER_WORKER_1_IP}")
         if [[ -z ${interfaceOutput} ]]; then
-            sudo ifconfig lo0 alias "${DOCKER_WORKER_1_IP}"
+            sudo ${IFCONFIG} lo0 alias "${DOCKER_WORKER_1_IP}"
         fi
-#        interfaceOutput=$(ifconfig lo0 | grep "${DOCKER_WORKER_2_IP}")
+#        interfaceOutput=$(${IFCONFIG} lo0 | grep "${DOCKER_WORKER_2_IP}")
 #        if [[ -z ${interfaceOutput} ]]; then
-#            sudo ifconfig lo0 alias "${DOCKER_WORKER_2_IP}"
+#            sudo ${IFCONFIG} lo0 alias "${DOCKER_WORKER_2_IP}"
 #        fi
 
     else
