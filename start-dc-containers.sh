@@ -336,16 +336,19 @@ dcStartLog "Docker containers for application: ${dcDEFAULT_APP_NAME} env: ${ENV}
 # at the same time.  The ports will collide and the db container will not start.
 #-------------------------------------------------------------------------------
 
-if [[ -z ${SERVICE_TO_START} ]]; then
-    postgres=$(ps -ef|grep postgres | grep -v grep)
-    set -e
-    if [ -n "$postgres" ]; then
-        dcLog "*** courtesy warning ***"
-        dcLog "postgres running, please exit postgres and try starting again."
-        return 1 2> /dev/null || exit 1
-    fi
-    set +e
-fi
+# Now that we are using a separate network for the containers if there is a postgres
+# container then it will attach to the port on that network and should not interfere
+# with the postgres on the local machine
+#if [[ -z ${SERVICE_TO_START} ]]; then
+#    postgres=$(ps -ef|grep postgres | grep -v grep)
+#    set -e
+#    if [ -n "$postgres" ]; then
+#        dcLog "*** courtesy warning ***"
+#        dcLog "postgres running, please exit postgres and try starting again."
+#        return 1 2> /dev/null || exit 1
+#    fi
+#    set +e
+#fi
 
 #-------------------------------------------------------------------------------
 # We have all the information for this so lets run the docker-compose up with
