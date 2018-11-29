@@ -41,19 +41,46 @@ dcEndLogDef="$func3Name(){ "${dcEndLogContent}"; }"
 
 # -----------------------------------------------------------------------------
 read -r -d '' dcTrackEventContent <<'EOF'
-	GOOGLE_DIR=$(cd $HOME/Googl*;pwd)
     CUSTOMER_NAME=${1}
     CUSTOMER_APP_NAME=${2}
     EVENT=${3}
     MSG=${4}
-    TRACKING_FILE="${GOOGLE_DIR}/devops.center/monitoring/dcEventTracking.txt"
+    
+    aKeyValue=$(grep "^dcCOMMON_SHARED_DIR" ~/.dcConfig/settings)
+    justTheValue=${aKeyValue#*=}
+    # remove any double quotes around the value
+    var1=${justTheValue#*\"}
+    SHARED_DIR_PART1=${var1%\"}
 
-    if [[ ! -f ${TRACKING_FILE} ]]; then
-        dcLog "ERROR: $TRACKING_FILE not found, the event will not be written"
+    if [[ -z ${SHARED_DIR_PART1} ]]; then
+        COMMON_KEY_DIR=$(cd $HOME/Googl*;pwd)
     else
-        TIMESTAMP=$(date +%F_%T)
-        JSONTOWRITE="{\"date\": \"${TIMESTAMP}\", \"customer\": \"${CUSTOMER_NAME}\", \"instancename\": \"${CUSTOMER_APP_NAME}\", \"event\": \"${EVENT}\", \"msg\": \"${MSG}\"} "
-        echo "${JSONTOWRITE}" >> "${TRACKING_FILE}"
+        # now we need to check if this is internal or a customer
+        aKeyValue=$(grep "^dcInternal" ~/.dcConfig/settings)
+        justTheValue=${aKeyValue#*=}
+        # remove any double quotes around the value
+        var1=${justTheValue#*\"}
+        dcInternal=${var1%\"}
+        if [[ -z ${dcInternal} ]]; then
+            dcCOMMON_SHARED_DIR=${SHARED_DIR_PART1}
+        else
+            # its internal so adjust the path
+            dcCOMMON_SHARED_DIR=${SHARED_DIR_PART1%/*}
+        fi
+    fi
+
+    if [[ -n ${dcCOMMON_SHARED_DIR} ]]; then
+        TRACKING_FILE="${dcCOMMON_SHARED_DIR}/devops.center/monitoring/dcEventTracking.txt"
+
+        if [[ ! -f "${TRACKING_FILE}" ]]; then
+            dcLog "ERROR: "${TRACKING_FILE}" not found, the event will not be written"
+        else
+            TIMESTAMP=$(date +%F_%T)
+            JSONTOWRITE="{\"date\": \"${TIMESTAMP}\", \"customer\": \"${CUSTOMER_NAME}\", \"instancename\": \"${CUSTOMER_APP_NAME}\", \"event\": \"${EVENT}\", \"msg\": \"${MSG}\"} "
+            echo "${JSONTOWRITE}" >> "${TRACKING_FILE}"
+        fi
+    else
+        echo "Could not save event, file not available"
     fi
 EOF
 dcTrackEventDef="$func4Name(){ "${dcTrackEventContent}"; }"
