@@ -82,8 +82,8 @@ dcTrackEvent()
     if [[ -n ${dcCOMMON_SHARED_DIR} ]]; then
         TRACKING_FILE="${dcCOMMON_SHARED_DIR}/devops.center/monitoring/dcEventTracking.txt"
 
-        if [[ ! -f ${TRACKING_FILE} ]]; then
-            dcLog "ERROR: $TRACKING_FILE not found, the event will not be written"
+        if [[ ! -f "${TRACKING_FILE}" ]]; then
+            dcLog "ERROR: ${TRACKING_FILE} not found, the event will not be written"
         else
             TIMESTAMP=$(date +%F_%T)
             JSONTOWRITE="{\"date\": \"${TIMESTAMP}\", \"customer\": \"${CUSTOMER_NAME}\", \"instancename\": \"${CUSTOMER_APP_NAME}\", \"event\": \"${EVENT}\", \"msg\": \"${MSG}\"} "
