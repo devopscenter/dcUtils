@@ -38,7 +38,6 @@ set -x             # essentially debug mode
 
 PGPOOL_VERSION=3.7.7
 
-cd ~
 sudo mkdir -p /installs
 pushd /installs
 sudo wget --quiet http://www.pgpool.net/download.php?f=pgpool-II-$PGPOOL_VERSION.tar.gz -O pgpool-II-$PGPOOL_VERSION.tar.gz
@@ -48,6 +47,8 @@ sudo ./configure && sudo make --silent && sudo make --silent install
 
 popd
 popd
+
+sudo rm -R /installs/
 
 sudo supervisorctl restart pgpool
 
