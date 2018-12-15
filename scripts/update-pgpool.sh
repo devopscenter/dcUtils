@@ -52,3 +52,5 @@ sudo rm -R /installs/
 
 sudo supervisorctl restart pgpool
 
+/usr/local/bin/pgpool --version
+
