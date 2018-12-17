@@ -46,4 +46,4 @@ sudo apt -y install ./build/amazon-efs-utils*deb
 
 popd
 
-rm -R efs-utils
+sudo rm -R efs-utils/
