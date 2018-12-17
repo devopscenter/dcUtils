@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 #===============================================================================
 #
-#          FILE: update-pgpool.sh
+#          FILE: awsInstallEFSTools.sh
 #
-#         USAGE: update-pgpool.sh
+#         USAGE: awsInstallEFSTools.sh
 #
-#   DESCRIPTION: Update pgpool, assuming previous dcStack pgpool installation
+#   DESCRIPTION: Install AWS EFS helper tools
 #
 #       OPTIONS: ---
 #  REQUIREMENTS: ---
@@ -13,7 +13,7 @@
 #         NOTES: ---
 #        AUTHOR: Bob Lozano (), bob@devops.center
 #  ORGANIZATION: devops.center
-#       CREATED: 12/15/2018 
+#       CREATED: 12/17/2018 
 #      REVISION:  ---
 #
 # Copyright 2018-2019 devops.center llc
@@ -36,21 +36,18 @@
 set -o errexit      # exit immediately if command exits with a non-zero status
 set -x             # essentially debug mode
 
-PGPOOL_VERSION=3.7.7
+
 
 sudo mkdir -p /installs
 pushd /installs
-sudo wget --quiet http://www.pgpool.net/download.php?f=pgpool-II-$PGPOOL_VERSION.tar.gz -O pgpool-II-$PGPOOL_VERSION.tar.gz
-sudo tar -xvf pgpool-II-$PGPOOL_VERSION.tar.gz && \
-pushd pgpool-II-$PGPOOL_VERSION 
-sudo ./configure && sudo make --silent && sudo make --silent install
+
+git clone https://github.com/aws/efs-utils
+pushd efs-utils
+sed -i 's/env sh/env bash/' build-deb.sh                # fix problem in script
+./build-deb.sh
+sudo apt -y install ./build/amazon-efs-utils*deb
 
 popd
 popd
 
 sudo rm -R /installs/
-
-sudo supervisorctl restart pgpool
-
-/usr/local/bin/pgpool --version
-
