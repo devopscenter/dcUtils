@@ -38,9 +38,6 @@ set -x             # essentially debug mode
 
 
 
-sudo mkdir -p /installs
-pushd /installs
-
 git clone https://github.com/aws/efs-utils
 pushd efs-utils
 sed -i 's/env sh/env bash/' build-deb.sh                # fix problem in script
@@ -48,6 +45,5 @@ sed -i 's/env sh/env bash/' build-deb.sh                # fix problem in script
 sudo apt -y install ./build/amazon-efs-utils*deb
 
 popd
-popd
 
-sudo rm -R /installs/
+rm -R efs-utils
