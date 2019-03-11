@@ -5,7 +5,7 @@
 #
 #         USAGE: awsInstallEFSTools.sh
 #
-#   DESCRIPTION: Install AWS EFS helper tools
+#   DESCRIPTION: Install AWS EFS helper tools and NFS,if needed
 #
 #       OPTIONS: ---
 #  REQUIREMENTS: ---
@@ -37,6 +37,8 @@ set -o errexit      # exit immediately if command exits with a non-zero status
 set -x             # essentially debug mode
 
 
+#  install the package needed to ulized EFS for the shared directory /media/share
+sudo apt -y install nfs-common
 
 git clone https://github.com/aws/efs-utils
 pushd efs-utils
