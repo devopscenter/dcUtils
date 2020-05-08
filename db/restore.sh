@@ -98,7 +98,8 @@ if [[ ${DB_EXISTS} -ne 0 ]]; then
     #-------------------------------------------------------------------------------
     for value in {1..3}
     do
-        sudo -u postgres psql -U postgres -d "$DB_NAME" -c "select pg_terminate_backend(pg_stat_activity.pid) from pg_stat_activity where pg_stat_activity.datname = '${DB_NAME}' and pid <> pg_backend_pid();"
+        sudo -U postgres psql -U postgres -c "alter database ${DB_NAME} with allow_connections false;"
+        sudo -u postgres psql -U postgres -c "select pg_terminate_backend(pg_stat_activity.pid) from pg_stat_activity where pg_stat_activity.datname = '${DB_NAME}' and pid <> pg_backend_pid();"
         if [ $? -gt 0 ]
         then 
             if [ $value -eq 3 ] 
@@ -199,6 +200,10 @@ if ! [[ -z "$SCHEMA_ONLY" ]]; then
 else
     sudo -u postgres pg_restore -U postgres -j $NUM_CONCURRENT -Fc --dbname="$DB_NAME" "$LOCAL_BACKUP_FILE"
 fi
+
+# Re-enable connections for the freshly loaded db
+       sudo -U postgres psql -U postgres -c "alter database ${DB_NAME} with allow_connections true;"
+       
 
 # turn on archive_mode after restore is complete and restart postgres
 sudo sed -i "s/^\barchive_mode\b[[:blank:]]\+=[[:blank:]]\+\boff\b/archive_mode = on/g" /media/data/postgres/db/pgdata/postgresql.conf
