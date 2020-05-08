@@ -202,7 +202,7 @@ else
 fi
 
 # Re-enable connections for the freshly loaded db
-       sudo -U postgres psql -U postgres -c "alter database ${DB_NAME} with allow_connections true;"
+       sudo -u postgres psql -U postgres -c "alter database ${DB_NAME} with allow_connections true;"
 
 # turn on archive_mode after restore is complete and restart postgres
 sudo sed -i "s/^\barchive_mode\b[[:blank:]]\+=[[:blank:]]\+\boff\b/archive_mode = on/g" /media/data/postgres/db/pgdata/postgresql.conf
