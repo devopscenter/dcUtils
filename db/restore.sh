@@ -47,6 +47,7 @@
 #set -x             # essentially debug mode
 
 BACKUP_DIR='.'
+NUM_CONCURRENT=${NUM_CONCURRENT:-"4"}
 
 function usage
 {
@@ -81,7 +82,6 @@ while [[ $# -gt 0 ]]; do
   esac
   shift
 done
-
 
 #-------------------------------------------------------------------------------
 # First check to see if the database exists
