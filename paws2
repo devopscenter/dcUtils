@@ -523,16 +523,16 @@ while [[ ${i} -lt ${numItems} ]]; do
             # on in the list so grab it and bump out of the loop
             echo "Host ${hostName}" >> ${TMP_CONFIG}
             # prefer the private ip if we have it
-#            if [[ ! -z ${instancePrivateIP} ]]; then
+            if [[ ! -z ${instancePrivateIP} ]]; then
                 # the private information goes here
-#                echo " hostname ${instancePrivateIP}" >> ${TMP_CONFIG}
+                echo " hostname ${instancePrivateIP}" >> ${TMP_CONFIG}
                 # and put the port
- #               if [[ -z ${instancePrivatePort} ]]; then
-  #                  echo " port 22" >> ${TMP_CONFIG}
-   #             else
-    #                echo " port ${instancePrivatePort}" >> ${TMP_CONFIG}
-     #           fi
-      #      else
+                if [[ -z ${instancePrivatePort} ]]; then
+                    echo " port 22" >> ${TMP_CONFIG}
+                else
+                    echo " port ${instancePrivatePort}" >> ${TMP_CONFIG}
+                fi
+            else
                 # put the public information
                 echo " hostname ${instancePublicIP}" >> ${TMP_CONFIG}
                 # and put the port
@@ -541,7 +541,7 @@ while [[ ${i} -lt ${numItems} ]]; do
                 else
                     echo " port ${instancePublicPort}" >> ${TMP_CONFIG}
                 fi
-       #     fi
+            fi
             echo " identityfile \"${pathToKey}\"" >> ${TMP_CONFIG}
             echo " user ${destLogin}" >> ${TMP_CONFIG}
             if [[ -n ${gateway} ]]; then
@@ -661,6 +661,6 @@ fi
 #-------------------------------------------------------------------------------
 # remove temporary .ssh/config file
 #-------------------------------------------------------------------------------
-#if [[ -f "$TMP_CONFIG" ]]; then
-#    rm "$TMP_CONFIG"
-#fi
+if [[ -f "$TMP_CONFIG" ]]; then
+    rm "$TMP_CONFIG"
+fi
