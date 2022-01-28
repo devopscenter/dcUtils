@@ -90,67 +90,16 @@ setupNetwork()
         # choose a default subnet 
         SUBNET_TO_USE=${DEFAULT_SUBNET}
     fi
-
+    echo "subnet: ${DOCKER_SUBNET_TO_USE}, ${SUBNET_TO_USE}"
     # first th estatic IP for the services
-    export DOCKER_SYSLOG_IP="${SUBNET_TO_USE}.2"
-    export DOCKER_PGMASTER_IP="${SUBNET_TO_USE}.4"
-    export DOCKER_MONGODB_IP="${SUBNET_TO_USE}.5"
-    export DOCKER_MYSQLMASTER_IP="${SUBNET_TO_USE}.6"
-    export DOCKER_WEB_1_IP="${SUBNET_TO_USE}.10"
-    export DOCKER_WEB_2_IP="${SUBNET_TO_USE}.11"
-    export DOCKER_WORKER_1_IP="${SUBNET_TO_USE}.20"
-    export DOCKER_WORKER_2_IP="${SUBNET_TO_USE}.21"
-    export DOCKER_REDIS_IP="${SUBNET_TO_USE}.30"  # reserved for redismaster
-    export DOCKER_REDIS_USER_1_IP="${SUBNET_TO_USE}.31"
-    export DOCKER_REDIS_USER_2_IP="${SUBNET_TO_USE}.32"
-    export DOCKER_REDIS_USER_3_IP="${SUBNET_TO_USE}.33"
-    export DOCKER_REDIS_USER_4_IP="${SUBNET_TO_USE}.34"
+    # now done in the env file
 
 # TODO Need to refactor this code about opening ports to env variables, MORE DYNAMIC!! not hardcoded...doesn't scale
 
     # need to set up the exposed port differently between OSX and Linux.  With OSX the syntax is IP:PORT:PORT where as with
     # linux the only thing needed is just the port number
     if [[ ${OSNAME} == "Darwin" ]]; then
-        # container web 1
-        export DOCKER_WEB_1_PORT_80="${DOCKER_WEB_1_IP}:80:80"
-        export DOCKER_WEB_1_PORT_8000="${DOCKER_WEB_1_IP}:8000:8000"
-        export DOCKER_WEB_1_PORT_3000="${DOCKER_WEB_1_IP}:3000:3000"
-        export DOCKER_WEB_1_PORT_8125="${DOCKER_WEB_1_IP}:8125:8125"
-        export DOCKER_WEB_1_PORT_2003="${DOCKER_WEB_1_IP}:2003:2003"
-        export DOCKER_WEB_1_PORT_2004="${DOCKER_WEB_1_IP}:2004:2004"
-        export DOCKER_WEB_1_PORT_2023="${DOCKER_WEB_1_IP}:2023:2023"
-        export DOCKER_WEB_1_PORT_2024="${DOCKER_WEB_1_IP}:2024:2024"
-        export DOCKER_WEB_1_PORT_443="${DOCKER_WEB_1_IP}:443:443"
-        # container web 2
-        export DOCKER_WEB_2_PORT_80="${DOCKER_WEB_2_IP}:80:80"
-        export DOCKER_WEB_2_PORT_8000="${DOCKER_WEB_2_IP}:8000:8000"
-        export DOCKER_WEB_2_PORT_3000="${DOCKER_WEB_2_IP}:3000:3000"
-        export DOCKER_WEB_2_PORT_8125="${DOCKER_WEB_2_IP}:8125:8125"
-        export DOCKER_WEB_2_PORT_2003="${DOCKER_WEB_2_IP}:2003:2003"
-        export DOCKER_WEB_2_PORT_2004="${DOCKER_WEB_2_IP}:2004:2004"
-        export DOCKER_WEB_2_PORT_2023="${DOCKER_WEB_2_IP}:2023:2023"
-        export DOCKER_WEB_2_PORT_2024="${DOCKER_WEB_2_IP}:2024:2024"
-        export DOCKER_WEB_2_PORT_443="${DOCKER_WEB_2_IP}:443:443"
-
-        # worker 1
-        export DOCKER_WORKER_1_PORT_80="${DOCKER_WORKER_1_IP}:80:80"
-        export DOCKER_WORKER_1_PORT_5555="${DOCKER_WORKER_1_IP}:5555:5555"
-        # worker 2
-        export DOCKER_WORKER_2_PORT_80="${DOCKER_WORKER_2_IP}:80:80"
-        export DOCKER_WORKER_2_PORT_5555="${DOCKER_WORKER_2_IP}:5555:5555"
-
-        # postgres
-        export DOCKER_PGMASTER_PORT_5432="${DOCKER_PGMASTER_IP}:5432:5432"
-
-        # mongodb
-        export DOCKER_MONGODB_PORT_27017="${DOCKER_MONGODB_IP}:27017:27017"
-
-        # mysql
-        export DOCKER_MYSQL_PORT_3306="${DOCKER_MYSQLMASTER_IP}:3306:3306"
-
-        # redis
-        export DOCKER_REDIS_PORT_6379="${DOCKER_REDIS_IP}:6379:6379"
-
+ 
         IFCONFIG=${IFCCONFIG_CMD:=/sbin/ifconfig}
         if [[ ! -x ${IFCONFIG} ]]; then
             echo "ERROR: the command ifconfig is not available, set the environment"
@@ -164,98 +113,31 @@ setupNetwork()
         if [[ -z ${interfaceOutput} ]]; then
             sudo ${IFCONFIG} lo0 alias "${DOCKER_SYSLOG_IP}"
         fi
+
         interfaceOutput=$(${IFCONFIG} lo0 | grep "${DOCKER_REDIS_IP}")
         if [[ -z ${interfaceOutput} ]]; then
             sudo ${IFCONFIG} lo0 alias "${DOCKER_REDIS_IP}"
         fi
-        interfaceOutput=$(${IFCONFIG} lo0 | grep "${DOCKER_REDIS_USER_1_IP}")
-        if [[ -z ${interfaceOutput} ]]; then
-            sudo ${IFCONFIG} lo0 alias "${DOCKER_REDIS_USER_1_IP}"
-        fi
-#        interfaceOutput=$(${IFCONFIG} lo0 | grep "${DOCKER_REDIS_USER_2_IP}")
-#        if [[ -z ${interfaceOutput} ]]; then
-#            sudo ${IFCONFIG} lo0 alias "${DOCKER_REDIS_USER_2_IP}"
-#        fi
-#        interfaceOutput=$(${IFCONFIG} lo0 | grep "${DOCKER_REDIS_USER_3_IP}")
-#        if [[ -z ${interfaceOutput} ]]; then
-#            sudo ${IFCONFIG} lo0 alias "${DOCKER_REDIS_USER_3_IP}"
-#        fi
-#        interfaceOutput=$(${IFCONFIG} lo0 | grep "${DOCKER_REDIS_USER_4_IP}")
-#        if [[ -z ${interfaceOutput} ]]; then
-#            sudo ${IFCONFIG} lo0 alias "${DOCKER_REDIS_USER_4_IP}"
-#        fi
+
         interfaceOutput=$(${IFCONFIG} lo0 | grep "${DOCKER_PGMASTER_IP}")
         if [[ -z ${interfaceOutput} ]]; then
             sudo ${IFCONFIG} lo0 alias "${DOCKER_PGMASTER_IP}"
         fi
-        interfaceOutput=$(${IFCONFIG} lo0 | grep "${DOCKER_MONGODB_IP}")
-        if [[ -z ${interfaceOutput} ]]; then
-            sudo ${IFCONFIG} lo0 alias "${DOCKER_MONGODB_IP}"
-        fi
-        interfaceOutput=$(${IFCONFIG} lo0 | grep "${DOCKER_MYSQLMASTER_IP}")
-        if [[ -z ${interfaceOutput} ]]; then
-            sudo ${IFCONFIG} lo0 alias "${DOCKER_MYSQLMASTER_IP}"
-        fi
+
         interfaceOutput=$(${IFCONFIG} lo0 | grep "${DOCKER_WEB_1_IP}")
         if [[ -z ${interfaceOutput} ]]; then
             sudo ${IFCONFIG} lo0 alias "${DOCKER_WEB_1_IP}"
         fi
-#        interfaceOutput=$(${IFCONFIG} lo0 | grep "${DOCKER_WEB_2_IP}")
-#        if [[ -z ${interfaceOutput} ]]; then
-#            sudo ${IFCONFIG} lo0 alias "${DOCKER_WEB_2_IP}"
-#        fi
-        interfaceOutput=$(${IFCONFIG} lo0 | grep "${DOCKER_WORKER_1_IP}")
+
+        interfaceOutput=$(${IFCONFIG} lo0 | grep "${DOCKER_SVC_1_IP}")
         if [[ -z ${interfaceOutput} ]]; then
-            sudo ${IFCONFIG} lo0 alias "${DOCKER_WORKER_1_IP}"
+            sudo ${IFCONFIG} lo0 alias "${DOCKER_SVC_1_IP}"
         fi
-#        interfaceOutput=$(${IFCONFIG} lo0 | grep "${DOCKER_WORKER_2_IP}")
-#        if [[ -z ${interfaceOutput} ]]; then
-#            sudo ${IFCONFIG} lo0 alias "${DOCKER_WORKER_2_IP}"
-#        fi
 
-    else
-        # its linux so define the variables with just the port
-        # web
-        export DOCKER_WEB_1_PORT_80="80"
-        export DOCKER_WEB_1_PORT_8000="8000"
-        export DOCKER_WEB_1_PORT_3000="3000"
-        export DOCKER_WEB_1_PORT_8125="8125"
-        export DOCKER_WEB_1_PORT_2003="2003"
-        export DOCKER_WEB_1_PORT_2004="2004"
-        export DOCKER_WEB_1_PORT_2023="2023"
-        export DOCKER_WEB_1_PORT_2024="2024"
-        export DOCKER_WEB_1_PORT_443="443"
-
-        # web 2
-        export DOCKER_WEB_2_PORT_80="80"
-        export DOCKER_WEB_2_PORT_8000="8000"
-        export DOCKER_WEB_2_PORT_3000="3000"
-        export DOCKER_WEB_2_PORT_8125="8125"
-        export DOCKER_WEB_2_PORT_2003="2003"
-        export DOCKER_WEB_2_PORT_2004="2004"
-        export DOCKER_WEB_2_PORT_2023="2023"
-        export DOCKER_WEB_2_PORT_2024="2024"
-        export DOCKER_WEB_2_PORT_443="443"
-
-        # worker
-        export DOCKER_WORKER_1_PORT_80="80"
-        export DOCKER_WORKER_1_PORT_5555="5555"
-
-        # worker 2
-        export DOCKER_WORKER_2_PORT_80="80"
-        export DOCKER_WORKER_2_PORT_5555="5555"
-
-        # postgres
-        export DOCKER_PGMASTER_PORT_5432="5432"
-
-        # mongodb
-        export DOCKER_MONGODB_PORT_27017="27017"
-
-        # mysql
-        export DOCKER_MYSQLMASTER_PORT_3306="3306"
-
-        # redis
-        export DOCKER_REDIS_PORT_6379="6379"
+   else
+       # its linux so define the variables with just the port
+       # now done in env file (for now)
+       env 
     fi
 
 }
