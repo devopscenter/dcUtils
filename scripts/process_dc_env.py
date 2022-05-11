@@ -361,7 +361,7 @@ class Process_dc_Env:
                                                     stderr=subprocess.STDOUT,
                                                     shell=True)
 
-                theWholeEnv = tmpOutput.split('\n')
+                theWholeEnv = tmpOutput.split(b'\n')
                 # -------------------------------------------------------------
                 # now go through the whole environment and only get the ones
                 # that are in the envFile that we sourced
@@ -373,14 +373,14 @@ class Process_dc_Env:
                 # needed key
                 # -------------------------------------------------------------
                 theEnvFileToRead = envDirToFind + "/" + envFileName
-                with open(theEnvFileToRead) as f:
-                    lines = [line.rstrip('\n') for line in f]
+                with open(theEnvFileToRead, 'rb') as f:
+                    lines = [line.rstrip(b'\n') for line in f]
 
                 for line in lines:
-                    needKey, needValue = line.split('=', 1)
+                    needKey, needValue = line.split(b'=', 1)
                     for envVar in theWholeEnv:
                         if needKey in envVar:
-                            lookKey, lookValue = envVar.split('=', 1)
+                            lookKey, lookValue = envVar.split(b'=', 1)
                             self.envList[needKey] = lookValue
             except subprocess.CalledProcessError:
                 logging.exception("There was an issue with sourcing " +
@@ -440,7 +440,7 @@ def shellGetEnv():
         returnEnvList = anEnv.process_dc_env()
 
     returnStr = "export"
-    for key, value in returnEnvList.iteritems():
+    for key, value in returnEnvList.items():
         if '\"' in value or '\'' in value:
             returnStr += " " + key + '=' + value
         else:

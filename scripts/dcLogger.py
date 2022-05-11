@@ -100,7 +100,7 @@ class dcLogger():
     def logOutput(self, message):
         """Write out a message to the remote log tool."""
         # logger.info("{}".format(message))
-        self.logger.warn(message)
+        self.logger.warning(message)
 
     def logFileToOutput(self, aFile):
         """Write out a file to the remote log tool."""
