@@ -265,10 +265,6 @@ class ManageAppName:
 
     def run(self, command, options):
         optionsMap = self.parseOptions(options)
-#   for testing purposes
-#        if len(optionsMap.keys()):
-#            for item in optionsMap.keys():
-#                print "[{}] =>{}<=".format(item, optionsMap[item])
 
         if command == "join":
             self.joinExistingDevelopment()
@@ -368,7 +364,7 @@ class ManageAppName:
 
         # now go through the list and chmod them
         for keyFile in privateKeyFileList:
-            os.chmod(keyFile, 0400)
+            os.chmod(keyFile, 0o400)
 
         print("Completed successfully\n")
 
@@ -692,7 +688,7 @@ class ManageAppName:
         # stackName-web image to build from.  So, there is a CUSTOMER_STACK
         # variable that needs to be changed
         for line in fileinput.input(workerDockerFile, inplace=1):
-            print line.replace("CUSTOMER_STACK", uniqueStackName),
+            print (line.replace("CUSTOMER_STACK", uniqueStackName))
 
     def createEnvFiles(self, envDir):
         appUtilsDir = self.appName + "-utils/"
@@ -807,9 +803,9 @@ class ManageAppName:
         # need to change the env file name and path to represent what is
         # created with this script
         for line in fileinput.input(composeFile, inplace=1):
-            print line.replace("DC_UNIQUE_ID", self.uniqueStackName),
+            print (line.replace("DC_UNIQUE_ID", self.uniqueStackName))
         for line in fileinput.input(composeDebugFile, inplace=1):
-            print line.replace("DC_UNIQUE_ID", self.uniqueStackName),
+            print (line.replace("DC_UNIQUE_ID", self.uniqueStackName))
 
     def createPersonalEnv(self, envDir):
         """create the personal.env file when joinExistingDevelopment"""
@@ -1064,10 +1060,10 @@ class ManageAppName:
                     continue
                 if self.appName in line:
                     foundALine = 1
-                    print re.sub("=(.*)-stack", "=" + stackName, line),
+                    print (re.sub("=(.*)-stack", "=" + stackName, line, end=""))
                 else:
                     # NOTE the comma doesn't print out an extra newline
-                    print line,
+                    print (line, end="")
             fileinput.close()
 
             if foundALine == 0:

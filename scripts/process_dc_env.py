@@ -48,9 +48,9 @@ import subprocess
 process_dc_env.py process the arguments and passes them back to put them in the
 environment along with other environment variables defined in .env files.
 """
-__version__ = "0.1"
+__version__ = "0.2"
 
-__copyright__ = "Copyright 2016, devops.center"
+__copyright__ = "Copyright 2016-2022, devops.center"
 __credits__ = ["Bob Lozano", "Gregg Jensen"]
 __license__ = "GPL"
 __status__ = "Development"
@@ -270,7 +270,7 @@ class Process_dc_Env:
             sys.exit(1)
 
     def getBaseAppUtils(self):
-        """Get the appliation utils."""
+        """Get the application utils."""
         appDir = self.baseDir + "/" + self.baseAppName
         subDirMapFile = appDir + "/" + ".dcDirMap.cnf"
         if os.path.exists(subDirMapFile):
@@ -370,7 +370,8 @@ class Process_dc_Env:
                 # bunch of extra  variables that we don't need.  What we need
                 # are the keys from the file, so we will read through the file
                 # and pull the keys and then match up the sourced value to the
-                # needed key
+                # needed key.
+                # With that, make the dict all str (part of the python 3 update)
                 # -------------------------------------------------------------
                 theEnvFileToRead = envDirToFind + "/" + envFileName
                 with open(theEnvFileToRead, 'rb') as f:
@@ -380,8 +381,9 @@ class Process_dc_Env:
                     needKey, needValue = line.split(b'=', 1)
                     for envVar in theWholeEnv:
                         if needKey in envVar:
-                            lookKey, lookValue = envVar.split(b'=', 1)
-                            self.envList[needKey] = lookValue
+                            lookKey = needKey.decode()
+                            lookValue = needValue.decode()
+                            self.envList[lookKey] = lookValue
             except subprocess.CalledProcessError:
                 logging.exception("There was an issue with sourcing " +
                                   fileToSource)
@@ -431,6 +433,8 @@ def shellGetEnv():
     customerNameToSpecialize = None
     if "FOR_CUSTOMER" in envList:
         customerNameToSpecialize = envList["FOR_CUSTOMER"]
+
+    print('initialCreate',initialCreate,'\n')
 
     if initialCreate:
         returnEnvList = envList
